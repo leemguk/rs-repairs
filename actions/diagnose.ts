@@ -51,7 +51,9 @@ export async function diagnoseProblem(appliance: string, problem: string, email:
     }
     
     Guidelines:
-    - Use UK pricing in GBP (£)
+    - Use UK pricing in GBP (£) with cost range from £0 (DIY repair) to £149 (professional same-day service)
+    - For DIY repairs: £0 - £30 (just parts cost), for professional repairs: £109 - £149
+    - Professional service pricing: £109 (standard), £129 (next-day), £149 (same-day)
     - Difficulty levels: easy (basic tools, no electrical), moderate (some technical skill), difficult (electrical/complex), expert (specialized tools/dangerous)
     - Recommend "diy" for easy-moderate repairs, "professional" for difficult-expert or safety concerns, "warranty" for expensive/complex issues on older appliances
     - Always prioritize safety - if there's any electrical, gas, or safety risk, recommend professional
@@ -236,7 +238,7 @@ function getFallbackDiagnosis(appliance: string, problem: string): DiagnosisResu
       ],
     },
     urgency: problem.toLowerCase().includes('sparking') || problem.toLowerCase().includes('smoke') ? "high" : "medium",
-    estimatedCost: isRefrigeration ? "£120 - £200" : isElectrical ? "£109 - £180" : "£109 - £160",
+    estimatedCost: isRefrigeration ? "£0 - £149" : isElectrical ? "£109 - £149" : "£0 - £149",
     difficulty: isElectrical || problem.toLowerCase().includes('electrical') ? "expert" : "moderate",
     recommendedService: isElectrical || problem.toLowerCase().includes('electrical') || problem.toLowerCase().includes('sparking') ? "professional" : "professional",
     serviceReason: "This issue requires professional assessment to ensure safe and proper repair. Our certified technicians can provide accurate diagnosis and quality repairs.",
