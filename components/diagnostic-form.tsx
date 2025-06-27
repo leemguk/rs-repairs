@@ -72,7 +72,7 @@ const exampleDiagnosis: DiagnosisResult = {
     ]
   },
   urgency: "medium",
-  estimatedCost: "£15-£45 DIY / £129-£149 Professional",
+  estimatedCost: "£0-£149",
   difficulty: "moderate",
   recommendedService: "diy",
   serviceReason: "Start with simple DIY checks as the issue may be resolved with load balancing and cleaning. If noise persists, professional bearing replacement may be needed.",
