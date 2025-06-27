@@ -49,7 +49,6 @@ interface DiagnosticFormProps {
   onBookEngineer?: () => void
 }
 
-// Example diagnostic data
 const exampleDiagnosis: DiagnosisResult = {
   possibleCauses: [
     "Loose or damaged drum bearings",
@@ -73,7 +72,7 @@ const exampleDiagnosis: DiagnosisResult = {
       "Drive belt replacement",
       "Shock absorber replacement"
     ]
-  ]
+  },
   urgency: "medium",
   estimatedCost: "£109 - £149",
   difficulty: "difficult",
@@ -116,7 +115,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
 
   const handleShowExample = () => {
     setShowExample(true)
-    setDiagnosis(null) // Clear any existing diagnosis
+    setDiagnosis(null)
   }
 
   const handleCloseExample = () => {
@@ -133,7 +132,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     setIsVerifying(true)
     setError("")
 
-    // Simulate sending verification email
     setTimeout(() => {
       setIsVerifying(false)
       setIsEmailSent(true)
@@ -150,12 +148,10 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     setIsVerifying(true)
     setError("")
 
-    // Simulate verification (accept any 6-digit code for demo)
     setTimeout(() => {
       if (verificationCode.length === 6) {
         setIsVerifying(false)
         setIsEmailVerified(true)
-        // Proceed with diagnosis
         handleDiagnosticSubmit()
       } else {
         setIsVerifying(false)
@@ -168,7 +164,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     setIsLoading(true)
     setError("")
     setDiagnosis(null)
-    setShowExample(false) // Hide example when getting real diagnosis
+    setShowExample(false)
 
     try {
       const result = await diagnoseProblem(appliance, brand, problem, email)
@@ -196,7 +192,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     if (onBookEngineer) {
       onBookEngineer()
     } else {
-      // Fallback to scrolling to services section
       scrollToServices()
     }
   }
@@ -274,11 +269,9 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     }
   }
 
-  // Function to render diagnostic results (used for both real and example)
   const renderDiagnosticResults = (diagnosisData: DiagnosisResult, isExample: boolean = false) => {
     return (
       <div className="space-y-6">
-        {/* Example Banner */}
         {isExample && (
           <Card className="border-2 border-blue-200 bg-blue-50">
             <CardContent className="p-4">
@@ -303,7 +296,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
           </Card>
         )}
 
-        {/* Email Success (only for real diagnosis) */}
         {!isExample && (
           <Card className="border-2 border-green-200 bg-green-50">
             <CardContent className="p-4">
@@ -318,7 +310,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
           </Card>
         )}
 
-        {/* Service Recommendation Card - Only show for warranty recommendation */}
         {diagnosisData.recommendedService === "warranty" && (
           <Card className={`border-l-4 ${getServiceRecommendation(diagnosisData.recommendedService).color}`}>
             <CardHeader>
@@ -344,10 +335,8 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
           </Card>
         )}
 
-        {/* For DIY and Professional recommendations, show dual options */}
         {(diagnosisData.recommendedService === "diy" || diagnosisData.recommendedService === "professional") && (
           <div className="grid gap-4 md:grid-cols-2">
-            {/* DIY Option Card */}
             <Card className={`border-l-4 flex flex-col ${diagnosisData.recommendedService === "diy" ? "border-l-blue-600 bg-blue-50" : "border-l-gray-300 bg-gray-50"}`}>
               <CardHeader>
                 <div className="flex items-center gap-3">
@@ -385,7 +374,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               </CardContent>
             </Card>
 
-            {/* Professional Option Card */}
             <Card className={`border-l-4 flex flex-col ${diagnosisData.recommendedService === "professional" ? "border-l-orange-600 bg-orange-50" : "border-l-gray-300 bg-gray-50"}`}>
               <CardHeader>
                 <div className="flex items-center gap-3">
@@ -426,7 +414,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
           </div>
         )}
 
-        {/* Diagnostic Details */}
         <Card className="border-l-4 border-l-blue-600">
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -442,7 +429,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Key Information Grid */}
             <div className="grid gap-6 md:grid-cols-2">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
@@ -457,7 +443,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               </div>
             </div>
 
-            {/* Safety Warnings */}
             {diagnosisData.safetyWarnings && diagnosisData.safetyWarnings.length > 0 && (
               <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
                 <h3 className="font-semibold mb-3 flex items-center gap-2 text-red-800">
@@ -475,7 +460,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               </div>
             )}
 
-            {/* Skills Required (for DIY) */}
             {diagnosisData.skillsRequired && diagnosisData.skillsRequired.length > 0 && (
               <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                 <h3 className="font-semibold mb-3 flex items-center gap-2 text-blue-800">
@@ -492,7 +476,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               </div>
             )}
 
-            {/* Possible Causes */}
             <div>
               <h3 className="font-semibold mb-3 flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-orange-600" />
@@ -581,7 +564,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               </div>
             )}
 
-            {/* Button Row */}
             {!showEmailVerification && (
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button onClick={handleAskAI} className="flex-1 bg-blue-600 hover:bg-blue-700" size="lg">
@@ -600,7 +582,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               </div>
             )}
 
-            {/* Email Verification Section */}
             {showEmailVerification && (
               <div className="border-t pt-6 space-y-4">
                 <div className="flex items-center gap-2 text-blue-600">
@@ -715,7 +696,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
         </CardContent>
       </Card>
 
-      {/* Loading State */}
       {isLoading && isEmailVerified && (
         <Card className="border-2 border-blue-200 bg-blue-50">
           <CardContent className="p-8">
@@ -730,10 +710,8 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
         </Card>
       )}
 
-      {/* Show Example Report */}
       {showExample && renderDiagnosticResults(exampleDiagnosis, true)}
 
-      {/* Show Real Diagnosis Results */}
       {diagnosis && !showExample && renderDiagnosticResults(diagnosis, false)}
     </div>
   )
