@@ -280,7 +280,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                   <Eye className="h-5 w-5 text-blue-600" />
                   <div>
                     <p className="font-medium text-blue-800">Example Diagnostic Report</p>
-                    <p className="text-xs text-blue-600">This is what your kAI diagnosis will look like</p>
+                    <p className="text-xs text-blue-600">This is what your report from kAI will look like</p>
                   </div>
                 </div>
                 <Button
@@ -510,10 +510,9 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
             <Lightbulb className="h-8 w-8 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl">kAI Appliance Diagnostics</CardTitle>
+          <CardTitle className="text-2xl">kAI - Appliance Fault Assistant</CardTitle>
           <CardDescription>
-            Tell us about your appliance problem and kAI will help identify potential causes and recommend the best
-            solution
+            Tell kAI about your appliance and get a detailed fault diagnosis and recommended best solutions
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -568,7 +567,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button onClick={handleAskAI} className="flex-1 bg-blue-600 hover:bg-blue-700" size="lg">
                   <Lightbulb className="mr-2 h-4 w-4" />
-                  Ask kAI
+                  Diagnose Your Fault
                 </Button>
                 <Button
                   variant="outline"
