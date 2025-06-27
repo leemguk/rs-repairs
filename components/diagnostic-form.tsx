@@ -314,7 +314,10 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => setShowExample(true)}
+                  onClick={() => {
+                    alert("Button clicked! Modal should open now...")
+                    setShowExample(true)
+                  }}
                   className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
                 >
                   <Eye className="mr-2 h-4 w-4" />
