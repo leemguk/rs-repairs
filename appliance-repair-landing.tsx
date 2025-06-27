@@ -589,10 +589,10 @@ export default function Component() {
                   AI-Powered Diagnostics
                 </Badge>
                 <h2 className="text-2xl font-bold tracking-tighter sm:text-3xl md:text-4xl lg:text-5xl text-gray-900">
-                  Let Us Help You Make The Right Repair Choice?
+                  Let kAI Help You Make The Right Repair Choice?
                 </h2>
                 <p className="max-w-[900px] text-gray-600 text-sm sm:text-base md:text-lg lg:text-xl/relaxed">
-                  Describe your appliance problem and our AI will help diagnose potential issues and suggest next steps
+                  Describe your appliance problem and kAI will help diagnose the fault and suggest next steps
                 </p>
               </div>
             </div>
