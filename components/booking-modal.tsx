@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Clock, CheckCircle, Calendar, ChevronRight, User, MapPin } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { supabase } from "@/lib/supabase"
+import type { Booking } from "@/lib/supabase"
 
 interface BookingModalProps {
   isOpen: boolean
@@ -40,6 +42,7 @@ const manufacturers = ["Samsung", "LG", "Whirlpool", "Bosch"]
 export function BookingModal({ isOpen, onClose }: BookingModalProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [acceptTerms, setAcceptTerms] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [addressSuggestions, setAddressSuggestions] = useState<
     Array<{
       id: string
@@ -133,6 +136,87 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
 
   const updateBookingData = (field: keyof BookingData, value: string) => {
     setBookingData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // Save booking to Supabase
+  const saveBookingToDatabase = async (): Promise<string | null> => {
+    if (!selectedPricing) return null
+
+    try {
+      // Prepare booking data for database
+      const bookingRecord: Omit<Booking, 'id' | 'created_at'> = {
+        full_name: bookingData.firstName,
+        email: bookingData.email,
+        mobile: bookingData.mobile,
+        address: bookingData.fullAddress,
+        appliance_type: bookingData.applianceType,
+        manufacturer: bookingData.manufacturer,
+        model: bookingData.applianceModel || null,
+        fault_description: bookingData.applianceFault,
+        service_type: selectedPricing.type === 'same-day' ? 'same_day' : 
+                     selectedPricing.type === 'next-day' ? 'next_day' : 'standard',
+        service_price: selectedPricing.price * 100, // Convert to pence
+        appointment_date: selectedPricing.type === 'same-day' ? new Date().toISOString().split('T')[0] :
+                         selectedPricing.type === 'next-day' ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] :
+                         bookingData.selectedDate || null,
+        appointment_time: selectedPricing.type === 'same-day' ? 'Before 6pm' : bookingData.selectedTimeSlot || null,
+        payment_status: 'pending',
+        booking_status: 'confirmed'
+      }
+
+      // Insert booking into Supabase
+      const { data, error } = await supabase
+        .from('bookings')
+        .insert([bookingRecord])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error saving booking:', error)
+        throw new Error('Failed to save booking')
+      }
+
+      console.log('Booking saved successfully:', data)
+      return data.id
+    } catch (error) {
+      console.error('Database error:', error)
+      throw error
+    }
+  }
+
+  // Send email notification (placeholder for SendGrid integration)
+  const sendEmailNotification = async (bookingId: string) => {
+    try {
+      // This will be replaced with actual SendGrid API call
+      const emailData = {
+        bookingId,
+        customerName: bookingData.firstName,
+        customerEmail: bookingData.email,
+        serviceType: selectedPricing?.description,
+        price: selectedPricing?.price,
+        appliance: `${bookingData.manufacturer} ${bookingData.applianceType}`,
+        address: bookingData.fullAddress,
+        appointmentDate: selectedPricing?.type === 'same-day' ? 'Today' :
+                        selectedPricing?.type === 'next-day' ? 'Tomorrow' :
+                        bookingData.selectedDate,
+        appointmentTime: selectedPricing?.type === 'same-day' ? 'Before 6pm' : bookingData.selectedTimeSlot
+      }
+
+      console.log('Email notification data:', emailData)
+      
+      // TODO: Replace with actual SendGrid API call
+      // const response = await fetch('/api/send-booking-email', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(emailData)
+      // })
+      
+      return true
+    } catch (error) {
+      console.error('Email notification error:', error)
+      // Don't throw - email failure shouldn't block the booking
+      return false
+    }
   }
 
   // Mock Loqate address search function
@@ -265,18 +349,14 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     }
   }
 
-  const handleSubmit = () => {
-    // Handle final booking submission
-    console.log("Booking submitted:", bookingData)
-    alert("Booking confirmed! You will receive a confirmation SMS shortly.")
-    onClose()
-    // Reset form
+  const resetForm = () => {
     setCurrentStep(1)
     setAcceptTerms(false)
     setSelectedPricing(null)
     setAddressSearchValue("")
     setAddressSuggestions([])
     setShowAddressSuggestions(false)
+    setIsSubmitting(false)
     setBookingData({
       applianceType: "",
       manufacturer: "",
@@ -295,10 +375,50 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     })
   }
 
-  const handleStripePayment = async () => {
-    if (!selectedPricing) return
+  const handleSubmit = async () => {
+    if (!selectedPricing || isSubmitting) return
+
+    setIsSubmitting(true)
 
     try {
+      // Save booking to database first
+      const bookingId = await saveBookingToDatabase()
+      
+      if (!bookingId) {
+        throw new Error('Failed to create booking')
+      }
+
+      // Send email notification
+      await sendEmailNotification(bookingId)
+
+      // Show success message
+      alert(`Booking confirmed! Booking ID: ${bookingId}\n\nYou will receive a confirmation email shortly. Our repair company will contact you to confirm the appointment time.`)
+      
+      // Close modal and reset
+      onClose()
+      resetForm()
+
+    } catch (error) {
+      console.error('Booking submission error:', error)
+      alert('Sorry, there was an error processing your booking. Please try again or contact us directly.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleStripePayment = async () => {
+    if (!selectedPricing || isSubmitting) return
+
+    setIsSubmitting(true)
+
+    try {
+      // First save the booking to get an ID
+      const bookingId = await saveBookingToDatabase()
+      
+      if (!bookingId) {
+        throw new Error('Failed to create booking')
+      }
+
       const stripe = await stripePromise
       if (!stripe) throw new Error("Stripe failed to load")
 
@@ -311,6 +431,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
         body: JSON.stringify({
           amount: selectedPricing.price * 100, // Convert to pence
           currency: "gbp",
+          bookingId: bookingId,
           bookingData: {
             ...bookingData,
             serviceType: selectedPricing.type,
@@ -332,41 +453,43 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       if (error) {
         console.error("Stripe error:", error)
         alert("Payment failed. Please try again.")
+        return
       }
     } catch (error) {
       console.error("Payment error:", error)
-      // For demo purposes, simulate successful payment
-      alert(`Payment of £${selectedPricing.price} processed successfully! Booking confirmed.`)
-      onClose()
-      setCurrentStep(1)
-      setAcceptTerms(false)
-      setSelectedPricing(null)
-      setAddressSearchValue("")
-      setAddressSuggestions([])
-      setShowAddressSuggestions(false)
-      setBookingData({
-        applianceType: "",
-        manufacturer: "",
-        mobile: "",
-        selectedDate: "",
-        selectedTimeSlot: "",
-        applianceFault: "",
-        applianceModel: "",
-        firstName: "",
-        surname: "",
-        email: "",
-        address: "",
-        fullAddress: "",
-        postcode: "",
-        marketingConsent: true,
-      })
+      
+      // For demo purposes, simulate successful payment and complete the booking
+      try {
+        // Update booking status to paid
+        if (selectedPricing) {
+          const bookingId = await saveBookingToDatabase()
+          if (bookingId) {
+            // Update payment status
+            await supabase
+              .from('bookings')
+              .update({ payment_status: 'paid' })
+              .eq('id', bookingId)
+
+            await sendEmailNotification(bookingId)
+            
+            alert(`Payment of £${selectedPricing.price} processed successfully!\n\nBooking confirmed with ID: ${bookingId}\n\nYou will receive a confirmation email shortly.`)
+            onClose()
+            resetForm()
+          }
+        }
+      } catch (dbError) {
+        console.error('Database update error:', dbError)
+        alert('Payment processed but there was an issue updating the booking. Please contact support.')
+      }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const renderProgressBar = () => {
     const goToStep = (step: number) => {
       // Only allow navigation to completed steps or the next step
-      if (step <= currentStep) {
+      if (step <= currentStep && !isSubmitting) {
         setCurrentStep(step)
         // Force scroll to top immediately and after render
         const scrollToTop = () => {
@@ -406,7 +529,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
           <div
             className={`flex items-center cursor-pointer transition-colors ${
               currentStep >= 1 ? "text-green-600 hover:text-green-700" : "text-gray-400"
-            }`}
+            } ${isSubmitting ? "pointer-events-none" : ""}`}
             onClick={() => goToStep(1)}
           >
             <div className={`w-2 sm:w-3 h-1 ${currentStep >= 1 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
@@ -421,7 +544,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
               currentStep >= 2
                 ? "text-green-600 hover:text-green-700 cursor-pointer"
                 : "text-gray-400 cursor-pointer hover:text-gray-600"
-            }`}
+            } ${isSubmitting ? "pointer-events-none" : ""}`}
             onClick={() => goToStep(2)}
           >
             <div className={`w-2 sm:w-3 h-1 ${currentStep >= 2 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
@@ -436,7 +559,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
               currentStep >= 3
                 ? "text-green-600 hover:text-green-700 cursor-pointer"
                 : "text-gray-400 cursor-pointer hover:text-gray-600"
-            }`}
+            } ${isSubmitting ? "pointer-events-none" : ""}`}
             onClick={() => goToStep(3)}
           >
             <div className={`w-2 sm:w-3 h-1 ${currentStep >= 3 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
@@ -451,7 +574,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
               currentStep >= 4
                 ? "text-green-600 hover:text-green-700 cursor-pointer"
                 : "text-gray-400 cursor-pointer hover:text-gray-600"
-            }`}
+            } ${isSubmitting ? "pointer-events-none" : ""}`}
             onClick={() => goToStep(4)}
           >
             <div className={`w-2 sm:w-3 h-1 ${currentStep >= 4 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
@@ -475,6 +598,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
             <Select
               value={bookingData.applianceType}
               onValueChange={(value) => updateBookingData("applianceType", value)}
+              disabled={isSubmitting}
             >
               <SelectTrigger className="w-full text-base">
                 <SelectValue placeholder="Select appliance type" />
@@ -496,6 +620,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
             <Select
               value={bookingData.manufacturer}
               onValueChange={(value) => updateBookingData("manufacturer", value)}
+              disabled={isSubmitting}
             >
               <SelectTrigger className="w-full text-base">
                 <SelectValue placeholder="Select manufacturer" />
@@ -519,6 +644,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
               onChange={(e) => updateBookingData("applianceFault", e.target.value)}
               placeholder="Describe the problem with your appliance..."
               className="w-full min-h-[80px] text-base"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -529,6 +655,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
               onChange={(e) => updateBookingData("applianceModel", e.target.value)}
               placeholder="Model name if known"
               className="w-full text-base"
+              disabled={isSubmitting}
             />
           </div>
         </div>
@@ -538,7 +665,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
         <Button
           onClick={nextStep}
           className="bg-green-600 hover:bg-green-700 w-full"
-          disabled={!bookingData.applianceType || !bookingData.manufacturer || !bookingData.applianceFault}
+          disabled={!bookingData.applianceType || !bookingData.manufacturer || !bookingData.applianceFault || isSubmitting}
         >
           Continue
         </Button>
@@ -564,9 +691,9 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
                   : option.available
                     ? "border-gray-200 hover:border-green-300"
                     : "border-gray-100 bg-gray-50 cursor-not-allowed opacity-60"
-              }`}
+              } ${isSubmitting ? "pointer-events-none" : ""}`}
               onClick={() => {
-                if (option.available) {
+                if (option.available && !isSubmitting) {
                   setSelectedPricing(option)
                   // Reset date and time selections when changing service type
                   updateBookingData("selectedDate", "")
@@ -646,6 +773,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
                   <Select
                     value={bookingData.selectedTimeSlot}
                     onValueChange={(value) => updateBookingData("selectedTimeSlot", value)}
+                    disabled={isSubmitting}
                   >
                     <SelectTrigger className="w-full text-base">
                       <SelectValue placeholder="Select time preference" />
@@ -668,6 +796,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
                   <Select
                     value={bookingData.selectedDate}
                     onValueChange={(value) => updateBookingData("selectedDate", value)}
+                    disabled={isSubmitting}
                   >
                     <SelectTrigger className="w-full text-base">
                       <SelectValue placeholder="Choose your preferred date" />
@@ -690,6 +819,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
                     <Select
                       value={bookingData.selectedTimeSlot}
                       onValueChange={(value) => updateBookingData("selectedTimeSlot", value)}
+                      disabled={isSubmitting}
                     >
                       <SelectTrigger className="w-full text-base">
                         <SelectValue placeholder="Select time preference" />
@@ -720,6 +850,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
           variant="outline"
           className="w-full border-green-600 text-green-600 hover:bg-green-50 mt-8"
           onClick={prevStep}
+          disabled={isSubmitting}
         >
           {"<"} Change Appliance Details
         </Button>
@@ -732,7 +863,8 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
           disabled={
             !selectedPricing ||
             (selectedPricing.type === "next-day" && !bookingData.selectedTimeSlot) ||
-            (selectedPricing.type === "standard" && (!bookingData.selectedDate || !bookingData.selectedTimeSlot))
+            (selectedPricing.type === "standard" && (!bookingData.selectedDate || !bookingData.selectedTimeSlot)) ||
+            isSubmitting
           }
         >
           Continue to Details
@@ -752,6 +884,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
           onChange={(e) => updateBookingData("firstName", e.target.value)}
           placeholder="Enter your full name"
           className="w-full text-base"
+          disabled={isSubmitting}
         />
       </div>
 
@@ -764,6 +897,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
             value={bookingData.mobile}
             onChange={(e) => updateBookingData("mobile", e.target.value)}
             className="w-full text-base"
+            disabled={isSubmitting}
           />
         </div>
 
@@ -776,11 +910,17 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
             value={bookingData.email}
             onChange={(e) => updateBookingData("email", e.target.value)}
             className="w-full text-base"
+            disabled={isSubmitting}
           />
         </div>
 
         <div className="flex items-start gap-2">
-          <Checkbox id="marketing-consent-booking" defaultChecked={true} className="mt-1" />
+          <Checkbox 
+            id="marketing-consent-booking" 
+            defaultChecked={true} 
+            className="mt-1" 
+            disabled={isSubmitting}
+          />
           <label htmlFor="marketing-consent-booking" className="text-xs text-gray-600 cursor-pointer">
             I would like to receive helpful tips, special offers, and updates about appliance maintenance and repair
             services via email. You can unsubscribe at any time.
@@ -797,12 +937,13 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
               onChange={(e) => handleAddressSearch(e.target.value)}
               placeholder="Start typing your address..."
               className="w-full text-base pr-10"
+              disabled={isSubmitting}
             />
             <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
 
           {/* Address Suggestions Dropdown */}
-          {showAddressSuggestions && addressSuggestions.length > 0 && (
+          {showAddressSuggestions && addressSuggestions.length > 0 && !isSubmitting && (
             <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
               {addressSuggestions.map((suggestion) => (
                 <div
@@ -825,16 +966,18 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
                 <div>
                   <p className="text-sm font-medium text-green-800">Address confirmed:</p>
                   <p className="text-sm text-green-700">{bookingData.fullAddress}</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAddressSearchValue("")
-                      setBookingData((prev) => ({ ...prev, address: "", fullAddress: "", postcode: "" }))
-                    }}
-                    className="text-xs text-green-600 hover:text-green-700 underline mt-1"
-                  >
-                    Change address
-                  </button>
+                  {!isSubmitting && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddressSearchValue("")
+                        setBookingData((prev) => ({ ...prev, address: "", fullAddress: "", postcode: "" }))
+                      }}
+                      className="text-xs text-green-600 hover:text-green-700 underline mt-1"
+                    >
+                      Change address
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -846,12 +989,17 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
         <Button
           onClick={nextStep}
           className="bg-green-600 hover:bg-green-700"
-          disabled={!bookingData.firstName || !bookingData.email || !bookingData.fullAddress}
+          disabled={!bookingData.firstName || !bookingData.email || !bookingData.fullAddress || isSubmitting}
         >
           Continue & Review
         </Button>
 
-        <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50" onClick={prevStep}>
+        <Button 
+          variant="outline" 
+          className="border-green-600 text-green-600 hover:bg-green-50" 
+          onClick={prevStep}
+          disabled={isSubmitting}
+        >
           {"<"} Change Details
         </Button>
       </div>
@@ -974,6 +1122,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
               checked={acceptTerms}
               onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
               className="mt-1"
+              disabled={isSubmitting}
             />
             <label htmlFor="terms" className="text-sm text-gray-700 cursor-pointer">
               I agree to the{" "}
@@ -992,9 +1141,9 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
             <Button
               onClick={handleStripePayment}
               className="bg-green-600 hover:bg-green-700 text-lg py-4 font-semibold"
-              disabled={!acceptTerms}
+              disabled={!acceptTerms || isSubmitting}
             >
-              Pay £{selectedPricing?.price} & Confirm Booking
+              {isSubmitting ? "Processing..." : `Pay £${selectedPricing?.price} & Confirm Booking`}
             </Button>
 
             <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
@@ -1002,7 +1151,12 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
               <span className="font-semibold">Stripe</span>
             </div>
 
-            <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50" onClick={prevStep}>
+            <Button 
+              variant="outline" 
+              className="border-green-600 text-green-600 hover:bg-green-50" 
+              onClick={prevStep}
+              disabled={isSubmitting}
+            >
               {"<"} Back to Details
             </Button>
           </div>
