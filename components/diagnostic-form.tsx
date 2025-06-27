@@ -23,6 +23,7 @@ import {
   Mail,
   KeyRound,
   ChevronUp,
+  Eye,
 } from "lucide-react"
 import { diagnoseProblem } from "../actions/diagnose"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -59,6 +60,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(null)
   const [error, setError] = useState("")
+  const [showExample, setShowExample] = useState(false)
 
   const handleAskAI = () => {
     if (!appliance.trim() || !problem.trim()) {
@@ -219,6 +221,45 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     }
   }
 
+  // Example diagnosis data
+  const exampleDiagnosis: DiagnosisResult = {
+    possibleCauses: [
+      "Unbalanced load causing excessive vibration",
+      "Worn or damaged shock absorbers",
+      "Loose drum or suspension springs",
+      "Foreign objects trapped in drum or pump",
+      "Faulty drum bearings requiring replacement"
+    ],
+    recommendations: {
+      diy: [
+        "Redistribute clothes evenly in the drum and restart cycle",
+        "Check and remove any coins, buttons, or small items from drum",
+        "Ensure washing machine is level using adjustable feet",
+        "Run an empty hot wash cycle to clear any soap buildup",
+        "Inspect door seal for foreign objects or damage"
+      ],
+      professional: [
+        "Drum bearing replacement if bearings are worn",
+        "Shock absorber replacement and testing",
+        "Suspension spring inspection and replacement",
+        "Internal component diagnosis with specialized tools",
+        "Safety inspection and performance testing"
+      ]
+    },
+    urgency: "medium",
+    estimatedCost: "£0 - £149",
+    difficulty: "moderate",
+    recommendedService: "diy",
+    serviceReason: "Most drainage issues can be resolved with simple DIY steps, but if the problem persists, professional diagnosis is recommended for component replacement.",
+    skillsRequired: ["Basic appliance knowledge", "Ability to access and clean drain filter", "Physical ability to move machine"],
+    timeEstimate: "30-60 minutes",
+    safetyWarnings: [
+      "Always disconnect power before attempting any inspection",
+      "Ensure appliance is completely drained before accessing filters",
+      "Never attempt repairs on live electrical components"
+    ]
+  }
+
   return (
     <div className="space-y-6">
       <Card className="border-2 border-blue-200">
@@ -266,10 +307,20 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
             )}
 
             {!showEmailVerification && (
-              <Button onClick={handleAskAI} className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
-                <Lightbulb className="mr-2 h-4 w-4" />
-                Ask AI
-              </Button>
+              <div className="space-y-3">
+                <Button onClick={handleAskAI} className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
+                  <Lightbulb className="mr-2 h-4 w-4" />
+                  Ask AI
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowExample(true)}
+                  className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  See Example Diagnosis
+                </Button>
+              </div>
             )}
 
             {/* Email Verification Section */}
