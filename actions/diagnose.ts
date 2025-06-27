@@ -1,5 +1,7 @@
 "use server"
 
+import { supabase } from '@/lib/supabase'
+
 interface DiagnosisResult {
   possibleCauses: string[]
   recommendations: {
@@ -16,13 +18,16 @@ interface DiagnosisResult {
   safetyWarnings?: string[]
 }
 
-export async function diagnoseProblem(appliance: string, problem: string): Promise<DiagnosisResult> {
+export async function diagnoseProblem(appliance: string, problem: string, email: string): Promise<DiagnosisResult> {
   try {
     const openRouterApiKey = process.env.OPENROUTER_API_KEY
 
     if (!openRouterApiKey) {
       console.error('OpenRouter API key not found, using fallback')
-      return getFallbackDiagnosis(appliance, problem)
+      const fallbackResult = getFallbackDiagnosis(appliance, problem)
+      // Save fallback diagnosis to database
+      await saveDiagnosticToDatabase(appliance, problem, email, fallbackResult)
+      return fallbackResult
     }
 
     const systemPrompt = `You are an expert appliance repair technician with 20+ years of experience. 
@@ -59,7 +64,7 @@ Problem: ${problem}
 Please diagnose this appliance problem, assess the repair difficulty, and recommend the most appropriate service option.`
 
     // Try primary model (Claude 3.5 Sonnet)
-    const diagnosis = await callOpenRouter(
+    let diagnosis = await callOpenRouter(
       'anthropic/claude-3.5-sonnet',
       systemPrompt,
       userPrompt,
@@ -67,27 +72,36 @@ Please diagnose this appliance problem, assess the repair difficulty, and recomm
     )
 
     if (diagnosis) {
+      // Save successful AI diagnosis to database
+      await saveDiagnosticToDatabase(appliance, problem, email, diagnosis)
       return diagnosis
     }
 
     // Try fallback model (GPT-4o Mini)
-    const fallbackDiagnosis = await callOpenRouter(
+    diagnosis = await callOpenRouter(
       'openai/gpt-4o-mini',
       systemPrompt,
       userPrompt,
       openRouterApiKey
     )
 
-    if (fallbackDiagnosis) {
-      return fallbackDiagnosis
+    if (diagnosis) {
+      // Save fallback AI diagnosis to database
+      await saveDiagnosticToDatabase(appliance, problem, email, diagnosis)
+      return diagnosis
     }
 
     // If both AI models fail, use structured fallback
-    return getFallbackDiagnosis(appliance, problem)
+    const fallbackResult = getFallbackDiagnosis(appliance, problem)
+    await saveDiagnosticToDatabase(appliance, problem, email, fallbackResult)
+    return fallbackResult
 
   } catch (error) {
     console.error("Diagnosis error:", error)
-    return getFallbackDiagnosis(appliance, problem)
+    const fallbackResult = getFallbackDiagnosis(appliance, problem)
+    // Save fallback diagnosis to database even on error
+    await saveDiagnosticToDatabase(appliance, problem, email, fallbackResult)
+    return fallbackResult
   }
 }
 
@@ -144,6 +158,46 @@ async function callOpenRouter(
   } catch (error) {
     console.error(`Error calling OpenRouter with ${model}:`, error)
     return null
+  }
+}
+
+async function saveDiagnosticToDatabase(
+  appliance: string, 
+  problem: string, 
+  email: string, 
+  diagnosis: DiagnosisResult
+) {
+  try {
+    const { data, error } = await supabase
+      .from('diagnostics')
+      .insert([
+        {
+          email: email,
+          appliance_type: appliance,
+          problem_description: problem,
+          estimated_time: diagnosis.timeEstimate,
+          estimated_cost: diagnosis.estimatedCost,
+          difficulty_level: diagnosis.difficulty,
+          priority_level: diagnosis.urgency,
+          possible_causes: diagnosis.possibleCauses,
+          diy_solutions: diagnosis.recommendations.diy,
+          professional_services: diagnosis.recommendations.professional,
+          recommended_action: diagnosis.recommendedService,
+          converted_to_booking: false
+        }
+      ])
+
+    if (error) {
+      console.error('Database save error:', error)
+      // Don't throw error - let the diagnosis continue even if DB save fails
+    } else {
+      console.log('Diagnostic saved to database successfully')
+    }
+
+    return data
+  } catch (error) {
+    console.error('Failed to save diagnostic to database:', error)
+    // Don't throw error - let the diagnosis continue even if DB save fails
   }
 }
 
