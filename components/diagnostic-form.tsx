@@ -73,7 +73,7 @@ const exampleDiagnosis: DiagnosisResult = {
       "Drive belt replacement",
       "Shock absorber replacement"
     ]
-  },
+  ],
   urgency: "medium",
   estimatedCost: "£109 - £149",
   difficulty: "difficult",
@@ -92,6 +92,7 @@ const exampleDiagnosis: DiagnosisResult = {
 
 export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
   const [appliance, setAppliance] = useState("")
+  const [brand, setBrand] = useState("")
   const [problem, setProblem] = useState("")
   const [showEmailVerification, setShowEmailVerification] = useState(false)
   const [email, setEmail] = useState("")
@@ -106,7 +107,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
 
   const handleAskAI = () => {
     if (!appliance.trim() || !problem.trim()) {
-      setError("Please fill in both fields")
+      setError("Please fill in appliance type and problem description")
       return
     }
     setError("")
@@ -170,7 +171,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     setShowExample(false) // Hide example when getting real diagnosis
 
     try {
-      const result = await diagnoseProblem(appliance, problem, email)
+      const result = await diagnoseProblem(appliance, brand, problem, email)
       setDiagnosis(result)
     } catch (err) {
       setError("Sorry, we encountered an error. Please try again.")
@@ -547,12 +548,27 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               />
             </div>
             <div className="space-y-2">
+              <label htmlFor="brand" className="text-sm font-medium">
+                Appliance brand <span className="text-gray-500">(optional)</span>
+              </label>
+              <Input
+                id="brand"
+                placeholder="e.g., Bosch, Samsung, LG, Whirlpool..."
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                className="w-full text-base"
+              />
+              <p className="text-xs text-gray-500">
+                Helpful for error codes and brand-specific diagnostics
+              </p>
+            </div>
+            <div className="space-y-2">
               <label htmlFor="problem" className="text-sm font-medium">
                 Describe the problem in detail
               </label>
               <Textarea
                 id="problem"
-                placeholder="e.g., My washing machine makes loud banging noises during the spin cycle and clothes come out still wet..."
+                placeholder="e.g., My washing machine makes loud banging noises during the spin cycle and clothes come out still wet. Error code E4 is showing..."
                 value={problem}
                 onChange={(e) => setProblem(e.target.value)}
                 className="w-full min-h-[100px] text-base"
