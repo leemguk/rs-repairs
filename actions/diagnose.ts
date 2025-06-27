@@ -41,6 +41,73 @@ function detectErrorCode(problem: string): string | null {
   return null
 }
 
+// Function to parse the simple AI response into DiagnosisResult format
+function parseSimpleResponse(response: string, errorCode: string, brand: string, appliance: string): DiagnosisResult {
+  const lines = response.split('\n').map(line => line.trim()).filter(line => line.length > 0)
+  
+  // Extract causes
+  const causesLine = lines.find(line => line.startsWith('CAUSES:'))
+  const causes = causesLine 
+    ? causesLine.replace('CAUSES:', '').split(',').map(cause => cause.trim().replace(/^\d+\.\s*/, ''))
+    : [`${brand} ${appliance} error code ${errorCode} detected`, "Component malfunction", "System fault"]
+  
+  // Extract service recommendation
+  const serviceLine = lines.find(line => line.startsWith('SERVICE:'))
+  const serviceText = serviceLine ? serviceLine.replace('SERVICE:', '').trim().toLowerCase() : 'professional'
+  const recommendedService = serviceText.includes('diy') ? 'diy' : 'professional'
+  
+  // Extract cost
+  const costLine = lines.find(line => line.startsWith('COST:'))
+  const cost = costLine ? costLine.replace('COST:', '').trim() : '£109 - £149'
+  
+  // Extract reason
+  const reasonLine = lines.find(line => line.startsWith('REASON:'))
+  const reason = reasonLine 
+    ? reasonLine.replace('REASON:', '').trim() 
+    : `Error code ${errorCode} requires ${recommendedService} service for proper diagnosis and repair.`
+  
+  // Generate DIY and professional recommendations based on the error code
+  const diyRecommendations = [
+    "Power cycle the appliance (unplug for 2 minutes, then restart)",
+    "Check for any obvious blockages or obstructions",
+    "Verify all connections are secure and properly seated",
+    "Consult your user manual for specific error code troubleshooting"
+  ]
+  
+  const professionalRecommendations = [
+    `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
+    "Specialized diagnostic equipment to identify exact component failure",
+    "Brand-specific repair procedures using genuine parts",
+    "Complete system testing and calibration after repair"
+  ]
+  
+  // Determine difficulty and urgency based on service recommendation
+  const difficulty = recommendedService === 'diy' ? 'moderate' : 'expert'
+  const urgency = errorCode.toLowerCase().includes('e') ? 'medium' : 'medium'
+  
+  return {
+    possibleCauses: causes,
+    recommendations: {
+      diy: diyRecommendations,
+      professional: professionalRecommendations
+    },
+    urgency: urgency,
+    estimatedCost: cost,
+    difficulty: difficulty,
+    recommendedService: recommendedService,
+    serviceReason: reason,
+    skillsRequired: recommendedService === 'diy' 
+      ? ["Basic tools", "Manual reading"] 
+      : ["Specialized diagnostic tools", "Brand-specific technical knowledge"],
+    timeEstimate: recommendedService === 'diy' ? "30 - 60 minutes" : "1 - 2 hours",
+    safetyWarnings: [
+      "Always disconnect power before attempting any inspection",
+      "If unsure about any step, contact a professional service",
+      "Error codes may indicate electrical or safety-critical component issues"
+    ]
+  }
+}
+
 // Test function for simple error code lookup - no JSON constraint
 async function testErrorCodeLookup(errorCode: string, brand: string, appliance: string, apiKey: string): Promise<string> {
   try {
@@ -135,21 +202,12 @@ REASON: why this service is recommended`
       console.log(`Simple diagnostic response:`, simpleResponse)
       
       // Parse the simple response and convert to DiagnosisResult
-      // This is just for testing - we can make this more robust later
-      return {
-        possibleCauses: ["Test cause 1", "Test cause 2", "Test cause 3"],
-        recommendations: {
-          diy: ["Test DIY step"],
-          professional: ["Test professional step"]
-        },
-        urgency: "medium",
-        estimatedCost: "£109 - £149",
-        difficulty: "moderate",
-        recommendedService: "professional",
-        serviceReason: "Testing simple approach",
-        timeEstimate: "1 - 2 hours",
-        safetyWarnings: ["Test warning"]
-      }
+      const parsedResult = parseSimpleResponse(simpleResponse, detectedErrorCode, brand, appliance)
+      
+      // Save to database
+      await saveDiagnosticToDatabase(appliance, brand, problem, email, parsedResult)
+      
+      return parsedResult
     }
 
     // Fallback for non-error-code cases
