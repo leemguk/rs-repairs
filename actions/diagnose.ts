@@ -119,7 +119,7 @@ async function testErrorCodeLookup(errorCode: string, brand: string, appliance: 
         "X-Title": "RS Repairs Error Code Test"
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet',
+        model: 'openai/gpt-4o', // Changed to GPT-4o instead of Claude
         messages: [
           { 
             role: "user", 
@@ -188,7 +188,7 @@ REASON: why this service is recommended`
           "X-Title": "RS Repairs Simple Diagnostic"
         },
         body: JSON.stringify({
-          model: 'anthropic/claude-3.5-sonnet',
+          model: 'openai/gpt-4o', // Also changed the main diagnostic model to GPT-4o
           messages: [{ role: "user", content: simplePrompt }],
           max_tokens: 300,
           temperature: 0.1
