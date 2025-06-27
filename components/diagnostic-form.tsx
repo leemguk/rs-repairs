@@ -75,12 +75,12 @@ const exampleDiagnosis: DiagnosisResult = {
     ]
   },
   urgency: "medium",
-  estimatedCost: "£109-£149",
+  estimatedCost: "£109 - £149",
   difficulty: "difficult",
   recommendedService: "professional",
   serviceReason: "Professional service needed for this repair",
   skillsRequired: ["Mechanical knowledge", "Electrical safety awareness", "Special washing machine tools", "Heavy lifting capability"],
-  timeEstimate: "2-3 hours",
+  timeEstimate: "2 - 3 hours",
   safetyWarnings: [
     "Do not operate machine if noise is very severe - could cause further damage",
     "Machine contains heavy components - lifting hazard",
