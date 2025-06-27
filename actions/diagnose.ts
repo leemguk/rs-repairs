@@ -56,7 +56,9 @@ export async function diagnoseProblem(appliance: string, problem: string, email:
     - Professional service pricing: £109 (standard), £129 (next-day), £149 (same-day)
     - Always use spaces around hyphens in costs and times (e.g., "£109 - £149", "2 - 3 hours")
     - Difficulty levels: easy (basic tools, no electrical), moderate (some technical skill), difficult (electrical/complex), expert (specialized tools/dangerous)
-    - Recommend "diy" for easy-moderate repairs, "professional" for difficult-expert or safety concerns, "warranty" for expensive/complex issues on older appliances
+    - Recommend "professional" for difficult-expert repairs, bearing replacements, electrical issues, or safety concerns
+    - Recommend "diy" ONLY for easy-moderate repairs like cleaning, filter changes, or simple adjustments
+    - For washing machine bearing issues, drive belt problems, or mechanical repairs: ALWAYS recommend "professional"
     - Always prioritize safety - if there's any electrical, gas, or safety risk, recommend professional
     - Provide realistic time estimates with proper spacing around hyphens
     - Include safety warnings for any potentially dangerous repairs`
