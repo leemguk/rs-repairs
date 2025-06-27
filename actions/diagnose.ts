@@ -119,20 +119,15 @@ async function testErrorCodeLookup(errorCode: string, brand: string, appliance: 
         "X-Title": "RS Repairs Error Code Test"
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-sonnet-4', // Updated to Claude Sonnet 4
+        model: 'anthropic/claude-sonnet-4',
         messages: [
           { 
-            role: "system",
-            content: `You are a certified appliance repair technician with 20+ years of experience specializing in ${brand} appliances. You have access to official ${brand} service manuals and technical documentation.`
-          },
-          { 
             role: "user", 
-            content: `According to official ${brand} service documentation, what does error code ${errorCode} specifically indicate on ${brand} ${appliance} models? Provide only the exact technical meaning from the official documentation.` 
+            content: `What does error code ${errorCode} mean on a ${brand} ${appliance}? Just give me the specific problem it indicates in one sentence.` 
           }
         ],
         max_tokens: 100,
         temperature: 0.1
-        // NO JSON response format constraint
       })
     })
 
