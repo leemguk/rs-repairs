@@ -387,6 +387,21 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
         </CardContent>
       </Card>
 
+      {/* Loading State */}
+      {isLoading && isEmailVerified && (
+        <Card className="border-2 border-blue-200 bg-blue-50">
+          <CardContent className="p-8">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <div>
+                <p className="font-medium text-blue-800">AI Analyzing Your Appliance Problem...</p>
+                <p className="text-sm text-blue-600 mt-1">This may take a few seconds</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {diagnosis && (
         <div className="space-y-6">
           {/* Updated Email Verified Success */}
