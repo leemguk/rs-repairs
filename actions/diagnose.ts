@@ -1,6 +1,33 @@
-"use server"
+"use client"
 
-import { supabase } from '@/lib/supabase'
+import type React from "react"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import {
+  AlertCircle,
+  Lightbulb,
+  Loader2,
+  Wrench,
+  Search,
+  Calendar,
+  Shield,
+  Clock,
+  AlertTriangle,
+  CheckCircle2,
+  ArrowRight,
+  Mail,
+  KeyRound,
+  ChevronUp,
+  Eye,
+  X,
+} from "lucide-react"
+import { diagnoseProblem } from "../actions/diagnose"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface DiagnosisResult {
   possibleCauses: string[]
@@ -18,247 +45,680 @@ interface DiagnosisResult {
   safetyWarnings?: string[]
 }
 
-export async function diagnoseProblem(appliance: string, problem: string, email: string): Promise<DiagnosisResult> {
-  try {
-    const openRouterApiKey = process.env.OPENROUTER_API_KEY
-
-    if (!openRouterApiKey) {
-      console.error('OpenRouter API key not found, using fallback')
-      const fallbackResult = getFallbackDiagnosis(appliance, problem)
-      // Save fallback diagnosis to database
-      await saveDiagnosticToDatabase(appliance, problem, email, fallbackResult)
-      return fallbackResult
-    }
-
-    const systemPrompt = `You are an expert appliance repair technician with 20+ years of experience. 
-    Analyze appliance problems and provide diagnostic information in a structured format.
-    
-    Always respond with valid JSON in this exact format:
-    {
-      "possibleCauses": ["cause1", "cause2", "cause3"],
-      "recommendations": {
-        "diy": ["diy step 1", "diy step 2"],
-        "professional": ["professional service 1", "professional service 2"]
-      },
-      "urgency": "low|medium|high",
-      "estimatedCost": "£X - £Y",
-      "difficulty": "easy|moderate|difficult|expert",
-      "recommendedService": "diy|professional|warranty",
-      "serviceReason": "Clear explanation of why this service is recommended",
-      "skillsRequired": ["skill1", "skill2"],
-      "timeEstimate": "X - Y hours/days",
-      "safetyWarnings": ["warning1", "warning2"]
-    }
-    
-    Guidelines:
-    - Use UK pricing in GBP (£) with cost range from £0 (DIY repair) to £149 (professional same-day service)
-    - For DIY repairs: £0 - £30 (just parts cost), for professional repairs: £109 - £149
-    - Professional service pricing: £109 (standard), £129 (next-day), £149 (same-day)
-    - Always use spaces around hyphens in costs and times (e.g., "£109 - £149", "2 - 3 hours")
-    - Difficulty levels: easy (basic tools, no electrical), moderate (some technical skill), difficult (electrical/complex), expert (specialized tools/dangerous)
-    - Recommend "professional" for difficult-expert repairs, bearing replacements, electrical issues, or safety concerns
-    - Recommend "diy" ONLY for easy-moderate repairs like cleaning, filter changes, or simple adjustments
-    - For washing machine bearing issues, drive belt problems, or mechanical repairs: ALWAYS recommend "professional"
-    - Always prioritize safety - if there's any electrical, gas, or safety risk, recommend professional
-    - Provide realistic time estimates with proper spacing around hyphens
-    - Include safety warnings for any potentially dangerous repairs`
-
-    const userPrompt = `Appliance: ${appliance}
-Problem: ${problem}
-
-Please diagnose this appliance problem, assess the repair difficulty, and recommend the most appropriate service option.`
-
-    // Try primary model (Claude 3.5 Sonnet)
-    let diagnosis = await callOpenRouter(
-      'anthropic/claude-3.5-sonnet',
-      systemPrompt,
-      userPrompt,
-      openRouterApiKey
-    )
-
-    if (diagnosis) {
-      // Save successful AI diagnosis to database
-      await saveDiagnosticToDatabase(appliance, problem, email, diagnosis)
-      return diagnosis
-    }
-
-    // Try fallback model (GPT-4o Mini)
-    diagnosis = await callOpenRouter(
-      'openai/gpt-4o-mini',
-      systemPrompt,
-      userPrompt,
-      openRouterApiKey
-    )
-
-    if (diagnosis) {
-      // Save fallback AI diagnosis to database
-      await saveDiagnosticToDatabase(appliance, problem, email, diagnosis)
-      return diagnosis
-    }
-
-    // If both AI models fail, use structured fallback
-    const fallbackResult = getFallbackDiagnosis(appliance, problem)
-    await saveDiagnosticToDatabase(appliance, problem, email, fallbackResult)
-    return fallbackResult
-
-  } catch (error) {
-    console.error("Diagnosis error:", error)
-    const fallbackResult = getFallbackDiagnosis(appliance, problem)
-    // Save fallback diagnosis to database even on error
-    await saveDiagnosticToDatabase(appliance, problem, email, fallbackResult)
-    return fallbackResult
-  }
+interface DiagnosticFormProps {
+  onBookEngineer?: () => void
 }
 
-async function callOpenRouter(
-  model: string,
-  systemPrompt: string,
-  userPrompt: string,
-  apiKey: string
-): Promise<DiagnosisResult | null> {
-  try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "X-Title": "RS Repairs Diagnostic Tool"
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ],
-        max_tokens: 1500,
-        temperature: 0.3,
-        response_format: { type: "json_object" }
-      })
-    })
-
-    if (!response.ok) {
-      console.error(`OpenRouter API error for ${model}:`, response.status)
-      return null
-    }
-
-    const data = await response.json()
-    const aiResponse = data.choices[0].message.content
-
-    // Parse and validate the JSON response
-    const diagnosis = JSON.parse(aiResponse) as DiagnosisResult
-
-    // Validate the response structure
-    if (
-      !diagnosis.possibleCauses ||
-      !diagnosis.recommendations ||
-      !diagnosis.difficulty ||
-      !diagnosis.recommendedService
-    ) {
-      console.error("Invalid response structure from AI")
-      return null
-    }
-
-    return diagnosis
-
-  } catch (error) {
-    console.error(`Error calling OpenRouter with ${model}:`, error)
-    return null
-  }
-}
-
-async function saveDiagnosticToDatabase(
-  appliance: string, 
-  problem: string, 
-  email: string, 
-  diagnosis: DiagnosisResult
-) {
-  try {
-    const { data, error } = await supabase
-      .from('diagnostics')
-      .insert([
-        {
-          email: email,
-          appliance_type: appliance,
-          problem_description: problem,
-          estimated_time: diagnosis.timeEstimate,
-          estimated_cost: diagnosis.estimatedCost,
-          difficulty_level: diagnosis.difficulty,
-          priority_level: diagnosis.urgency,
-          possible_causes: diagnosis.possibleCauses,
-          diy_solutions: diagnosis.recommendations.diy,
-          professional_services: diagnosis.recommendations.professional,
-          recommended_action: diagnosis.recommendedService,
-          converted_to_booking: false
-        }
-      ])
-
-    if (error) {
-      console.error('Database save error:', error)
-      // Don't throw error - let the diagnosis continue even if DB save fails
-    } else {
-      console.log('Diagnostic saved to database successfully')
-    }
-
-    return data
-  } catch (error) {
-    console.error('Failed to save diagnostic to database:', error)
-    // Don't throw error - let the diagnosis continue even if DB save fails
-  }
-}
-
-function getFallbackDiagnosis(appliance: string, problem: string): DiagnosisResult {
-  // Intelligent fallback based on appliance type
-  const isElectrical = appliance.toLowerCase().includes('oven') || 
-                      appliance.toLowerCase().includes('cooker') ||
-                      appliance.toLowerCase().includes('microwave')
-  
-  const isWaterRelated = appliance.toLowerCase().includes('washing') ||
-                        appliance.toLowerCase().includes('dishwasher') ||
-                        appliance.toLowerCase().includes('dryer')
-
-  const isRefrigeration = appliance.toLowerCase().includes('fridge') ||
-                         appliance.toLowerCase().includes('freezer')
-
-  return {
-    possibleCauses: [
-      `${appliance} component wear and tear`,
-      isElectrical ? "Electrical connection issues" : isWaterRelated ? "Water system blockage" : "Mechanical component failure",
-      "Internal sensor or control board malfunction",
-      "Regular maintenance required"
+// Example diagnostic data
+const exampleDiagnosis: DiagnosisResult = {
+  possibleCauses: [
+    "Loose or damaged drum bearings",
+    "Foreign object (coin, pin, etc.) stuck in drum",
+    "Worn drive belt",
+    "Unbalanced load",
+    "Damaged shock absorbers",
+    "Loose transit bolts"
+  ],
+  recommendations: {
+    diy: [
+      "Check if transit bolts were left in place",
+      "Inspect drum for loose objects",
+      "Ensure machine is level on floor",
+      "Check load distribution",
+      "Inspect visible belt for damage"
     ],
-    recommendations: {
-      diy: [
-        "Check power connections and ensure appliance is plugged in properly",
-        isWaterRelated ? "Clean filters and check for blockages" : "Clean any visible debris or buildup",
-        "Consult your user manual for basic troubleshooting steps",
-        "Verify appliance settings are correct"
-      ],
-      professional: [
-        "Professional diagnostic inspection with specialized equipment",
-        "Component replacement using genuine parts",
-        "Safety check and performance testing",
-        "Preventive maintenance recommendations"
-      ],
-    },
-    urgency: problem.toLowerCase().includes('sparking') || problem.toLowerCase().includes('smoke') ? "high" : "medium",
-    estimatedCost: isRefrigeration ? "£0 - £149" : isElectrical ? "£109 - £149" : "£0 - £149",
-    difficulty: isElectrical || problem.toLowerCase().includes('electrical') ? "expert" : "moderate",
-    recommendedService: isElectrical || problem.toLowerCase().includes('electrical') || problem.toLowerCase().includes('sparking') ? "professional" : "professional",
-    serviceReason: "This issue requires professional assessment to ensure safe and proper repair. Our certified technicians can provide accurate diagnosis and quality repairs.",
-    skillsRequired: undefined,
-    timeEstimate: "45 - 90 minutes",
-    safetyWarnings: isElectrical ? [
-      "Always disconnect power before attempting any inspection",
-      "Electrical repairs should only be performed by qualified technicians",
-      "Never attempt repairs on live electrical components"
-    ] : isWaterRelated ? [
-      "Turn off water supply before inspection",
-      "Ensure appliance is completely drained",
-      "Check for water leaks around connections"
-    ] : [
-      "Always disconnect power before attempting any repairs",
-      "Some appliance components may be under pressure",
-      "Professional service recommended for safety"
+    professional: [
+      "Bearing replacement service",
+      "Full mechanical inspection",
+      "Drive belt replacement",
+      "Shock absorber replacement"
     ]
+  },
+  urgency: "medium",
+  estimatedCost: "£109 - £149",
+  difficulty: "difficult",
+  recommendedService: "professional",
+  serviceReason: "Professional service needed for this repair",
+  skillsRequired: ["Mechanical knowledge", "Electrical safety awareness", "Special washing machine tools", "Heavy lifting capability"],
+  timeEstimate: "2 - 3 hours",
+  safetyWarnings: [
+    "Do not operate machine if noise is very severe - could cause further damage",
+    "Machine contains heavy components - lifting hazard",
+    "Electrical components present shock risk",
+    "Sharp edges when dismantling",
+    "Water damage risk if pipes not properly disconnected"
+  ]
+}
+
+export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
+  const [appliance, setAppliance] = useState("")
+  const [problem, setProblem] = useState("")
+  const [showEmailVerification, setShowEmailVerification] = useState(false)
+  const [email, setEmail] = useState("")
+  const [verificationCode, setVerificationCode] = useState("")
+  const [isEmailVerified, setIsEmailVerified] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [isEmailSent, setIsEmailSent] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(null)
+  const [error, setError] = useState("")
+  const [showExample, setShowExample] = useState(false)
+
+  const handleAskAI = () => {
+    if (!appliance.trim() || !problem.trim()) {
+      setError("Please fill in both fields")
+      return
+    }
+    setError("")
+    setShowEmailVerification(true)
   }
+
+  const handleShowExample = () => {
+    setShowExample(true)
+    setDiagnosis(null) // Clear any existing diagnosis
+  }
+
+  const handleCloseExample = () => {
+    setShowExample(false)
+  }
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email.trim()) {
+      setError("Please enter your email address")
+      return
+    }
+
+    setIsVerifying(true)
+    setError("")
+
+    // Simulate sending verification email
+    setTimeout(() => {
+      setIsVerifying(false)
+      setIsEmailSent(true)
+    }, 1500)
+  }
+
+  const handleVerificationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!verificationCode.trim()) {
+      setError("Please enter the verification code")
+      return
+    }
+
+    setIsVerifying(true)
+    setError("")
+
+    // Simulate verification (accept any 6-digit code for demo)
+    setTimeout(() => {
+      if (verificationCode.length === 6) {
+        setIsVerifying(false)
+        setIsEmailVerified(true)
+        // Proceed with diagnosis
+        handleDiagnosticSubmit()
+      } else {
+        setIsVerifying(false)
+        setError("Please enter a valid 6-digit verification code")
+      }
+    }, 1000)
+  }
+
+  const handleDiagnosticSubmit = async () => {
+    setIsLoading(true)
+    setError("")
+    setDiagnosis(null)
+    setShowExample(false) // Hide example when getting real diagnosis
+
+    try {
+      const result = await diagnoseProblem(appliance, problem, email)
+      setDiagnosis(result)
+    } catch (err) {
+      setError("Sorry, we encountered an error. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const resendVerificationCode = () => {
+    setIsVerifying(true)
+    setTimeout(() => {
+      setIsVerifying(false)
+      setIsEmailSent(true)
+    }, 1000)
+  }
+
+  const scrollToServices = () => {
+    document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  const handleBookEngineer = () => {
+    if (onBookEngineer) {
+      onBookEngineer()
+    } else {
+      // Fallback to scrolling to services section
+      scrollToServices()
+    }
+  }
+
+  const handleFindParts = () => {
+    scrollToServices()
+  }
+
+  const getUrgencyColor = (urgency: string) => {
+    switch (urgency) {
+      case "high":
+        return "bg-red-100 text-red-800"
+      case "medium":
+        return "bg-yellow-100 text-yellow-800"
+      case "low":
+        return "bg-green-100 text-green-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case "easy":
+        return "bg-green-100 text-green-800"
+      case "moderate":
+        return "bg-blue-100 text-blue-800"
+      case "difficult":
+        return "bg-orange-100 text-orange-800"
+      case "expert":
+        return "bg-red-100 text-red-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getServiceRecommendation = (service: string) => {
+    switch (service) {
+      case "diy":
+        return {
+          title: "DIY Repair Recommended",
+          icon: <Wrench className="h-5 w-5 text-blue-600" />,
+          color: "border-blue-200 bg-blue-50",
+          buttonText: "Find Parts",
+          buttonColor: "bg-blue-600 hover:bg-blue-700",
+          buttonAction: handleFindParts,
+        }
+      case "professional":
+        return {
+          title: "Professional Service Recommended",
+          icon: <Calendar className="h-5 w-5 text-orange-600" />,
+          color: "border-orange-200 bg-orange-50",
+          buttonText: "Book Engineer",
+          buttonColor: "bg-orange-600 hover:bg-orange-700",
+          buttonAction: handleBookEngineer,
+        }
+      case "warranty":
+        return {
+          title: "Warranty Protection Recommended",
+          icon: <Shield className="h-5 w-5 text-green-600" />,
+          color: "border-green-200 bg-green-50",
+          buttonText: "View Warranty Plans",
+          buttonColor: "bg-green-600 hover:bg-green-700",
+          buttonAction: scrollToServices,
+        }
+      default:
+        return {
+          title: "Service Recommendation",
+          icon: <AlertCircle className="h-5 w-5" />,
+          color: "border-gray-200 bg-gray-50",
+          buttonText: "Get Help",
+          buttonColor: "bg-gray-600 hover:bg-gray-700",
+          buttonAction: scrollToServices,
+        }
+    }
+  }
+
+  // Function to render diagnostic results (used for both real and example)
+  const renderDiagnosticResults = (diagnosisData: DiagnosisResult, isExample: boolean = false) => {
+    return (
+      <div className="space-y-6">
+        {/* Example Banner */}
+        {isExample && (
+          <Card className="border-2 border-blue-200 bg-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Eye className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="font-medium text-blue-800">Example Diagnostic Report</p>
+                    <p className="text-xs text-blue-600">This is what your AI diagnosis will look like</p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCloseExample}
+                  className="text-blue-600 hover:bg-blue-100"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Email Success (only for real diagnosis) */}
+        {!isExample && (
+          <Card className="border-2 border-green-200 bg-green-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="font-medium text-green-800">Diagnosis Complete! See Details Below</p>
+                  <p className="text-xs text-green-600">Report sent to: {email}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Service Recommendation Card - Only show for warranty recommendation */}
+        {diagnosisData.recommendedService === "warranty" && (
+          <Card className={`border-l-4 ${getServiceRecommendation(diagnosisData.recommendedService).color}`}>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex items-center gap-3 flex-1">
+                  {getServiceRecommendation(diagnosisData.recommendedService).icon}
+                  <div className="flex-1">
+                    <CardTitle className="text-xl">
+                      {getServiceRecommendation(diagnosisData.recommendedService).title}
+                    </CardTitle>
+                    <CardDescription className="mt-1">{diagnosisData.serviceReason}</CardDescription>
+                  </div>
+                </div>
+                <Button
+                  className={`${getServiceRecommendation(diagnosisData.recommendedService).buttonColor} text-white w-full sm:w-auto`}
+                  onClick={getServiceRecommendation(diagnosisData.recommendedService).buttonAction}
+                >
+                  {getServiceRecommendation(diagnosisData.recommendedService).buttonText}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
+        )}
+
+        {/* For DIY and Professional recommendations, show dual options */}
+        {(diagnosisData.recommendedService === "diy" || diagnosisData.recommendedService === "professional") && (
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* DIY Option Card */}
+            <Card className={`border-l-4 flex flex-col ${diagnosisData.recommendedService === "diy" ? "border-l-blue-600 bg-blue-50" : "border-l-gray-300 bg-gray-50"}`}>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Wrench className={`h-5 w-5 ${diagnosisData.recommendedService === "diy" ? "text-blue-600" : "text-gray-600"}`} />
+                  <div className="flex-1">
+                    <CardTitle className={`text-lg ${diagnosisData.recommendedService === "diy" ? "text-blue-800" : "text-gray-700"}`}>
+                      Try DIY First
+                      {diagnosisData.recommendedService === "diy" && (
+                        <Badge className="ml-2 bg-blue-100 text-blue-800 text-xs">Recommended</Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-sm">
+                      Simple checks you can do yourself
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col">
+                <ul className="space-y-2 mb-4 flex-1">
+                  {diagnosisData.recommendations.diy.map((rec, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm">
+                      <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosisData.recommendedService === "diy" ? "bg-blue-600" : "bg-gray-400"}`} />
+                      <span>{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  variant={diagnosisData.recommendedService === "diy" ? "default" : "outline"}
+                  className={`w-full mt-auto ${diagnosisData.recommendedService === "diy" ? "bg-blue-600 hover:bg-blue-700" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}
+                  onClick={handleFindParts}
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  Find Parts
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Professional Option Card */}
+            <Card className={`border-l-4 flex flex-col ${diagnosisData.recommendedService === "professional" ? "border-l-orange-600 bg-orange-50" : "border-l-gray-300 bg-gray-50"}`}>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Calendar className={`h-5 w-5 ${diagnosisData.recommendedService === "professional" ? "text-orange-600" : "text-gray-600"}`} />
+                  <div className="flex-1">
+                    <CardTitle className={`text-lg ${diagnosisData.recommendedService === "professional" ? "text-orange-800" : "text-gray-700"}`}>
+                      Book an Engineer
+                      {diagnosisData.recommendedService === "professional" && (
+                        <Badge className="ml-2 bg-orange-100 text-orange-800 text-xs">Recommended</Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-sm">
+                      {diagnosisData.recommendedService === "professional" 
+                        ? "Professional service needed for this repair" 
+                        : "If DIY doesn't work, book a professional"}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col">
+                <ul className="space-y-2 mb-4 flex-1">
+                  {diagnosisData.recommendations.professional.map((rec, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm">
+                      <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosisData.recommendedService === "professional" ? "bg-orange-600" : "bg-gray-400"}`} />
+                      <span>{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  className={`w-full mt-auto ${diagnosisData.recommendedService === "professional" ? "bg-orange-600 hover:bg-orange-700" : "bg-gray-600 hover:bg-gray-700"}`}
+                  onClick={handleBookEngineer}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Book Engineer
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Diagnostic Details */}
+        <Card className="border-l-4 border-l-blue-600">
+          <CardHeader>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <CardTitle className="text-xl">Diagnostic Results</CardTitle>
+              <div className="flex gap-2 flex-wrap">
+                <Badge className={getDifficultyColor(diagnosisData.difficulty)}>
+                  {diagnosisData.difficulty.charAt(0).toUpperCase() + diagnosisData.difficulty.slice(1)} Difficulty
+                </Badge>
+                <Badge className={getUrgencyColor(diagnosisData.urgency)}>
+                  {diagnosisData.urgency.charAt(0).toUpperCase() + diagnosisData.urgency.slice(1)} Priority
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Key Information Grid */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="h-4 w-4 text-gray-600" />
+                  <h3 className="font-semibold text-gray-900">Estimated Time</h3>
+                </div>
+                <p className="text-xl font-bold text-blue-600">{diagnosisData.timeEstimate}</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-900 mb-3">Estimated Cost</h3>
+                <p className="text-xl font-bold text-green-600">{diagnosisData.estimatedCost}</p>
+              </div>
+            </div>
+
+            {/* Safety Warnings */}
+            {diagnosisData.safetyWarnings && diagnosisData.safetyWarnings.length > 0 && (
+              <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+                <h3 className="font-semibold mb-3 flex items-center gap-2 text-red-800">
+                  <AlertTriangle className="h-5 w-5" />
+                  Safety Warnings
+                </h3>
+                <ul className="space-y-2">
+                  {diagnosisData.safetyWarnings.map((warning, index) => (
+                    <li key={index} className="flex items-start gap-2 text-red-700">
+                      <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">{warning}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Skills Required (for DIY) */}
+            {diagnosisData.skillsRequired && diagnosisData.skillsRequired.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                <h3 className="font-semibold mb-3 flex items-center gap-2 text-blue-800">
+                  <CheckCircle2 className="h-5 w-5" />
+                  Skills Required
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {diagnosisData.skillsRequired.map((skill, index) => (
+                    <Badge key={index} variant="outline" className="border-blue-300 text-blue-700">
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Possible Causes */}
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+                Possible Causes
+              </h3>
+              <ul className="space-y-2">
+                {diagnosisData.possibleCauses.map((cause, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <div className="h-2 w-2 rounded-full bg-orange-600 mt-2 flex-shrink-0" />
+                    <span className="text-gray-700">{cause}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="text-center text-sm text-gray-500 border-t pt-4">
+              <p>
+                This is an AI-generated diagnosis. For accurate assessment, we recommend professional inspection for
+                complex or safety-critical repairs.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-2 border-blue-200">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+            <Lightbulb className="h-8 w-8 text-blue-600" />
+          </div>
+          <CardTitle className="text-2xl">AI Appliance Diagnostics</CardTitle>
+          <CardDescription>
+            Tell us about your appliance problem and we'll help identify potential causes and recommend the best
+            solution
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="appliance" className="text-sm font-medium">
+                What appliance is having issues?
+              </label>
+              <Input
+                id="appliance"
+                placeholder="e.g., Washing machine, Refrigerator, Dishwasher..."
+                value={appliance}
+                onChange={(e) => setAppliance(e.target.value)}
+                className="w-full text-base"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="problem" className="text-sm font-medium">
+                Describe the problem in detail
+              </label>
+              <Textarea
+                id="problem"
+                placeholder="e.g., My washing machine makes loud banging noises during the spin cycle and clothes come out still wet..."
+                value={problem}
+                onChange={(e) => setProblem(e.target.value)}
+                className="w-full min-h-[100px] text-base"
+              />
+            </div>
+            {error && !showEmailVerification && (
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
+            )}
+
+            {/* Button Row */}
+            {!showEmailVerification && (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button onClick={handleAskAI} className="flex-1 bg-blue-600 hover:bg-blue-700" size="lg">
+                  <Lightbulb className="mr-2 h-4 w-4" />
+                  Ask AI
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleShowExample}
+                  className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50"
+                  size="lg"
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  See Example Report
+                </Button>
+              </div>
+            )}
+
+            {/* Email Verification Section */}
+            {showEmailVerification && (
+              <div className="border-t pt-6 space-y-4">
+                <div className="flex items-center gap-2 text-blue-600">
+                  <Mail className="h-5 w-5" />
+                  <h3 className="font-semibold">Quick Email Verification</h3>
+                  <button
+                    onClick={() => setShowEmailVerification(false)}
+                    className="ml-auto text-gray-400 hover:text-gray-600"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600">
+                  We'll send your diagnostic report to your email and provide follow-up recommendations.
+                </p>
+
+                {!isEmailSent ? (
+                  <form onSubmit={handleEmailSubmit} className="space-y-3">
+                    <Input
+                      type="email"
+                      placeholder="Enter your email address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full text-base"
+                      required
+                    />
+                    <div className="flex items-start gap-2">
+                      <Checkbox id="marketing-consent-diagnostic" defaultChecked={true} className="mt-1" />
+                      <label htmlFor="marketing-consent-diagnostic" className="text-xs text-gray-600 cursor-pointer">
+                        I would like to receive helpful tips, special offers, and updates about appliance maintenance
+                        and repair services via email. You can unsubscribe at any time.
+                      </label>
+                    </div>
+                    {error && (
+                      <div className="flex items-center gap-2 text-red-600 text-sm">
+                        <AlertCircle className="h-4 w-4" />
+                        {error}
+                      </div>
+                    )}
+                    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isVerifying}>
+                      {isVerifying ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending Code...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="mr-2 h-4 w-4" />
+                          Send Verification Code
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                ) : !isEmailVerified ? (
+                  <div className="space-y-3">
+                    <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
+                      <p className="text-sm text-green-800">
+                        <CheckCircle2 className="h-4 w-4 inline mr-1" />
+                        Verification code sent to <strong>{email}</strong>
+                      </p>
+                    </div>
+                    <form onSubmit={handleVerificationSubmit} className="space-y-3">
+                      <Input
+                        placeholder="Enter 6-digit code"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        className="w-full text-center text-base tracking-wider"
+                        maxLength={6}
+                        required
+                      />
+                      <p className="text-xs text-gray-500 text-center">
+                        For demo: enter any 6-digit code (e.g., 123456)
+                      </p>
+                      {error && (
+                        <div className="flex items-center gap-2 text-red-600 text-sm">
+                          <AlertCircle className="h-4 w-4" />
+                          {error}
+                        </div>
+                      )}
+                      <Button
+                        type="submit"
+                        className="w-full bg-green-600 hover:bg-green-700"
+                        disabled={isVerifying || isLoading}
+                      >
+                        {isVerifying || isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {isLoading ? "Getting Diagnosis..." : "Verifying..."}
+                          </>
+                        ) : (
+                          <>
+                            <KeyRound className="mr-2 h-4 w-4" />
+                            Verify & Get Diagnosis
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                    <div className="text-center">
+                      <button
+                        onClick={resendVerificationCode}
+                        className="text-sm text-blue-600 hover:underline"
+                        disabled={isVerifying}
+                      >
+                        Resend Code
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Loading State */}
+      {isLoading && isEmailVerified && (
+        <Card className="border-2 border-blue-200 bg-blue-50">
+          <CardContent className="p-8">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <div>
+                <p className="font-medium text-blue-800">AI Analyzing Your Appliance Problem...</p>
+                <p className="text-sm text-blue-600 mt-1">This may take a few seconds</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Show Example Report */}
+      {showExample && renderDiagnosticResults(exampleDiagnosis, true)}
+
+      {/* Show Real Diagnosis Results */}
+      {diagnosis && !showExample && renderDiagnosticResults(diagnosis, false)}
+    </div>
+  )
 }
