@@ -46,7 +46,7 @@ export async function diagnoseProblem(appliance: string, problem: string, email:
       "recommendedService": "diy|professional|warranty",
       "serviceReason": "Clear explanation of why this service is recommended",
       "skillsRequired": ["skill1", "skill2"],
-      "timeEstimate": "X hours/days",
+      "timeEstimate": "X - Y hours/days",
       "safetyWarnings": ["warning1", "warning2"]
     }
     
@@ -54,10 +54,11 @@ export async function diagnoseProblem(appliance: string, problem: string, email:
     - Use UK pricing in GBP (£) with cost range from £0 (DIY repair) to £149 (professional same-day service)
     - For DIY repairs: £0 - £30 (just parts cost), for professional repairs: £109 - £149
     - Professional service pricing: £109 (standard), £129 (next-day), £149 (same-day)
+    - Always use spaces around hyphens in costs and times (e.g., "£109 - £149", "2 - 3 hours")
     - Difficulty levels: easy (basic tools, no electrical), moderate (some technical skill), difficult (electrical/complex), expert (specialized tools/dangerous)
     - Recommend "diy" for easy-moderate repairs, "professional" for difficult-expert or safety concerns, "warranty" for expensive/complex issues on older appliances
     - Always prioritize safety - if there's any electrical, gas, or safety risk, recommend professional
-    - Provide realistic time estimates
+    - Provide realistic time estimates with proper spacing around hyphens
     - Include safety warnings for any potentially dangerous repairs`
 
     const userPrompt = `Appliance: ${appliance}
@@ -243,7 +244,7 @@ function getFallbackDiagnosis(appliance: string, problem: string): DiagnosisResu
     recommendedService: isElectrical || problem.toLowerCase().includes('electrical') || problem.toLowerCase().includes('sparking') ? "professional" : "professional",
     serviceReason: "This issue requires professional assessment to ensure safe and proper repair. Our certified technicians can provide accurate diagnosis and quality repairs.",
     skillsRequired: undefined,
-    timeEstimate: "45-90 minutes",
+    timeEstimate: "45 - 90 minutes",
     safetyWarnings: isElectrical ? [
       "Always disconnect power before attempting any inspection",
       "Electrical repairs should only be performed by qualified technicians",
