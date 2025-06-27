@@ -280,7 +280,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                   <Eye className="h-5 w-5 text-blue-600" />
                   <div>
                     <p className="font-medium text-blue-800">Example Diagnostic Report</p>
-                    <p className="text-xs text-blue-600">This is what your AI diagnosis will look like</p>
+                    <p className="text-xs text-blue-600">This is what your kAI diagnosis will look like</p>
                   </div>
                 </div>
                 <Button
@@ -493,7 +493,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
 
             <div className="text-center text-sm text-gray-500 border-t pt-4">
               <p>
-                This is an AI-generated diagnosis. For accurate assessment, we recommend professional inspection for
+                This is a kAI-generated diagnosis. For accurate assessment, we recommend professional inspection for
                 complex or safety-critical repairs.
               </p>
             </div>
@@ -510,9 +510,9 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
             <Lightbulb className="h-8 w-8 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl">AI Appliance Diagnostics</CardTitle>
+          <CardTitle className="text-2xl">kAI Appliance Diagnostics</CardTitle>
           <CardDescription>
-            Tell us about your appliance problem and we'll help identify potential causes and recommend the best
+            Tell us about your appliance problem and kAI will help identify potential causes and recommend the best
             solution
           </CardDescription>
         </CardHeader>
@@ -568,7 +568,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button onClick={handleAskAI} className="flex-1 bg-blue-600 hover:bg-blue-700" size="lg">
                   <Lightbulb className="mr-2 h-4 w-4" />
-                  Ask AI
+                  Ask kAI
                 </Button>
                 <Button
                   variant="outline"
@@ -702,7 +702,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
             <div className="flex flex-col items-center gap-4 text-center">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
               <div>
-                <p className="font-medium text-blue-800">AI Analyzing Your Appliance Problem...</p>
+                <p className="font-medium text-blue-800">kAI Analyzing Your Appliance Problem...</p>
                 <p className="text-sm text-blue-600 mt-1">This may take a few seconds</p>
               </div>
             </div>
