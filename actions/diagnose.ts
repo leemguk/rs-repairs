@@ -18,15 +18,15 @@ interface DiagnosisResult {
   safetyWarnings?: string[]
 }
 
-export async function diagnoseProblem(appliance: string, problem: string, email: string): Promise<DiagnosisResult> {
+export async function diagnoseProblem(appliance: string, brand: string, problem: string, email: string): Promise<DiagnosisResult> {
   try {
     const openRouterApiKey = process.env.OPENROUTER_API_KEY
 
     if (!openRouterApiKey) {
       console.error('OpenRouter API key not found, using fallback')
-      const fallbackResult = getFallbackDiagnosis(appliance, problem)
+      const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
       // Save fallback diagnosis to database
-      await saveDiagnosticToDatabase(appliance, problem, email, fallbackResult)
+      await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
       return fallbackResult
     }
 
@@ -61,12 +61,17 @@ export async function diagnoseProblem(appliance: string, problem: string, email:
     - For washing machine bearing issues, drive belt problems, or mechanical repairs: ALWAYS recommend "professional"
     - Always prioritize safety - if there's any electrical, gas, or safety risk, recommend professional
     - Provide realistic time estimates with proper spacing around hyphens
-    - Include safety warnings for any potentially dangerous repairs`
+    - Include safety warnings for any potentially dangerous repairs
+    - If brand is provided, use brand-specific knowledge for error codes, common issues, and part recommendations
+    - Different brands have different error code meanings - be specific about brand-related diagnostics`
 
+    const brandInfo = brand ? `Brand: ${brand}` : "Brand: Not specified"
+    
     const userPrompt = `Appliance: ${appliance}
+${brandInfo}
 Problem: ${problem}
 
-Please diagnose this appliance problem, assess the repair difficulty, and recommend the most appropriate service option.`
+Please diagnose this appliance problem, assess the repair difficulty, and recommend the most appropriate service option. If the brand is specified, please consider brand-specific error codes and common issues.`
 
     // Try primary model (Claude 3.5 Sonnet)
     let diagnosis = await callOpenRouter(
@@ -78,7 +83,7 @@ Please diagnose this appliance problem, assess the repair difficulty, and recomm
 
     if (diagnosis) {
       // Save successful AI diagnosis to database
-      await saveDiagnosticToDatabase(appliance, problem, email, diagnosis)
+      await saveDiagnosticToDatabase(appliance, brand, problem, email, diagnosis)
       return diagnosis
     }
 
@@ -92,20 +97,20 @@ Please diagnose this appliance problem, assess the repair difficulty, and recomm
 
     if (diagnosis) {
       // Save fallback AI diagnosis to database
-      await saveDiagnosticToDatabase(appliance, problem, email, diagnosis)
+      await saveDiagnosticToDatabase(appliance, brand, problem, email, diagnosis)
       return diagnosis
     }
 
     // If both AI models fail, use structured fallback
-    const fallbackResult = getFallbackDiagnosis(appliance, problem)
-    await saveDiagnosticToDatabase(appliance, problem, email, fallbackResult)
+    const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
+    await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
     return fallbackResult
 
   } catch (error) {
     console.error("Diagnosis error:", error)
-    const fallbackResult = getFallbackDiagnosis(appliance, problem)
+    const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
     // Save fallback diagnosis to database even on error
-    await saveDiagnosticToDatabase(appliance, problem, email, fallbackResult)
+    await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
     return fallbackResult
   }
 }
@@ -174,7 +179,8 @@ async function callOpenRouter(
 }
 
 async function saveDiagnosticToDatabase(
-  appliance: string, 
+  appliance: string,
+  brand: string, 
   problem: string, 
   email: string, 
   diagnosis: DiagnosisResult
@@ -186,6 +192,7 @@ async function saveDiagnosticToDatabase(
         {
           email: email,
           appliance_type: appliance,
+          appliance_brand: brand || null,
           problem_description: problem,
           estimated_time: diagnosis.timeEstimate,
           estimated_cost: diagnosis.estimatedCost,
@@ -213,7 +220,7 @@ async function saveDiagnosticToDatabase(
   }
 }
 
-function getFallbackDiagnosis(appliance: string, problem: string): DiagnosisResult {
+function getFallbackDiagnosis(appliance: string, brand: string, problem: string): DiagnosisResult {
   // Intelligent fallback based on appliance type
   const isElectrical = appliance.toLowerCase().includes('oven') || 
                       appliance.toLowerCase().includes('cooker') ||
@@ -226,9 +233,11 @@ function getFallbackDiagnosis(appliance: string, problem: string): DiagnosisResu
   const isRefrigeration = appliance.toLowerCase().includes('fridge') ||
                          appliance.toLowerCase().includes('freezer')
 
+  const brandText = brand ? ` (${brand})` : ""
+
   return {
     possibleCauses: [
-      `${appliance} component wear and tear`,
+      `${appliance}${brandText} component wear and tear`,
       isElectrical ? "Electrical connection issues" : isWaterRelated ? "Water system blockage" : "Mechanical component failure",
       "Internal sensor or control board malfunction",
       "Regular maintenance required"
