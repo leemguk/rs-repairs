@@ -72,42 +72,52 @@ export async function diagnoseProblem(appliance: string, brand: string, problem:
     const hasErrorCode = checkErrorCode(brand, problem)
     const detectedErrorCode = detectErrorCode(problem)
     
+    // Debug logging
+    console.log('Error code detection:', { hasErrorCode, detectedErrorCode, brand, problem })
+    
     let errorCodeContext = ""
     
     if (detectedErrorCode && brand) {
       errorCodeContext = `
 
-🚨 CRITICAL ERROR CODE ANALYSIS REQUIRED 🚨
-The problem description contains "${detectedErrorCode}" which is a specific error code for ${brand.toUpperCase()} ${appliance.toLowerCase()}.
+🔥 STOP - ERROR CODE DETECTED 🔥
+"${detectedErrorCode}" is a SPECIFIC ERROR CODE for ${brand.toUpperCase()} ${appliance.toUpperCase()}
 
-MANDATORY INSTRUCTIONS FOR THIS ERROR CODE:
-1. You MUST treat "${detectedErrorCode}" as a specific ${brand.toUpperCase()} ${appliance.toLowerCase()} error code
-2. Use your comprehensive knowledge of ${brand.toUpperCase()} ${appliance.toLowerCase()} error codes specifically
-3. DO NOT provide generic appliance repair advice - this is a specific diagnostic code
-4. Focus on what ${brand.toUpperCase()} error code ${detectedErrorCode} typically indicates for ${appliance.toLowerCase()} appliances
-5. Consider the most common causes for this specific error code on ${brand.toUpperCase()} ${appliance.toLowerCase()} machines
-6. Remember: the same error code can mean completely different things for different appliance types (washing machine vs fridge vs oven)
-7. If you're not certain about this exact error code for this specific appliance type, state that professional diagnosis is needed
-8. Be appliance-type specific: ${appliance.toLowerCase()} error codes are different from other appliances
+⚠️ CRITICAL INSTRUCTIONS - READ CAREFULLY:
+1. "${detectedErrorCode}" is NOT a generic problem description
+2. It is a SPECIFIC diagnostic code from ${brand.toUpperCase()} ${appliance.toLowerCase()} control system
+3. You MUST look up what "${detectedErrorCode}" means for ${brand.toUpperCase()} ${appliance.toLowerCase()} specifically
+4. DO NOT provide generic drain/water/heating advice unless that's what THIS specific error code indicates
+5. Different appliance types have different error code meanings: washing machine ≠ dishwasher ≠ oven
+6. If you don't know this exact error code for this appliance type, say so and recommend professional diagnosis
 
-For ${brand.toUpperCase()} ${appliance.toLowerCase()} error code ${detectedErrorCode}, you must provide:
-- The most likely meaning of this specific error code for this appliance type
-- Brand and appliance-specific causes for this error code
-- Appropriate difficulty level for this type of fault on this appliance
-- Whether this is typically a DIY or professional repair for ${brand.toUpperCase()} ${appliance.toLowerCase()} machines
+ERROR CODE LOOKUP REQUIRED:
+- Brand: ${brand.toUpperCase()}
+- Appliance: ${appliance.toUpperCase()}  
+- Code: ${detectedErrorCode}
+- Required: Look up the EXACT meaning of ${brand.toUpperCase()} ${appliance.toLowerCase()} error code ${detectedErrorCode}
 
-REMEMBER: Error codes are appliance-specific, not just brand-specific. A Bosch washing machine E4 is different from a Bosch dishwasher E4.`
+DO NOT GUESS. DO NOT PROVIDE GENERIC REPAIR ADVICE. Look up this specific error code.`
     }
 
     // Enhanced system prompt with better error code handling
-    const systemPrompt = `You are an expert appliance repair technician with 20+ years of experience specializing in all major UK appliance brands, with extensive knowledge of brand-specific and appliance-type-specific error codes.
+    const systemPrompt = `You are an expert appliance repair technician with 20+ years of experience specializing in all major UK appliance brands.
 
 ${errorCodeContext}
 
-CRITICAL KNOWLEDGE: Error codes are both BRAND-specific AND APPLIANCE-TYPE-specific. The same error code can mean completely different things for different appliances:
-- Example: Bosch E4 on washing machine ≠ Bosch E4 on dishwasher ≠ Bosch E4 on oven
-- You must consider BOTH the brand AND the appliance type when interpreting error codes
-- Never assume error codes mean the same thing across different appliance types
+⚠️ IMPORTANT: When you see an error code, you must:
+1. Recognize it as a specific diagnostic code from the appliance's control system
+2. Look up what that EXACT error code means for that SPECIFIC brand and appliance type
+3. Provide diagnosis based on that error code's meaning, not generic assumptions
+4. Remember: Beko washing machine E17 = excessive foam/detergent issue (NOT drain problems)
+5. Remember: Error codes are precise - don't guess or provide generic advice
+
+CRITICAL KNOWLEDGE: Error codes are both BRAND-specific AND APPLIANCE-TYPE-specific. Examples:
+- Beko washing machine E17 = excessive foam detected (too much detergent)
+- Samsung washing machine 5E = drain error
+- LG washing machine OE = drain error  
+- Bosch washing machine E18 = drain pump issue
+- The same error code can mean completely different things for different appliances
 
 Guidelines for ALL diagnoses:
 - Use UK pricing in GBP (£) with cost range from £0 (DIY repair) to £149 (professional same-day service)
