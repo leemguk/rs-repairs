@@ -432,7 +432,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
           {(diagnosis.recommendedService === "diy" || diagnosis.recommendedService === "professional") && (
             <div className="grid gap-4 md:grid-cols-2">
               {/* DIY Option Card */}
-              <Card className={`border-l-4 ${diagnosis.recommendedService === "diy" ? "border-l-blue-600 bg-blue-50" : "border-l-gray-300 bg-gray-50"}`}>
+              <Card className={`border-l-4 flex flex-col ${diagnosis.recommendedService === "diy" ? "border-l-blue-600 bg-blue-50" : "border-l-gray-300 bg-gray-50"}`}>
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <Wrench className={`h-5 w-5 ${diagnosis.recommendedService === "diy" ? "text-blue-600" : "text-gray-600"}`} />
@@ -449,8 +449,8 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 mb-4">
+                <CardContent className="flex-1 flex flex-col">
+                  <ul className="space-y-2 mb-4 flex-1">
                     {diagnosis.recommendations.diy.map((rec, index) => (
                       <li key={index} className="flex items-start gap-2 text-sm">
                         <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosis.recommendedService === "diy" ? "bg-blue-600" : "bg-gray-400"}`} />
@@ -460,7 +460,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                   </ul>
                   <Button
                     variant={diagnosis.recommendedService === "diy" ? "default" : "outline"}
-                    className={`w-full ${diagnosis.recommendedService === "diy" ? "bg-blue-600 hover:bg-blue-700" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}
+                    className={`w-full mt-auto ${diagnosis.recommendedService === "diy" ? "bg-blue-600 hover:bg-blue-700" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}
                     onClick={handleFindParts}
                   >
                     <Search className="mr-2 h-4 w-4" />
@@ -470,7 +470,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               </Card>
 
               {/* Professional Option Card */}
-              <Card className={`border-l-4 ${diagnosis.recommendedService === "professional" ? "border-l-orange-600 bg-orange-50" : "border-l-gray-300 bg-gray-50"}`}>
+              <Card className={`border-l-4 flex flex-col ${diagnosis.recommendedService === "professional" ? "border-l-orange-600 bg-orange-50" : "border-l-gray-300 bg-gray-50"}`}>
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <Calendar className={`h-5 w-5 ${diagnosis.recommendedService === "professional" ? "text-orange-600" : "text-gray-600"}`} />
@@ -489,8 +489,8 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 mb-4">
+                <CardContent className="flex-1 flex flex-col">
+                  <ul className="space-y-2 mb-4 flex-1">
                     {diagnosis.recommendations.professional.map((rec, index) => (
                       <li key={index} className="flex items-start gap-2 text-sm">
                         <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosis.recommendedService === "professional" ? "bg-orange-600" : "bg-gray-400"}`} />
@@ -499,7 +499,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                     ))}
                   </ul>
                   <Button
-                    className={`w-full ${diagnosis.recommendedService === "professional" ? "bg-orange-600 hover:bg-orange-700" : "bg-gray-600 hover:bg-gray-700"}`}
+                    className={`w-full mt-auto ${diagnosis.recommendedService === "professional" ? "bg-orange-600 hover:bg-orange-700" : "bg-gray-600 hover:bg-gray-700"}`}
                     onClick={handleBookEngineer}
                   >
                     <Calendar className="mr-2 h-4 w-4" />
