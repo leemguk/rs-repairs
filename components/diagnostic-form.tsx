@@ -221,45 +221,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     }
   }
 
-  // Example diagnosis data
-  const exampleDiagnosis: DiagnosisResult = {
-    possibleCauses: [
-      "Unbalanced load causing excessive vibration",
-      "Worn or damaged shock absorbers",
-      "Loose drum or suspension springs",
-      "Foreign objects trapped in drum or pump",
-      "Faulty drum bearings requiring replacement"
-    ],
-    recommendations: {
-      diy: [
-        "Redistribute clothes evenly in the drum and restart cycle",
-        "Check and remove any coins, buttons, or small items from drum",
-        "Ensure washing machine is level using adjustable feet",
-        "Run an empty hot wash cycle to clear any soap buildup",
-        "Inspect door seal for foreign objects or damage"
-      ],
-      professional: [
-        "Drum bearing replacement if bearings are worn",
-        "Shock absorber replacement and testing",
-        "Suspension spring inspection and replacement",
-        "Internal component diagnosis with specialized tools",
-        "Safety inspection and performance testing"
-      ]
-    },
-    urgency: "medium",
-    estimatedCost: "£0 - £149",
-    difficulty: "moderate",
-    recommendedService: "diy",
-    serviceReason: "Most drainage issues can be resolved with simple DIY steps, but if the problem persists, professional diagnosis is recommended for component replacement.",
-    skillsRequired: ["Basic appliance knowledge", "Ability to access and clean drain filter", "Physical ability to move machine"],
-    timeEstimate: "30-60 minutes",
-    safetyWarnings: [
-      "Always disconnect power before attempting any inspection",
-      "Ensure appliance is completely drained before accessing filters",
-      "Never attempt repairs on live electrical components"
-    ]
-  }
-
   return (
     <div className="space-y-6">
       <Card className="border-2 border-blue-200">
