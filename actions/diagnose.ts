@@ -18,75 +18,7 @@ interface DiagnosisResult {
   safetyWarnings?: string[]
 }
 
-// Error code database for accurate brand-specific diagnostics
-const ERROR_CODE_DATABASE: Record<string, Record<string, {
-  meaning: string
-  causes: string[]
-  difficulty: "easy" | "moderate" | "difficult" | "expert"
-  urgency: "low" | "medium" | "high"
-}>> = {
-  beko: {
-    e9: {
-      meaning: "Door lock fault - door not closing or locking properly",
-      causes: [
-        "Faulty door lock mechanism",
-        "Door not aligned properly",
-        "Damaged door seal preventing proper closure",
-        "Electrical connection issue to door lock"
-      ],
-      difficulty: "moderate",
-      urgency: "medium"
-    },
-    e4: {
-      meaning: "Water supply issue - no water entering machine",
-      causes: ["Water supply turned off", "Blocked inlet filter", "Faulty inlet valve", "Low water pressure"],
-      difficulty: "easy",
-      urgency: "medium"
-    }
-  },
-  bosch: {
-    e4: {
-      meaning: "Door lock mechanism failure",
-      causes: ["Faulty door lock", "Door latch misalignment", "Wiring issue to door lock", "Control board fault"],
-      difficulty: "difficult",
-      urgency: "medium"
-    },
-    e18: {
-      meaning: "Drain pump issue or blockage",
-      causes: ["Blocked drain pump", "Faulty drain pump", "Drain hose obstruction", "Foreign object in pump"],
-      difficulty: "moderate",
-      urgency: "medium"
-    }
-  },
-  samsung: {
-    "4e": {
-      meaning: "Water supply problem",
-      causes: ["No water supply", "Water pressure too low", "Blocked inlet filter", "Faulty water inlet valve"],
-      difficulty: "easy",
-      urgency: "medium"
-    },
-    "5e": {
-      meaning: "Drain error - water not draining properly",
-      causes: ["Blocked drain hose", "Clogged drain pump", "Drain pump failure", "Kinked drain hose"],
-      difficulty: "moderate",
-      urgency: "medium"
-    }
-  },
-  lg: {
-    oe: {
-      meaning: "Drain error - unable to drain water",
-      causes: ["Clogged drain pump filter", "Blocked drain hose", "Faulty drain pump", "Drain hose installation error"],
-      difficulty: "moderate",
-      urgency: "medium"
-    },
-    ie: {
-      meaning: "Water inlet error",
-      causes: ["Water supply issue", "Blocked inlet filter", "Faulty water inlet valve", "Low water pressure"],
-      difficulty: "easy",
-      urgency: "medium"
-    }
-  }
-}
+// Removed error code database - AI will handle all error codes with proper prompting
 
 // Enhanced error code detection function
 function detectErrorCode(problem: string): string | null {
@@ -111,37 +43,17 @@ function detectErrorCode(problem: string): string | null {
   return null
 }
 
-// Function to check for error codes in the problem description
-function checkErrorCode(brand: string, problem: string): {
-  meaning: string
-  causes: string[]
-  difficulty: "easy" | "moderate" | "difficult" | "expert"
-  urgency: "low" | "medium" | "high"
-} | null {
-  if (!brand) return null
+// Function to check for error codes in the problem description - now just for detection
+function checkErrorCode(brand: string, problem: string): boolean {
+  if (!brand) return false
   
-  const brandLower = brand.toLowerCase()
   const problemLower = problem.toLowerCase()
   
   // Look for error codes in various formats (E9, e9, E-9, etc.)
   const errorCodeRegex = /\b[ef][-]?(\d+[a-z]?|\w{1,2})\b/gi
   const matches = problemLower.match(errorCodeRegex)
   
-  if (!matches) return null
-  
-  const brandCodes = ERROR_CODE_DATABASE[brandLower]
-  if (!brandCodes) return null
-  
-  for (const match of matches) {
-    // Clean the error code (remove E/F prefix, hyphens)
-    const cleanCode = match.replace(/^[ef][-]?/i, '').toLowerCase()
-    
-    if (brandCodes[cleanCode]) {
-      return brandCodes[cleanCode]
-    }
-  }
-  
-  return null
+  return matches !== null
 }
 
 export async function diagnoseProblem(appliance: string, brand: string, problem: string, email: string): Promise<DiagnosisResult> {
@@ -156,48 +68,46 @@ export async function diagnoseProblem(appliance: string, brand: string, problem:
       return fallbackResult
     }
 
-    // Check for specific error codes first
-    const errorCodeInfo = checkErrorCode(brand, problem)
+    // Check for error codes
+    const hasErrorCode = checkErrorCode(brand, problem)
     const detectedErrorCode = detectErrorCode(problem)
     
     let errorCodeContext = ""
     
-    if (errorCodeInfo) {
+    if (detectedErrorCode && brand) {
       errorCodeContext = `
-      
-IMPORTANT ERROR CODE DETECTED:
-The problem description contains a specific error code. Based on the ${brand} error code database:
-- Error meaning: ${errorCodeInfo.meaning}
-- Known causes: ${errorCodeInfo.causes.join(', ')}
-- Recommended difficulty: ${errorCodeInfo.difficulty}
-- Urgency level: ${errorCodeInfo.urgency}
 
-Please use this specific information as the primary basis for your diagnosis.`
+🚨 CRITICAL ERROR CODE ANALYSIS REQUIRED 🚨
+The problem description contains "${detectedErrorCode}" which is a specific error code for ${brand.toUpperCase()} ${appliance.toLowerCase()}.
+
+MANDATORY INSTRUCTIONS FOR THIS ERROR CODE:
+1. You MUST treat "${detectedErrorCode}" as a specific ${brand.toUpperCase()} ${appliance.toLowerCase()} error code
+2. Use your comprehensive knowledge of ${brand.toUpperCase()} ${appliance.toLowerCase()} error codes specifically
+3. DO NOT provide generic appliance repair advice - this is a specific diagnostic code
+4. Focus on what ${brand.toUpperCase()} error code ${detectedErrorCode} typically indicates for ${appliance.toLowerCase()} appliances
+5. Consider the most common causes for this specific error code on ${brand.toUpperCase()} ${appliance.toLowerCase()} machines
+6. Remember: the same error code can mean completely different things for different appliance types (washing machine vs fridge vs oven)
+7. If you're not certain about this exact error code for this specific appliance type, state that professional diagnosis is needed
+8. Be appliance-type specific: ${appliance.toLowerCase()} error codes are different from other appliances
+
+For ${brand.toUpperCase()} ${appliance.toLowerCase()} error code ${detectedErrorCode}, you must provide:
+- The most likely meaning of this specific error code for this appliance type
+- Brand and appliance-specific causes for this error code
+- Appropriate difficulty level for this type of fault on this appliance
+- Whether this is typically a DIY or professional repair for ${brand.toUpperCase()} ${appliance.toLowerCase()} machines
+
+REMEMBER: Error codes are appliance-specific, not just brand-specific. A Bosch washing machine E4 is different from a Bosch dishwasher E4.`
     }
 
     // Enhanced system prompt with better error code handling
-    const systemPrompt = `You are an expert appliance repair technician with 20+ years of experience specializing in all major UK appliance brands.
+    const systemPrompt = `You are an expert appliance repair technician with 20+ years of experience specializing in all major UK appliance brands, with extensive knowledge of brand-specific and appliance-type-specific error codes.
 
-${errorCodeContext ? errorCodeContext : ''}
+${errorCodeContext}
 
-${detectedErrorCode ? `
-CRITICAL ERROR CODE ANALYSIS REQUIRED:
-The problem description contains "${detectedErrorCode}" which appears to be an error code for ${brand || 'this appliance'}.
-
-IMPORTANT INSTRUCTIONS FOR ERROR CODES:
-1. This IS a specific error code - treat it as such
-2. Use your extensive knowledge of ${brand || 'appliance'} error codes
-3. ${brand ? `Focus specifically on ${brand.toUpperCase()} error code meanings` : 'Consider common error code patterns across brands'}
-4. Do NOT guess or assume - if you're not certain about this specific error code, state that professional diagnosis is needed
-5. Error codes often indicate specific component failures - be precise about the most likely causes
-6. Consider that error codes can have different meanings across brands - be brand-specific
-
-For ${brand || 'this'} error code analysis, prioritize:
-- Exact error code meaning for this brand
-- Most common causes for this specific code
-- Whether this is a DIY-fixable issue or requires professional service
-- Safety considerations specific to this error code
-` : ''}
+CRITICAL KNOWLEDGE: Error codes are both BRAND-specific AND APPLIANCE-TYPE-specific. The same error code can mean completely different things for different appliances:
+- Example: Bosch E4 on washing machine ≠ Bosch E4 on dishwasher ≠ Bosch E4 on oven
+- You must consider BOTH the brand AND the appliance type when interpreting error codes
+- Never assume error codes mean the same thing across different appliance types
 
 Guidelines for ALL diagnoses:
 - Use UK pricing in GBP (£) with cost range from £0 (DIY repair) to £149 (professional same-day service)
@@ -212,7 +122,6 @@ Guidelines for ALL diagnoses:
 - Provide realistic time estimates with proper spacing around hyphens
 - Include safety warnings for any potentially dangerous repairs
 - For error codes you're not certain about, recommend professional diagnosis
-- Different brands have completely different error code meanings - never assume cross-brand compatibility
 - If dealing with an error code, mention in your serviceReason that this is a specific diagnostic code
 
 Always respond with valid JSON in this exact format:
@@ -249,13 +158,6 @@ Please diagnose this appliance problem, assess the repair difficulty, and recomm
     )
 
     if (diagnosis) {
-      // Override with error code information if available
-      if (errorCodeInfo) {
-        diagnosis.possibleCauses = errorCodeInfo.causes
-        diagnosis.difficulty = errorCodeInfo.difficulty
-        diagnosis.urgency = errorCodeInfo.urgency
-      }
-      
       // Save successful AI diagnosis to database
       await saveDiagnosticToDatabase(appliance, brand, problem, email, diagnosis)
       return diagnosis
@@ -270,13 +172,6 @@ Please diagnose this appliance problem, assess the repair difficulty, and recomm
     )
 
     if (diagnosis) {
-      // Override with error code information if available
-      if (errorCodeInfo) {
-        diagnosis.possibleCauses = errorCodeInfo.causes
-        diagnosis.difficulty = errorCodeInfo.difficulty
-        diagnosis.urgency = errorCodeInfo.urgency
-      }
-      
       // Save fallback AI diagnosis to database
       await saveDiagnosticToDatabase(appliance, brand, problem, email, diagnosis)
       return diagnosis
