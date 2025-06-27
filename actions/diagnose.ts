@@ -72,9 +72,6 @@ export async function diagnoseProblem(appliance: string, brand: string, problem:
     const hasErrorCode = checkErrorCode(brand, problem)
     const detectedErrorCode = detectErrorCode(problem)
     
-    // Debug logging
-    console.log('Error code detection:', { hasErrorCode, detectedErrorCode, brand, problem })
-    
     let errorCodeContext = ""
     
     if (detectedErrorCode && brand) {
