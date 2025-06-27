@@ -106,15 +106,17 @@ ${errorCodeContext}
 1. Recognize it as a specific diagnostic code from the appliance's control system
 2. Look up what that EXACT error code means for that SPECIFIC brand and appliance type
 3. Provide diagnosis based on that error code's meaning, not generic assumptions
-4. Remember: Beko washing machine E17 = excessive foam/detergent issue (NOT drain problems)
-5. Remember: Error codes are precise - don't guess or provide generic advice
+4. NEVER provide generic water/drain/heating advice unless that's what the specific error code indicates
 
-CRITICAL KNOWLEDGE: Error codes are both BRAND-specific AND APPLIANCE-TYPE-specific. Examples:
-- Beko washing machine E17 = excessive foam detected (too much detergent)
+CRITICAL ERROR CODE EXAMPLES - MEMORIZE THESE:
+- Beko washing machine E9 = door lock fault
+- Beko washing machine E10 = door jammed (NOT water inlet)
+- Beko washing machine E17 = excessive foam detected (NOT drain problems)
 - Samsung washing machine 5E = drain error
 - LG washing machine OE = drain error  
 - Bosch washing machine E18 = drain pump issue
-- The same error code can mean completely different things for different appliances
+
+DO NOT CONFUSE ERROR CODES. Each brand/appliance combination has specific meanings.
 
 Guidelines for ALL diagnoses:
 - Use UK pricing in GBP (£) with cost range from £0 (DIY repair) to £149 (professional same-day service)
@@ -150,9 +152,20 @@ Always respond with valid JSON in this exact format:
 
     const brandInfo = brand ? `Brand: ${brand}` : "Brand: Not specified"
     
-    const userPrompt = `Appliance: ${appliance}
+    let userPrompt = `Appliance: ${appliance}
 ${brandInfo}
-Problem: ${problem}
+Problem: ${problem}`
+
+    // Add error code emphasis to user prompt as well
+    if (detectedErrorCode && brand) {
+      userPrompt += `
+
+🔥 CRITICAL: This is error code ${detectedErrorCode} on a ${brand.toUpperCase()} ${appliance.toLowerCase()}.
+You MUST look up what ${brand.toUpperCase()} ${appliance.toLowerCase()} error code ${detectedErrorCode} specifically means.
+Do NOT provide generic repair advice. Look up this exact error code for this brand and appliance type.`
+    }
+
+    userPrompt += `
 
 Please diagnose this appliance problem, assess the repair difficulty, and recommend the most appropriate service option. If the brand is specified, please consider brand-specific error codes and common issues.`
 
