@@ -88,6 +88,29 @@ const ERROR_CODE_DATABASE: Record<string, Record<string, {
   }
 }
 
+// Enhanced error code detection function
+function detectErrorCode(problem: string): string | null {
+  const problemLower = problem.toLowerCase()
+  
+  // More comprehensive error code patterns
+  const errorCodePatterns = [
+    /\b[ef][-]?(\d{1,3}[a-z]?)\b/gi,  // E17, F05, E9A, etc.
+    /\berror\s+code\s*[:\-]?\s*([ef]?\d{1,3}[a-z]?)\b/gi,  // "error code: 17", "error code E17"
+    /\bcode\s*[:\-]?\s*([ef]?\d{1,3}[a-z]?)\b/gi,  // "code: E17", "code 17"
+    /\b(\d{1,2}[ef])\b/gi,  // Samsung style: 4E, 5E
+    /\b([a-z]{1,2}\d{1,2})\b/gi,  // LG style: OE, IE
+  ]
+  
+  for (const pattern of errorCodePatterns) {
+    const matches = problemLower.match(pattern)
+    if (matches) {
+      return matches[0].toUpperCase()
+    }
+  }
+  
+  return null
+}
+
 // Function to check for error codes in the problem description
 function checkErrorCode(brand: string, problem: string): {
   meaning: string
@@ -135,6 +158,8 @@ export async function diagnoseProblem(appliance: string, brand: string, problem:
 
     // Check for specific error codes first
     const errorCodeInfo = checkErrorCode(brand, problem)
+    const detectedErrorCode = detectErrorCode(problem)
+    
     let errorCodeContext = ""
     
     if (errorCodeInfo) {
@@ -150,45 +175,62 @@ The problem description contains a specific error code. Based on the ${brand} er
 Please use this specific information as the primary basis for your diagnosis.`
     }
 
-    const systemPrompt = `You are an expert appliance repair technician with 20+ years of experience. 
-    Analyze appliance problems and provide diagnostic information in a structured format.
-    
-    Always respond with valid JSON in this exact format:
-    {
-      "possibleCauses": ["cause1", "cause2", "cause3"],
-      "recommendations": {
-        "diy": ["diy step 1", "diy step 2"],
-        "professional": ["professional service 1", "professional service 2"]
-      },
-      "urgency": "low|medium|high",
-      "estimatedCost": "£X - £Y",
-      "difficulty": "easy|moderate|difficult|expert",
-      "recommendedService": "diy|professional|warranty",
-      "serviceReason": "Clear explanation of why this service is recommended",
-      "skillsRequired": ["skill1", "skill2"],
-      "timeEstimate": "X - Y hours/days",
-      "safetyWarnings": ["warning1", "warning2"]
-    }
-    
-    Guidelines:
-    - Use UK pricing in GBP (£) with cost range from £0 (DIY repair) to £149 (professional same-day service)
-    - For DIY repairs: £0 - £30 (just parts cost), for professional repairs: £109 - £149
-    - Professional service pricing: £109 (standard), £129 (next-day), £149 (same-day)
-    - Always use spaces around hyphens in costs and times (e.g., "£109 - £149", "2 - 3 hours")
-    - Difficulty levels: easy (basic tools, no electrical), moderate (some technical skill), difficult (electrical/complex), expert (specialized tools/dangerous)
-    - Recommend "professional" for difficult-expert repairs, bearing replacements, electrical issues, or safety concerns
-    - Recommend "diy" ONLY for easy-moderate repairs like cleaning, filter changes, or simple adjustments
-    - For washing machine bearing issues, drive belt problems, or mechanical repairs: ALWAYS recommend "professional"
-    - Always prioritize safety - if there's any electrical, gas, or safety risk, recommend professional
-    - Provide realistic time estimates with proper spacing around hyphens
-    - Include safety warnings for any potentially dangerous repairs
-    - CRITICAL: For error codes, use brand-specific knowledge. Common examples:
-      * Beko E9 = Door lock fault/door not closing properly
-      * Bosch E4 = Door lock mechanism failure  
-      * Samsung 4E = Water supply issue
-      * LG OE = Drain error
-    - If error code context is provided below, use that as your PRIMARY source of information
-    - Different brands have different error code meanings - be specific about brand-related diagnostics${errorCodeContext}`
+    // Enhanced system prompt with better error code handling
+    const systemPrompt = `You are an expert appliance repair technician with 20+ years of experience specializing in all major UK appliance brands.
+
+${errorCodeContext ? errorCodeContext : ''}
+
+${detectedErrorCode ? `
+CRITICAL ERROR CODE ANALYSIS REQUIRED:
+The problem description contains "${detectedErrorCode}" which appears to be an error code for ${brand || 'this appliance'}.
+
+IMPORTANT INSTRUCTIONS FOR ERROR CODES:
+1. This IS a specific error code - treat it as such
+2. Use your extensive knowledge of ${brand || 'appliance'} error codes
+3. ${brand ? `Focus specifically on ${brand.toUpperCase()} error code meanings` : 'Consider common error code patterns across brands'}
+4. Do NOT guess or assume - if you're not certain about this specific error code, state that professional diagnosis is needed
+5. Error codes often indicate specific component failures - be precise about the most likely causes
+6. Consider that error codes can have different meanings across brands - be brand-specific
+
+For ${brand || 'this'} error code analysis, prioritize:
+- Exact error code meaning for this brand
+- Most common causes for this specific code
+- Whether this is a DIY-fixable issue or requires professional service
+- Safety considerations specific to this error code
+` : ''}
+
+Guidelines for ALL diagnoses:
+- Use UK pricing in GBP (£) with cost range from £0 (DIY repair) to £149 (professional same-day service)
+- For DIY repairs: £0 - £30 (just parts cost), for professional repairs: £109 - £149
+- Professional service pricing: £109 (standard), £129 (next-day), £149 (same-day)
+- Always use spaces around hyphens in costs and times (e.g., "£109 - £149", "2 - 3 hours")
+- Difficulty levels: easy (basic tools, no electrical), moderate (some technical skill), difficult (electrical/complex), expert (specialized tools/dangerous)
+- Recommend "professional" for difficult-expert repairs, bearing replacements, electrical issues, or safety concerns
+- Recommend "diy" ONLY for easy-moderate repairs like cleaning, filter changes, or simple adjustments
+- For washing machine bearing issues, drive belt problems, or mechanical repairs: ALWAYS recommend "professional"
+- Always prioritize safety - if there's any electrical, gas, or safety risk, recommend professional
+- Provide realistic time estimates with proper spacing around hyphens
+- Include safety warnings for any potentially dangerous repairs
+- For error codes you're not certain about, recommend professional diagnosis
+- Different brands have completely different error code meanings - never assume cross-brand compatibility
+- If dealing with an error code, mention in your serviceReason that this is a specific diagnostic code
+
+Always respond with valid JSON in this exact format:
+{
+  "possibleCauses": ["cause1", "cause2", "cause3"],
+  "recommendations": {
+    "diy": ["diy step 1", "diy step 2"],
+    "professional": ["professional service 1", "professional service 2"]
+  },
+  "urgency": "low|medium|high",
+  "estimatedCost": "£X - £Y",
+  "difficulty": "easy|moderate|difficult|expert",
+  "recommendedService": "diy|professional|warranty",
+  "serviceReason": "Clear explanation of why this service is recommended",
+  "skillsRequired": ["skill1", "skill2"],
+  "timeEstimate": "X - Y hours/days",
+  "safetyWarnings": ["warning1", "warning2"]
+}`
 
     const brandInfo = brand ? `Brand: ${brand}` : "Brand: Not specified"
     
@@ -362,6 +404,7 @@ async function saveDiagnosticToDatabase(
 function getFallbackDiagnosis(appliance: string, brand: string, problem: string): DiagnosisResult {
   // Check for error codes in fallback too
   const errorCodeInfo = checkErrorCode(brand, problem)
+  const detectedErrorCode = detectErrorCode(problem)
   
   // Intelligent fallback based on appliance type
   const isElectrical = appliance.toLowerCase().includes('oven') || 
@@ -406,6 +449,44 @@ function getFallbackDiagnosis(appliance: string, brand: string, problem: string)
         "Always disconnect power before attempting any repairs",
         "If unsure about any step, contact a professional",
         "Be careful with electrical components"
+      ]
+    }
+  }
+
+  // Enhanced fallback for detected error codes not in database
+  if (detectedErrorCode && brand) {
+    return {
+      possibleCauses: [
+        `${brand} error code ${detectedErrorCode} indicates a specific system fault`,
+        "Component malfunction requiring diagnostic equipment",
+        "Sensor or control board communication error",
+        "Brand-specific technical issue"
+      ],
+      recommendations: {
+        diy: [
+          "Power cycle the appliance (unplug for 2 minutes, then restart)",
+          "Check for any obvious blockages or obstructions",
+          "Verify all connections are secure",
+          "Consult your user manual for error code information"
+        ],
+        professional: [
+          `Professional diagnosis of ${brand} error code ${detectedErrorCode}`,
+          "Specialized diagnostic equipment to identify exact fault",
+          "Brand-specific repair procedures and genuine parts",
+          "Complete system testing after repair"
+        ],
+      },
+      urgency: "medium",
+      estimatedCost: "£109 - £149",
+      difficulty: "expert",
+      recommendedService: "professional",
+      serviceReason: `Error code ${detectedErrorCode} on ${brand} appliances requires professional diagnosis with specialized equipment to identify the exact component failure and ensure safe repair.`,
+      skillsRequired: ["Specialized diagnostic tools", "Brand-specific technical knowledge"],
+      timeEstimate: "1 - 2 hours",
+      safetyWarnings: [
+        "Always disconnect power before attempting any inspection",
+        "Error codes often indicate electrical or safety-critical faults",
+        "Professional diagnosis recommended for accurate identification"
       ]
     }
   }
