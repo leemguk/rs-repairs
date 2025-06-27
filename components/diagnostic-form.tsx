@@ -88,23 +88,6 @@ const exampleDiagnosis: DiagnosisResult = {
     "Sharp edges when dismantling",
     "Water damage risk if pipes not properly disconnected"
   ]
-}"Shock absorber inspection and replacement if needed",
-      "Complete drum assembly check and realignment",
-      "Motor mount inspection and tightening of all connections"
-    ]
-  },
-  urgency: "medium",
-  estimatedCost: "£0-£149",
-  difficulty: "moderate",
-  recommendedService: "diy",
-  serviceReason: "Start with simple DIY checks as the issue may be resolved with load balancing and cleaning. If noise persists, professional bearing replacement may be needed.",
-  skillsRequired: ["Basic tools", "Following instructions", "Physical strength"],
-  timeEstimate: "30-60 minutes DIY / 2-3 hours professional",
-  safetyWarnings: [
-    "Always disconnect power before any DIY checks",
-    "Do not attempt bearing replacement yourself - requires special tools",
-    "Be careful when moving the machine as it's very heavy"
-  ]
 }
 
 export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
