@@ -116,7 +116,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     setDiagnosis(null)
 
     try {
-      const result = await diagnoseProblem(appliance, problem)
+      const result = await diagnoseProblem(appliance, problem, email)
       setDiagnosis(result)
     } catch (err) {
       setError("Sorry, we encountered an error. Please try again.")
