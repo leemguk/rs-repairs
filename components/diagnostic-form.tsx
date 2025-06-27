@@ -41,7 +41,7 @@ interface DiagnosisResult {
   safetyWarnings?: string[]
 }
 
-export default function DiagnosticForm() {
+export function DiagnosticForm() {
   const [appliance, setAppliance] = useState("")
   const [brand, setBrand] = useState("")
   const [errorCode, setErrorCode] = useState("")
