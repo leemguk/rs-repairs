@@ -14,11 +14,9 @@ import {
   Wrench, 
   Search, 
   Calendar, 
-  Shield, 
   Clock, 
   AlertTriangle, 
   CheckCircle2, 
-  ArrowRight, 
   Mail, 
   KeyRound, 
   ChevronUp, 
@@ -43,45 +41,7 @@ interface DiagnosisResult {
   safetyWarnings?: string[]
 }
 
-interface DiagnosticFormProps {
-  onBookEngineer?: () => void
-}
-
-const exampleDiagnosis: DiagnosisResult = {
-  possibleCauses: [
-    "Loose or damaged drum bearings",
-    "Foreign object (coin, pin, etc.) stuck in drum",
-    "Worn drive belt",
-    "Unbalanced load"
-  ],
-  recommendations: {
-    diy: [
-      "Check if transit bolts were left in place",
-      "Inspect drum for loose objects",
-      "Ensure machine is level on floor",
-      "Check load distribution"
-    ],
-    professional: [
-      "Bearing replacement service",
-      "Full mechanical inspection",
-      "Drive belt replacement",
-      "Shock absorber replacement"
-    ]
-  },
-  urgency: "medium",
-  estimatedCost: "£109 - £149",
-  difficulty: "difficult",
-  recommendedService: "professional",
-  serviceReason: "Professional service needed for this repair",
-  skillsRequired: ["Mechanical knowledge", "Electrical safety awareness"],
-  timeEstimate: "2 - 3 hours",
-  safetyWarnings: [
-    "Do not operate machine if noise is very severe",
-    "Machine contains heavy components - lifting hazard"
-  ]
-}
-
-export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
+export default function DiagnosticForm() {
   const [appliance, setAppliance] = useState("")
   const [brand, setBrand] = useState("")
   const [errorCode, setErrorCode] = useState("")
@@ -95,7 +55,6 @@ export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) 
   const [isLoading, setIsLoading] = useState(false)
   const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(null)
   const [error, setError] = useState("")
-  const [showExample, setShowExample] = useState(false)
 
   const handleAskAI = () => {
     if (!appliance.trim() || !problem.trim()) {
@@ -104,15 +63,6 @@ export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) 
     }
     setError("")
     setShowEmailVerification(true)
-  }
-
-  const handleShowExample = () => {
-    setShowExample(true)
-    setDiagnosis(null)
-  }
-
-  const handleCloseExample = () => {
-    setShowExample(false)
   }
 
   const handleEmailSubmit = () => {
@@ -155,39 +105,42 @@ export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) 
     setIsLoading(true)
     setError("")
     setDiagnosis(null)
-    setShowExample(false)
 
     try {
-      // Combine error code with problem description
+      // This is the key part: combine error code with problem description
       const fullProblem = errorCode 
         ? `${problem}${problem ? ' ' : ''}Error code: ${errorCode}`
         : problem
         
-      // Simulate API call
+      // In your real implementation, you would call:
+      // const result = await diagnoseProblem(appliance, brand, fullProblem, email)
+      
+      // Demo simulation
       await new Promise(resolve => setTimeout(resolve, 2000))
       
-      // Mock result based on inputs - shows how error codes would be handled
-      const mockResult: DiagnosisResult = {
+      const result: DiagnosisResult = {
         possibleCauses: errorCode 
-          ? [`Error code ${errorCode} indicates specific system fault`, "Control board communication error", "Component malfunction requiring diagnosis"]
-          : ["Component wear and tear", "Electrical connection issues", "Internal sensor malfunction"],
+          ? [`Error code ${errorCode} detected on ${brand || 'appliance'} ${appliance.toLowerCase()}`, "Control board communication error", "Component malfunction requiring professional diagnosis"]
+          : ["Component wear and tear", "Internal sensor malfunction", "Electrical connection issues"],
         recommendations: {
-          diy: ["Power cycle the appliance (unplug for 2 minutes)", "Check all connections are secure", "Consult user manual for error code information"],
+          diy: errorCode 
+            ? ["Power cycle the appliance (unplug for 2 minutes)", "Check user manual for error code information", "Verify all connections are secure"]
+            : ["Check power connections", "Inspect for obvious blockages", "Verify settings are correct"],
           professional: ["Professional diagnostic inspection with specialized equipment", "Component replacement using genuine parts", "Complete system testing after repair"]
         },
-        urgency: errorCode ? "medium" : "medium",
+        urgency: "medium",
         estimatedCost: "£109 - £149",
         difficulty: errorCode ? "expert" : "moderate",
         recommendedService: errorCode ? "professional" : "professional",
         serviceReason: errorCode 
           ? `Error code ${errorCode} on ${brand || 'this'} ${appliance.toLowerCase()} requires professional diagnosis with specialized equipment to identify the exact component failure.`
           : "This issue requires professional assessment to ensure safe and proper repair.",
-        skillsRequired: ["Specialized diagnostic tools", "Brand-specific technical knowledge"],
+        skillsRequired: errorCode ? ["Specialized diagnostic tools", "Brand-specific technical knowledge"] : ["Basic tools", "Technical knowledge"],
         timeEstimate: "1 - 2 hours",
-        safetyWarnings: ["Always disconnect power before attempting any inspection", "Error codes often indicate electrical or safety-critical faults"]
+        safetyWarnings: ["Always disconnect power before attempting any inspection", errorCode ? "Error codes often indicate electrical or safety-critical faults" : "Professional service recommended for safety"]
       }
       
-      setDiagnosis(mockResult)
+      setDiagnosis(result)
     } catch (err) {
       setError("Sorry, we encountered an error. Please try again.")
     } finally {
@@ -201,22 +154,6 @@ export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) 
       setIsVerifying(false)
       setIsEmailSent(true)
     }, 1000)
-  }
-
-  const scrollToServices = () => {
-    document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })
-  }
-
-  const handleBookEngineer = () => {
-    if (onBookEngineer) {
-      onBookEngineer()
-    } else {
-      scrollToServices()
-    }
-  }
-
-  const handleFindParts = () => {
-    scrollToServices()
   }
 
   const getUrgencyColor = (urgency: string) => {
@@ -238,199 +175,8 @@ export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) 
     }
   }
 
-  const renderDiagnosticResults = (diagnosisData: DiagnosisResult, isExample: boolean = false) => {
-    return (
-      <div className="space-y-6">
-        {isExample && (
-          <Card className="border-2 border-blue-200 bg-blue-50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Eye className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="font-medium text-blue-800">Example Diagnostic Report</p>
-                    <p className="text-xs text-blue-600">This is what your report from kAI will look like</p>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCloseExample}
-                  className="text-blue-600 hover:bg-blue-100"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {!isExample && (
-          <Card className="border-2 border-green-200 bg-green-50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                <div>
-                  <p className="font-medium text-green-800">Diagnosis Complete! See Details Below</p>
-                  <p className="text-xs text-green-600">Report sent to: {email}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card className={`border-l-4 flex flex-col ${diagnosisData.recommendedService === "diy" ? "border-l-blue-600 bg-blue-50" : "border-l-gray-300 bg-gray-50"}`}>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <Wrench className={`h-5 w-5 ${diagnosisData.recommendedService === "diy" ? "text-blue-600" : "text-gray-600"}`} />
-                <div className="flex-1">
-                  <CardTitle className={`text-lg ${diagnosisData.recommendedService === "diy" ? "text-blue-800" : "text-gray-700"}`}>
-                    Try DIY First
-                    {diagnosisData.recommendedService === "diy" && (
-                      <Badge className="ml-2 bg-blue-100 text-blue-800 text-xs">Recommended</Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription className="text-sm">
-                    Simple checks you can do yourself
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <ul className="space-y-2 mb-4 flex-1">
-                {diagnosisData.recommendations.diy.map((rec, index) => (
-                  <li key={index} className="flex items-start gap-2 text-sm">
-                    <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosisData.recommendedService === "diy" ? "bg-blue-600" : "bg-gray-400"}`} />
-                    <span>{rec}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button
-                variant={diagnosisData.recommendedService === "diy" ? "default" : "outline"}
-                className={`w-full mt-auto ${diagnosisData.recommendedService === "diy" ? "bg-blue-600 hover:bg-blue-700" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}
-                onClick={handleFindParts}
-              >
-                <Search className="mr-2 h-4 w-4" />
-                Find Parts
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className={`border-l-4 flex flex-col ${diagnosisData.recommendedService === "professional" ? "border-l-orange-600 bg-orange-50" : "border-l-gray-300 bg-gray-50"}`}>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <Calendar className={`h-5 w-5 ${diagnosisData.recommendedService === "professional" ? "text-orange-600" : "text-gray-600"}`} />
-                <div className="flex-1">
-                  <CardTitle className={`text-lg ${diagnosisData.recommendedService === "professional" ? "text-orange-800" : "text-gray-700"}`}>
-                    Book an Engineer
-                    {diagnosisData.recommendedService === "professional" && (
-                      <Badge className="ml-2 bg-orange-100 text-orange-800 text-xs">Recommended</Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription className="text-sm">
-                    {diagnosisData.recommendedService === "professional" 
-                      ? "Professional service needed for this repair" 
-                      : "If DIY doesn't work, book a professional"}
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <ul className="space-y-2 mb-4 flex-1">
-                {diagnosisData.recommendations.professional.map((rec, index) => (
-                  <li key={index} className="flex items-start gap-2 text-sm">
-                    <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosisData.recommendedService === "professional" ? "bg-orange-600" : "bg-gray-400"}`} />
-                    <span>{rec}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button
-                className={`w-full mt-auto ${diagnosisData.recommendedService === "professional" ? "bg-orange-600 hover:bg-orange-700" : "bg-gray-600 hover:bg-gray-700"}`}
-                onClick={handleBookEngineer}
-              >
-                <Calendar className="mr-2 h-4 w-4" />
-                Book Engineer
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="border-l-4 border-l-blue-600">
-          <CardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <CardTitle className="text-xl">Diagnostic Results</CardTitle>
-              <div className="flex gap-2 flex-wrap">
-                <Badge className={getDifficultyColor(diagnosisData.difficulty)}>
-                  {diagnosisData.difficulty.charAt(0).toUpperCase() + diagnosisData.difficulty.slice(1)} Difficulty
-                </Badge>
-                <Badge className={getUrgencyColor(diagnosisData.urgency)}>
-                  {diagnosisData.urgency.charAt(0).toUpperCase() + diagnosisData.urgency.slice(1)} Priority
-                </Badge>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock className="h-4 w-4 text-gray-600" />
-                  <h3 className="font-semibold text-gray-900">Estimated Time</h3>
-                </div>
-                <p className="text-xl font-bold text-blue-600">{diagnosisData.timeEstimate}</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-3">Estimated Cost</h3>
-                <p className="text-xl font-bold text-green-600">{diagnosisData.estimatedCost}</p>
-              </div>
-            </div>
-
-            {diagnosisData.safetyWarnings && diagnosisData.safetyWarnings.length > 0 && (
-              <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-                <h3 className="font-semibold mb-3 flex items-center gap-2 text-red-800">
-                  <AlertTriangle className="h-5 w-5" />
-                  Safety Warnings
-                </h3>
-                <ul className="space-y-2">
-                  {diagnosisData.safetyWarnings.map((warning, index) => (
-                    <li key={index} className="flex items-start gap-2 text-red-700">
-                      <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm">{warning}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div>
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
-                Possible Causes
-              </h3>
-              <ul className="space-y-2">
-                {diagnosisData.possibleCauses.map((cause, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <div className="h-2 w-2 rounded-full bg-orange-600 mt-2 flex-shrink-0" />
-                    <span className="text-gray-700">{cause}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="text-center text-sm text-gray-500 border-t pt-4">
-              <p>
-                This is a kAI-generated diagnosis. For accurate assessment, we recommend professional inspection for
-                complex or safety-critical repairs.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
       <Card className="border-2 border-blue-200">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
@@ -455,6 +201,7 @@ export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) 
                 className="w-full text-base"
               />
             </div>
+            
             <div className="space-y-2">
               <label htmlFor="brand" className="text-sm font-medium">
                 Appliance brand <span className="text-gray-500">(optional)</span>
@@ -470,6 +217,7 @@ export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) 
                 Helpful for error codes and brand-specific diagnostics
               </p>
             </div>
+            
             <div className="space-y-2">
               <label htmlFor="errorCode" className="text-sm font-medium flex items-center gap-2">
                 <Code className="h-4 w-4" />
@@ -486,6 +234,7 @@ export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) 
                 If your appliance shows an error code on the display, enter it here for more accurate diagnosis
               </p>
             </div>
+            
             <div className="space-y-2">
               <label htmlFor="problem" className="text-sm font-medium">
                 Describe the problem in detail
@@ -498,6 +247,7 @@ export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) 
                 className="w-full min-h-[100px] text-base"
               />
             </div>
+            
             {error && !showEmailVerification && (
               <div className="flex items-center gap-2 text-red-600 text-sm">
                 <AlertCircle className="h-4 w-4" />
@@ -506,21 +256,10 @@ export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) 
             )}
 
             {!showEmailVerification && (
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button onClick={handleAskAI} className="flex-1 bg-blue-600 hover:bg-blue-700" size="lg">
-                  <Lightbulb className="mr-2 h-4 w-4" />
-                  Diagnose Your Fault
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleShowExample}
-                  className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50"
-                  size="lg"
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  See Example Report
-                </Button>
-              </div>
+              <Button onClick={handleAskAI} className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
+                <Lightbulb className="mr-2 h-4 w-4" />
+                Diagnose Your Fault
+              </Button>
             )}
 
             {showEmailVerification && (
@@ -549,8 +288,8 @@ export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) 
                       className="w-full text-base"
                     />
                     <div className="flex items-start gap-2">
-                      <Checkbox id="marketing-consent-diagnostic" defaultChecked={true} className="mt-1" />
-                      <label htmlFor="marketing-consent-diagnostic" className="text-xs text-gray-600 cursor-pointer">
+                      <Checkbox id="marketing-consent" defaultChecked={true} className="mt-1" />
+                      <label htmlFor="marketing-consent" className="text-xs text-gray-600 cursor-pointer">
                         I would like to receive helpful tips, special offers, and updates about appliance maintenance
                         and repair services via email. You can unsubscribe at any time.
                       </label>
@@ -583,41 +322,39 @@ export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) 
                         Verification code sent to <strong>{email}</strong>
                       </p>
                     </div>
-                    <div className="space-y-3">
-                      <Input
-                        placeholder="Enter 6-digit code"
-                        value={verificationCode}
-                        onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                        className="w-full text-center text-base tracking-wider"
-                        maxLength={6}
-                      />
-                      <p className="text-xs text-gray-500 text-center">
-                        For demo: enter any 6-digit code (e.g., 123456)
-                      </p>
-                      {error && (
-                        <div className="flex items-center gap-2 text-red-600 text-sm">
-                          <AlertCircle className="h-4 w-4" />
-                          {error}
-                        </div>
+                    <Input
+                      placeholder="Enter 6-digit code"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      className="w-full text-center text-base tracking-wider"
+                      maxLength={6}
+                    />
+                    <p className="text-xs text-gray-500 text-center">
+                      For demo: enter any 6-digit code (e.g., 123456)
+                    </p>
+                    {error && (
+                      <div className="flex items-center gap-2 text-red-600 text-sm">
+                        <AlertCircle className="h-4 w-4" />
+                        {error}
+                      </div>
+                    )}
+                    <Button
+                      onClick={handleVerificationSubmit}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      disabled={isVerifying || isLoading}
+                    >
+                      {isVerifying || isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          {isLoading ? "Getting Diagnosis..." : "Verifying..."}
+                        </>
+                      ) : (
+                        <>
+                          <KeyRound className="mr-2 h-4 w-4" />
+                          Verify & Get Diagnosis
+                        </>
                       )}
-                      <Button
-                        onClick={handleVerificationSubmit}
-                        className="w-full bg-green-600 hover:bg-green-700"
-                        disabled={isVerifying || isLoading}
-                      >
-                        {isVerifying || isLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            {isLoading ? "Getting Diagnosis..." : "Verifying..."}
-                          </>
-                        ) : (
-                          <>
-                            <KeyRound className="mr-2 h-4 w-4" />
-                            Verify & Get Diagnosis
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                    </Button>
                     <div className="text-center">
                       <button
                         onClick={resendVerificationCode}
@@ -649,9 +386,114 @@ export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) 
         </Card>
       )}
 
-      {showExample && renderDiagnosticResults(exampleDiagnosis, true)}
+      {diagnosis && (
+        <Card className="border-l-4 border-l-blue-600">
+          <CardHeader>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <CardTitle className="text-xl">Diagnostic Results</CardTitle>
+              <div className="flex gap-2 flex-wrap">
+                <Badge className={getDifficultyColor(diagnosis.difficulty)}>
+                  {diagnosis.difficulty.charAt(0).toUpperCase() + diagnosis.difficulty.slice(1)} Difficulty
+                </Badge>
+                <Badge className={getUrgencyColor(diagnosis.urgency)}>
+                  {diagnosis.urgency.charAt(0).toUpperCase() + diagnosis.urgency.slice(1)} Priority
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="h-4 w-4 text-gray-600" />
+                  <h3 className="font-semibold text-gray-900">Estimated Time</h3>
+                </div>
+                <p className="text-xl font-bold text-blue-600">{diagnosis.timeEstimate}</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-900 mb-3">Estimated Cost</h3>
+                <p className="text-xl font-bold text-green-600">{diagnosis.estimatedCost}</p>
+              </div>
+            </div>
 
-      {diagnosis && !showExample && renderDiagnosticResults(diagnosis, false)}
+            {diagnosis.safetyWarnings && diagnosis.safetyWarnings.length > 0 && (
+              <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+                <h3 className="font-semibold mb-3 flex items-center gap-2 text-red-800">
+                  <AlertTriangle className="h-5 w-5" />
+                  Safety Warnings
+                </h3>
+                <ul className="space-y-2">
+                  {diagnosis.safetyWarnings.map((warning, index) => (
+                    <li key={index} className="flex items-start gap-2 text-red-700">
+                      <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">{warning}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+                Possible Causes
+              </h3>
+              <ul className="space-y-2">
+                {diagnosis.possibleCauses.map((cause, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <div className="h-2 w-2 rounded-full bg-orange-600 mt-2 flex-shrink-0" />
+                    <span className="text-gray-700">{cause}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Wrench className="h-5 w-5 text-blue-600" />
+                  DIY Solutions
+                </h4>
+                <ul className="space-y-2">
+                  {diagnosis.recommendations.diy.map((rec, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm">
+                      <div className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-2 flex-shrink-0" />
+                      <span>{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-orange-600" />
+                  Professional Service
+                </h4>
+                <ul className="space-y-2">
+                  {diagnosis.recommendations.professional.map((rec, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm">
+                      <div className="h-1.5 w-1.5 rounded-full bg-orange-600 mt-2 flex-shrink-0" />
+                      <span>{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+              <h4 className="font-semibold text-blue-800 mb-2">Recommendation</h4>
+              <p className="text-blue-700">{diagnosis.serviceReason}</p>
+            </div>
+
+            <div className="text-center text-sm text-gray-500 border-t pt-4">
+              <p>
+                This is a kAI-generated diagnosis. For accurate assessment, we recommend professional inspection for
+                complex or safety-critical repairs.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
