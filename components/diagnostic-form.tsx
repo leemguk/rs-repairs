@@ -273,14 +273,47 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                   <Lightbulb className="mr-2 h-4 w-4" />
                   Ask AI
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowExample(true)}
-                  className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
+                <button
+                  onClick={() => {
+                    const modal = document.createElement('div');
+                    modal.innerHTML = `
+                      <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+                        <div style="background: white; padding: 20px; border-radius: 8px; max-width: 500px; width: 90%;">
+                          <h2 style="margin: 0 0 15px 0; font-size: 20px; font-weight: bold;">Example AI Diagnosis</h2>
+                          <div style="background: #dbeafe; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                            <p><strong>Problem:</strong> Washing machine making loud banging noise during spin cycle</p>
+                          </div>
+                          <div style="background: #dcfce7; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                            <h3 style="margin: 0 0 10px 0;">✅ DIY Solutions:</h3>
+                            <ul style="margin: 0; padding-left: 20px;">
+                              <li>Redistribute clothes evenly in drum</li>
+                              <li>Check for foreign objects in drum</li>
+                              <li>Ensure machine is level</li>
+                            </ul>
+                            <p style="margin: 10px 0 0 0; font-weight: bold;">Cost: £0 - £30</p>
+                          </div>
+                          <div style="background: #fed7aa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                            <h3 style="margin: 0 0 10px 0;">🔧 Professional Service:</h3>
+                            <ul style="margin: 0; padding-left: 20px;">
+                              <li>Drum bearing replacement</li>
+                              <li>Shock absorber replacement</li>
+                              <li>Complete diagnostic testing</li>
+                            </ul>
+                            <p style="margin: 10px 0 0 0; font-weight: bold;">Cost: £109 - £149</p>
+                          </div>
+                          <button onclick="this.parentElement.parentElement.remove()" style="background: #2563eb; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%;">
+                            Close Example
+                          </button>
+                        </div>
+                      </div>
+                    `;
+                    document.body.appendChild(modal);
+                  }}
+                  className="w-full border border-blue-600 text-blue-600 hover:bg-blue-50 py-2 px-4 rounded-md flex items-center justify-center"
                 >
                   <Eye className="mr-2 h-4 w-4" />
                   See Example Diagnosis
-                </Button>
+                </button>
               </div>
             )}
 
