@@ -119,11 +119,15 @@ async function testErrorCodeLookup(errorCode: string, brand: string, appliance: 
         "X-Title": "RS Repairs Error Code Test"
       },
       body: JSON.stringify({
-        model: 'openai/gpt-4o', // Changed to GPT-4o instead of Claude
+        model: 'anthropic/claude-sonnet-4', // Updated to Claude Sonnet 4
         messages: [
           { 
+            role: "system",
+            content: `You are a certified appliance repair technician with 20+ years of experience specializing in ${brand} appliances. You have access to official ${brand} service manuals and technical documentation.`
+          },
+          { 
             role: "user", 
-            content: `What does error code ${errorCode} mean for a ${brand} ${appliance}? Give me just the meaning in one clear sentence.` 
+            content: `According to official ${brand} service documentation, what does error code ${errorCode} specifically indicate on ${brand} ${appliance} models? Provide only the exact technical meaning from the official documentation.` 
           }
         ],
         max_tokens: 100,
@@ -188,7 +192,7 @@ REASON: why this service is recommended`
           "X-Title": "RS Repairs Simple Diagnostic"
         },
         body: JSON.stringify({
-          model: 'openai/gpt-4o', // Also changed the main diagnostic model to GPT-4o
+          model: 'anthropic/claude-sonnet-4', // Also updated main diagnostic model
           messages: [{ role: "user", content: simplePrompt }],
           max_tokens: 300,
           temperature: 0.1
