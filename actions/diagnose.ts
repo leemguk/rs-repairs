@@ -18,6 +18,109 @@ interface DiagnosisResult {
   safetyWarnings?: string[]
 }
 
+// Error code database for accurate brand-specific diagnostics
+const ERROR_CODE_DATABASE: Record<string, Record<string, {
+  meaning: string
+  causes: string[]
+  difficulty: "easy" | "moderate" | "difficult" | "expert"
+  urgency: "low" | "medium" | "high"
+}>> = {
+  beko: {
+    e9: {
+      meaning: "Door lock fault - door not closing or locking properly",
+      causes: [
+        "Faulty door lock mechanism",
+        "Door not aligned properly",
+        "Damaged door seal preventing proper closure",
+        "Electrical connection issue to door lock"
+      ],
+      difficulty: "moderate",
+      urgency: "medium"
+    },
+    e4: {
+      meaning: "Water supply issue - no water entering machine",
+      causes: ["Water supply turned off", "Blocked inlet filter", "Faulty inlet valve", "Low water pressure"],
+      difficulty: "easy",
+      urgency: "medium"
+    }
+  },
+  bosch: {
+    e4: {
+      meaning: "Door lock mechanism failure",
+      causes: ["Faulty door lock", "Door latch misalignment", "Wiring issue to door lock", "Control board fault"],
+      difficulty: "difficult",
+      urgency: "medium"
+    },
+    e18: {
+      meaning: "Drain pump issue or blockage",
+      causes: ["Blocked drain pump", "Faulty drain pump", "Drain hose obstruction", "Foreign object in pump"],
+      difficulty: "moderate",
+      urgency: "medium"
+    }
+  },
+  samsung: {
+    "4e": {
+      meaning: "Water supply problem",
+      causes: ["No water supply", "Water pressure too low", "Blocked inlet filter", "Faulty water inlet valve"],
+      difficulty: "easy",
+      urgency: "medium"
+    },
+    "5e": {
+      meaning: "Drain error - water not draining properly",
+      causes: ["Blocked drain hose", "Clogged drain pump", "Drain pump failure", "Kinked drain hose"],
+      difficulty: "moderate",
+      urgency: "medium"
+    }
+  },
+  lg: {
+    oe: {
+      meaning: "Drain error - unable to drain water",
+      causes: ["Clogged drain pump filter", "Blocked drain hose", "Faulty drain pump", "Drain hose installation error"],
+      difficulty: "moderate",
+      urgency: "medium"
+    },
+    ie: {
+      meaning: "Water inlet error",
+      causes: ["Water supply issue", "Blocked inlet filter", "Faulty water inlet valve", "Low water pressure"],
+      difficulty: "easy",
+      urgency: "medium"
+    }
+  }
+}
+
+// Function to check for error codes in the problem description
+function checkErrorCode(brand: string, problem: string): {
+  meaning: string
+  causes: string[]
+  difficulty: "easy" | "moderate" | "difficult" | "expert"
+  urgency: "low" | "medium" | "high"
+} | null {
+  if (!brand) return null
+  
+  const brandLower = brand.toLowerCase()
+  const problemLower = problem.toLowerCase()
+  
+  // Look for error codes in various formats (E9, e9, E-9, etc.)
+  const errorCodeRegex = /\b[ef][-]?(\d+[a-z]?|\w{1,2})\b/gi
+  const matches = problemLower.match(errorCodeRegex)
+  
+  if (!matches) return null
+  
+  const brandCodes = ERROR_CODE_DATABASE[brandLower]
+  if (!brandCodes) return null
+  
+  for (const match of matches) {
+    // Clean the error code (remove E/F prefix, hyphens)
+    const cleanCode = match.replace(/^[ef][-]?/i, '').toLowerCase()
+    
+    if (brandCodes[cleanCode]) {
+      return brandCodes[cleanCode]
+    }
+  }
+  
+  return null
+}
+
 export async function diagnoseProblem(appliance: string, brand: string, problem: string, email: string): Promise<DiagnosisResult> {
   try {
     const openRouterApiKey = process.env.OPENROUTER_API_KEY
@@ -28,6 +131,23 @@ export async function diagnoseProblem(appliance: string, brand: string, problem:
       // Save fallback diagnosis to database
       await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
       return fallbackResult
+    }
+
+    // Check for specific error codes first
+    const errorCodeInfo = checkErrorCode(brand, problem)
+    let errorCodeContext = ""
+    
+    if (errorCodeInfo) {
+      errorCodeContext = `
+      
+IMPORTANT ERROR CODE DETECTED:
+The problem description contains a specific error code. Based on the ${brand} error code database:
+- Error meaning: ${errorCodeInfo.meaning}
+- Known causes: ${errorCodeInfo.causes.join(', ')}
+- Recommended difficulty: ${errorCodeInfo.difficulty}
+- Urgency level: ${errorCodeInfo.urgency}
+
+Please use this specific information as the primary basis for your diagnosis.`
     }
 
     const systemPrompt = `You are an expert appliance repair technician with 20+ years of experience. 
@@ -62,8 +182,13 @@ export async function diagnoseProblem(appliance: string, brand: string, problem:
     - Always prioritize safety - if there's any electrical, gas, or safety risk, recommend professional
     - Provide realistic time estimates with proper spacing around hyphens
     - Include safety warnings for any potentially dangerous repairs
-    - If brand is provided, use brand-specific knowledge for error codes, common issues, and part recommendations
-    - Different brands have different error code meanings - be specific about brand-related diagnostics`
+    - CRITICAL: For error codes, use brand-specific knowledge. Common examples:
+      * Beko E9 = Door lock fault/door not closing properly
+      * Bosch E4 = Door lock mechanism failure  
+      * Samsung 4E = Water supply issue
+      * LG OE = Drain error
+    - If error code context is provided below, use that as your PRIMARY source of information
+    - Different brands have different error code meanings - be specific about brand-related diagnostics${errorCodeContext}`
 
     const brandInfo = brand ? `Brand: ${brand}` : "Brand: Not specified"
     
@@ -82,6 +207,13 @@ Please diagnose this appliance problem, assess the repair difficulty, and recomm
     )
 
     if (diagnosis) {
+      // Override with error code information if available
+      if (errorCodeInfo) {
+        diagnosis.possibleCauses = errorCodeInfo.causes
+        diagnosis.difficulty = errorCodeInfo.difficulty
+        diagnosis.urgency = errorCodeInfo.urgency
+      }
+      
       // Save successful AI diagnosis to database
       await saveDiagnosticToDatabase(appliance, brand, problem, email, diagnosis)
       return diagnosis
@@ -96,6 +228,13 @@ Please diagnose this appliance problem, assess the repair difficulty, and recomm
     )
 
     if (diagnosis) {
+      // Override with error code information if available
+      if (errorCodeInfo) {
+        diagnosis.possibleCauses = errorCodeInfo.causes
+        diagnosis.difficulty = errorCodeInfo.difficulty
+        diagnosis.urgency = errorCodeInfo.urgency
+      }
+      
       // Save fallback AI diagnosis to database
       await saveDiagnosticToDatabase(appliance, brand, problem, email, diagnosis)
       return diagnosis
@@ -221,6 +360,9 @@ async function saveDiagnosticToDatabase(
 }
 
 function getFallbackDiagnosis(appliance: string, brand: string, problem: string): DiagnosisResult {
+  // Check for error codes in fallback too
+  const errorCodeInfo = checkErrorCode(brand, problem)
+  
   // Intelligent fallback based on appliance type
   const isElectrical = appliance.toLowerCase().includes('oven') || 
                       appliance.toLowerCase().includes('cooker') ||
@@ -235,6 +377,40 @@ function getFallbackDiagnosis(appliance: string, brand: string, problem: string)
 
   const brandText = brand ? ` (${brand})` : ""
 
+  // Use error code info if available
+  if (errorCodeInfo) {
+    return {
+      possibleCauses: errorCodeInfo.causes,
+      recommendations: {
+        diy: [
+          "Check power connections and ensure appliance is plugged in properly",
+          "Inspect for any visible obstructions or damage",
+          "Consult your user manual for basic troubleshooting steps",
+          "Verify appliance settings are correct"
+        ],
+        professional: [
+          "Professional diagnostic inspection with specialized equipment",
+          "Component replacement using genuine parts",
+          "Safety check and performance testing",
+          "Error code specific repair procedures"
+        ],
+      },
+      urgency: errorCodeInfo.urgency,
+      estimatedCost: errorCodeInfo.difficulty === "easy" ? "£0 - £30" : "£109 - £149",
+      difficulty: errorCodeInfo.difficulty,
+      recommendedService: errorCodeInfo.difficulty === "easy" ? "diy" : "professional",
+      serviceReason: `This error code indicates ${errorCodeInfo.meaning.toLowerCase()}. ${errorCodeInfo.difficulty === "easy" ? "Try DIY solutions first." : "Professional service recommended for safe and accurate repair."}`,
+      skillsRequired: errorCodeInfo.difficulty === "easy" ? ["Basic tools"] : ["Electrical knowledge", "Appliance repair experience"],
+      timeEstimate: errorCodeInfo.difficulty === "easy" ? "30 - 60 minutes" : "1 - 2 hours",
+      safetyWarnings: [
+        "Always disconnect power before attempting any repairs",
+        "If unsure about any step, contact a professional",
+        "Be careful with electrical components"
+      ]
+    }
+  }
+
+  // Standard fallback if no error code detected
   return {
     possibleCauses: [
       `${appliance}${brandText} component wear and tear`,
