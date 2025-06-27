@@ -23,7 +23,6 @@ import {
   Mail,
   KeyRound,
   ChevronUp,
-  Eye,
 } from "lucide-react"
 import { diagnoseProblem } from "../actions/diagnose"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -60,7 +59,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(null)
   const [error, setError] = useState("")
-  const [showExample, setShowExample] = useState(false)
 
   const handleAskAI = () => {
     if (!appliance.trim() || !problem.trim()) {
@@ -268,175 +266,10 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
             )}
 
             {!showEmailVerification && (
-              <div className="space-y-3">
-                <Button onClick={handleAskAI} className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
-                  <Lightbulb className="mr-2 h-4 w-4" />
-                  Ask AI
-                </Button>
-                <button
-                  onClick={() => {
-                    const modal = document.createElement('div');
-                    modal.innerHTML = `
-                      <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px;">
-                        <div style="background: white; border-radius: 8px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto;">
-                          <div style="padding: 24px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                              <h2 style="margin: 0; font-size: 24px; font-weight: bold; color: #111827;">Example AI Diagnosis</h2>
-                              <button onclick="this.closest('div[style*=\"position: fixed\"]').remove()" style="background: none; border: none; font-size: 24px; color: #6b7280; cursor: pointer;">×</button>
-                            </div>
-                            
-                            <!-- Diagnosis Complete Message -->
-                            <div style="background: #dcfce7; border: 2px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-                              <div style="display: flex; align-items: center; gap: 12px;">
-                                <div style="width: 20px; height: 20px; background: #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">✓</div>
-                                <div>
-                                  <p style="margin: 0; font-weight: 500; color: #166534;">Diagnosis Complete! See Details Below</p>
-                                  <p style="margin: 0; font-size: 12px; color: #15803d;">Report sent to: example@email.com</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            <!-- Sample Problem -->
-                            <div style="background: #dbeafe; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-                              <h3 style="margin: 0 0 8px 0; font-weight: 600; color: #1e40af;">Sample Problem:</h3>
-                              <p style="margin: 0; color: #1e40af;"><strong>Appliance:</strong> Washing Machine</p>
-                              <p style="margin: 0; color: #1e40af;"><strong>Problem:</strong> Making loud banging noise during spin cycle and clothes come out still wet</p>
-                            </div>
-
-                            <!-- Dual Recommendations -->
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-                              <!-- DIY Card -->
-                              <div style="border: 1px solid #e5e7eb; border-left: 4px solid #2563eb; background: #dbeafe; border-radius: 8px; display: flex; flex-direction: column;">
-                                <div style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
-                                  <div style="display: flex; align-items: center; gap: 12px;">
-                                    <span style="color: #2563eb;">🔧</span>
-                                    <div style="flex: 1;">
-                                      <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #1e40af;">
-                                        Try DIY First <span style="background: #bfdbfe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 12px;">Recommended</span>
-                                      </h3>
-                                      <p style="margin: 4px 0 0 0; font-size: 14px; color: #374151;">Simple checks you can do yourself</p>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div style="padding: 16px; flex: 1; display: flex; flex-direction: column;">
-                                  <ul style="margin: 0 0 16px 0; padding: 0; list-style: none; flex: 1;">
-                                    <li style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 14px;">
-                                      <div style="width: 6px; height: 6px; background: #2563eb; border-radius: 50%; margin-top: 8px; flex-shrink: 0;"></div>
-                                      <span>Redistribute clothes evenly in the drum and restart cycle</span>
-                                    </li>
-                                    <li style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 14px;">
-                                      <div style="width: 6px; height: 6px; background: #2563eb; border-radius: 50%; margin-top: 8px; flex-shrink: 0;"></div>
-                                      <span>Check and remove any coins, buttons, or small items from drum</span>
-                                    </li>
-                                    <li style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 14px;">
-                                      <div style="width: 6px; height: 6px; background: #2563eb; border-radius: 50%; margin-top: 8px; flex-shrink: 0;"></div>
-                                      <span>Ensure washing machine is level using adjustable feet</span>
-                                    </li>
-                                  </ul>
-                                  <button style="width: 100%; padding: 8px 16px; background: transparent; border: 1px solid #2563eb; color: #2563eb; border-radius: 6px; cursor: pointer; font-size: 14px;">
-                                    🔍 Find Parts
-                                  </button>
-                                </div>
-                              </div>
-
-                              <!-- Professional Card -->
-                              <div style="border: 1px solid #e5e7eb; border-left: 4px solid #9ca3af; background: #f9fafb; border-radius: 8px; display: flex; flex-direction: column;">
-                                <div style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
-                                  <div style="display: flex; align-items: center; gap: 12px;">
-                                    <span style="color: #6b7280;">📅</span>
-                                    <div style="flex: 1;">
-                                      <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #374151;">Book an Engineer</h3>
-                                      <p style="margin: 4px 0 0 0; font-size: 14px; color: #374151;">If DIY doesn't work, book a professional</p>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div style="padding: 16px; flex: 1; display: flex; flex-direction: column;">
-                                  <ul style="margin: 0 0 16px 0; padding: 0; list-style: none; flex: 1;">
-                                    <li style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 14px;">
-                                      <div style="width: 6px; height: 6px; background: #9ca3af; border-radius: 50%; margin-top: 8px; flex-shrink: 0;"></div>
-                                      <span>Drum bearing replacement if bearings are worn</span>
-                                    </li>
-                                    <li style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 14px;">
-                                      <div style="width: 6px; height: 6px; background: #9ca3af; border-radius: 50%; margin-top: 8px; flex-shrink: 0;"></div>
-                                      <span>Shock absorber replacement and testing</span>
-                                    </li>
-                                    <li style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 14px;">
-                                      <div style="width: 6px; height: 6px; background: #9ca3af; border-radius: 50%; margin-top: 8px; flex-shrink: 0;"></div>
-                                      <span>Internal component diagnosis with specialized tools</span>
-                                    </li>
-                                  </ul>
-                                  <button style="width: 100%; padding: 8px 16px; background: #6b7280; border: none; color: white; border-radius: 6px; cursor: pointer; font-size: 14px;">
-                                    📅 Book Engineer
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-
-                            <!-- Diagnostic Results -->
-                            <div style="border: 1px solid #e5e7eb; border-left: 4px solid #2563eb; border-radius: 8px; margin-bottom: 24px;">
-                              <div style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                                  <h3 style="margin: 0; font-size: 20px; font-weight: 600;">Diagnostic Results</h3>
-                                  <div style="display: flex; gap: 8px;">
-                                    <span style="background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Moderate Difficulty</span>
-                                    <span style="background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Medium Priority</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div style="padding: 16px;">
-                                <!-- Time and Cost -->
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-                                  <div style="background: #f9fafb; padding: 16px; border-radius: 8px;">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                      <span style="color: #6b7280;">⏰</span>
-                                      <h4 style="margin: 0; font-weight: 600;">Estimated Time</h4>
-                                    </div>
-                                    <p style="margin: 0; font-size: 18px; font-weight: bold; color: #2563eb;">30-60 minutes</p>
-                                  </div>
-                                  <div style="background: #f9fafb; padding: 16px; border-radius: 8px;">
-                                    <h4 style="margin: 0 0 8px 0; font-weight: 600;">Estimated Cost</h4>
-                                    <p style="margin: 0; font-size: 18px; font-weight: bold; color: #16a34a;">£0 - £149</p>
-                                  </div>
-                                </div>
-
-                                <!-- Safety Warnings -->
-                                <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-                                  <h4 style="margin: 0 0 12px 0; font-weight: 600; color: #991b1b; display: flex; align-items: center; gap: 8px;">
-                                    <span>⚠️</span> Safety Warnings
-                                  </h4>
-                                  <ul style="margin: 0; padding: 0; list-style: none;">
-                                    <li style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; color: #b91c1c; font-size: 14px;">
-                                      <span style="color: #dc2626; margin-top: 2px;">⚠️</span>
-                                      <span>Always disconnect power before attempting any inspection</span>
-                                    </li>
-                                    <li style="display: flex; align-items: flex-start; gap: 8px; color: #b91c1c; font-size: 14px;">
-                                      <span style="color: #dc2626; margin-top: 2px;">⚠️</span>
-                                      <span>Ensure appliance is completely drained before accessing filters</span>
-                                    </li>
-                                  </ul>
-                                </div>
-                              </div>
-                            </div>
-
-                            <!-- Close Button -->
-                            <div style="text-center;">
-                              <button onclick="this.closest('div[style*=\"position: fixed\"]').remove()" style="background: #2563eb; color: white; padding: 12px 32px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 500;">
-                                Close Example
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    `;
-                    modal.style.cssText = modal.firstElementChild.style.cssText;
-                    document.body.appendChild(modal);
-                  }}
-                  className="w-full border border-blue-600 text-blue-600 hover:bg-blue-50 py-2 px-4 rounded-md flex items-center justify-center"
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  See Example Diagnosis
-                </button>
-              </div>
+              <Button onClick={handleAskAI} className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
+                <Lightbulb className="mr-2 h-4 w-4" />
+                Ask AI
+              </Button>
             )}
 
             {/* Email Verification Section */}
