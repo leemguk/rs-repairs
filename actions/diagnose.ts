@@ -158,6 +158,13 @@ async function callOpenRouter(
       return null
     }
 
+    // Force professional recommendation for complex repairs
+    if (diagnosis.difficulty === "difficult" || diagnosis.difficulty === "expert" ||
+        diagnosis.estimatedCost.includes("£109") || diagnosis.estimatedCost.includes("£129") || diagnosis.estimatedCost.includes("£149")) {
+      diagnosis.recommendedService = "professional"
+      diagnosis.serviceReason = "Professional service needed for this repair"
+    }
+
     return diagnosis
 
   } catch (error) {
