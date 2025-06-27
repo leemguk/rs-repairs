@@ -389,42 +389,126 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
 
       {diagnosis && (
         <div className="space-y-6">
-          {/* Email Verified Success */}
+          {/* Updated Email Verified Success */}
           <Card className="border-2 border-green-200 bg-green-50">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
                 <div>
-                  <p className="font-medium text-green-800">Diagnosis Complete!</p>
-                  <p className="text-sm text-green-700">Report sent to: {email}</p>
+                  <p className="font-medium text-green-800">Diagnosis Complete! See Details Below</p>
+                  <p className="text-xs text-green-600">Report sent to: {email}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Service Recommendation Card */}
-          <Card className={`border-l-4 ${getServiceRecommendation(diagnosis.recommendedService).color}`}>
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex items-center gap-3 flex-1">
-                  {getServiceRecommendation(diagnosis.recommendedService).icon}
-                  <div className="flex-1">
-                    <CardTitle className="text-xl">
-                      {getServiceRecommendation(diagnosis.recommendedService).title}
-                    </CardTitle>
-                    <CardDescription className="mt-1">{diagnosis.serviceReason}</CardDescription>
+          {/* Service Recommendation Card - Only show for warranty recommendation */}
+          {diagnosis.recommendedService === "warranty" && (
+            <Card className={`border-l-4 ${getServiceRecommendation(diagnosis.recommendedService).color}`}>
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1">
+                    {getServiceRecommendation(diagnosis.recommendedService).icon}
+                    <div className="flex-1">
+                      <CardTitle className="text-xl">
+                        {getServiceRecommendation(diagnosis.recommendedService).title}
+                      </CardTitle>
+                      <CardDescription className="mt-1">{diagnosis.serviceReason}</CardDescription>
+                    </div>
                   </div>
+                  <Button
+                    className={`${getServiceRecommendation(diagnosis.recommendedService).buttonColor} text-white w-full sm:w-auto`}
+                    onClick={getServiceRecommendation(diagnosis.recommendedService).buttonAction}
+                  >
+                    {getServiceRecommendation(diagnosis.recommendedService).buttonText}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  className={`${getServiceRecommendation(diagnosis.recommendedService).buttonColor} text-white w-full sm:w-auto`}
-                  onClick={getServiceRecommendation(diagnosis.recommendedService).buttonAction}
-                >
-                  {getServiceRecommendation(diagnosis.recommendedService).buttonText}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-          </Card>
+              </CardHeader>
+            </Card>
+          )}
+
+          {/* For DIY and Professional recommendations, show dual options */}
+          {(diagnosis.recommendedService === "diy" || diagnosis.recommendedService === "professional") && (
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* DIY Option Card */}
+              <Card className={`border-l-4 ${diagnosis.recommendedService === "diy" ? "border-l-blue-600 bg-blue-50" : "border-l-gray-300 bg-gray-50"}`}>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <Wrench className={`h-5 w-5 ${diagnosis.recommendedService === "diy" ? "text-blue-600" : "text-gray-600"}`} />
+                    <div className="flex-1">
+                      <CardTitle className={`text-lg ${diagnosis.recommendedService === "diy" ? "text-blue-800" : "text-gray-700"}`}>
+                        Try DIY First
+                        {diagnosis.recommendedService === "diy" && (
+                          <Badge className="ml-2 bg-blue-100 text-blue-800 text-xs">Recommended</Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription className="text-sm">
+                        Simple checks you can do yourself
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 mb-4">
+                    {diagnosis.recommendations.diy.map((rec, index) => (
+                      <li key={index} className="flex items-start gap-2 text-sm">
+                        <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosis.recommendedService === "diy" ? "bg-blue-600" : "bg-gray-400"}`} />
+                        <span>{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    variant={diagnosis.recommendedService === "diy" ? "default" : "outline"}
+                    className={`w-full ${diagnosis.recommendedService === "diy" ? "bg-blue-600 hover:bg-blue-700" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}
+                    onClick={handleFindParts}
+                  >
+                    <Search className="mr-2 h-4 w-4" />
+                    Find Parts
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Professional Option Card */}
+              <Card className={`border-l-4 ${diagnosis.recommendedService === "professional" ? "border-l-orange-600 bg-orange-50" : "border-l-gray-300 bg-gray-50"}`}>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <Calendar className={`h-5 w-5 ${diagnosis.recommendedService === "professional" ? "text-orange-600" : "text-gray-600"}`} />
+                    <div className="flex-1">
+                      <CardTitle className={`text-lg ${diagnosis.recommendedService === "professional" ? "text-orange-800" : "text-gray-700"}`}>
+                        Book an Engineer
+                        {diagnosis.recommendedService === "professional" && (
+                          <Badge className="ml-2 bg-orange-100 text-orange-800 text-xs">Recommended</Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription className="text-sm">
+                        {diagnosis.recommendedService === "professional" 
+                          ? "Professional service needed for this repair" 
+                          : "If DIY doesn't work, book a professional"}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 mb-4">
+                    {diagnosis.recommendations.professional.map((rec, index) => (
+                      <li key={index} className="flex items-start gap-2 text-sm">
+                        <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosis.recommendedService === "professional" ? "bg-orange-600" : "bg-gray-400"}`} />
+                        <span>{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    className={`w-full ${diagnosis.recommendedService === "professional" ? "bg-orange-600 hover:bg-orange-700" : "bg-gray-600 hover:bg-gray-700"}`}
+                    onClick={handleBookEngineer}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Book Engineer
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Diagnostic Details */}
           <Card className="border-l-4 border-l-blue-600">
@@ -506,61 +590,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                     </li>
                   ))}
                 </ul>
-              </div>
-
-              {/* Recommendations */}
-              <div className="grid gap-4 md:grid-cols-2">
-                {/* DIY Options */}
-                <Card className="flex flex-col">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Wrench className="h-5 w-5 text-blue-600" />
-                      DIY Solutions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex-1 flex flex-col">
-                    <ul className="space-y-2 mb-4 flex-1">
-                      {diagnosis.recommendations.diy.map((rec, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
-                          <div className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-2 flex-shrink-0" />
-                          <span>{rec}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button
-                      variant="outline"
-                      className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 mt-auto"
-                      onClick={handleFindParts}
-                    >
-                      <Search className="mr-2 h-4 w-4" />
-                      Find Parts
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Professional Options */}
-                <Card className="flex flex-col">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-orange-600" />
-                      Professional Service
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex-1 flex flex-col">
-                    <ul className="space-y-2 mb-4 flex-1">
-                      {diagnosis.recommendations.professional.map((rec, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
-                          <div className="h-1.5 w-1.5 rounded-full bg-orange-600 mt-2 flex-shrink-0" />
-                          <span>{rec}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button className="w-full bg-orange-600 hover:bg-orange-700 mt-auto" onClick={handleBookEngineer}>
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Book Engineer
-                    </Button>
-                  </CardContent>
-                </Card>
               </div>
 
               <div className="text-center text-sm text-gray-500 border-t pt-4">
