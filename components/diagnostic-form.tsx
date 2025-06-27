@@ -437,17 +437,17 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Key Information Grid */}
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-2">
               <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <Clock className="h-4 w-4 text-gray-600" />
-                  <h3 className="font-semibold">Estimated Time</h3>
+                  <h3 className="font-semibold text-gray-900">Estimated Time</h3>
                 </div>
-                <p className="text-lg font-bold text-blue-600">{diagnosisData.timeEstimate}</p>
+                <p className="text-xl font-bold text-blue-600">{diagnosisData.timeEstimate}</p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Estimated Cost</h3>
-                <p className="text-lg font-bold text-green-600">{diagnosisData.estimatedCost}</p>
+                <h3 className="font-semibold text-gray-900 mb-3">Estimated Cost</h3>
+                <p className="text-xl font-bold text-green-600">{diagnosisData.estimatedCost}</p>
               </div>
             </div>
 
