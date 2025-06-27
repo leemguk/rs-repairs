@@ -73,7 +73,7 @@ const exampleDiagnosis: DiagnosisResult = {
       "Drive belt replacement",
       "Shock absorber replacement"
     ]
-  ],
+  ]
   urgency: "medium",
   estimatedCost: "£109 - £149",
   difficulty: "difficult",
