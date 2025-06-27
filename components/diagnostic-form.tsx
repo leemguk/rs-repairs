@@ -52,21 +52,43 @@ interface DiagnosticFormProps {
 // Example diagnostic data
 const exampleDiagnosis: DiagnosisResult = {
   possibleCauses: [
-    "Worn drum bearings causing excessive vibration and noise",
-    "Unbalanced load distribution during spin cycle",
-    "Loose or damaged shock absorbers",
-    "Blocked or partially blocked drain pump affecting water extraction"
+    "Loose or damaged drum bearings",
+    "Foreign object (coin, pin, etc.) stuck in drum",
+    "Worn drive belt",
+    "Unbalanced load",
+    "Damaged shock absorbers",
+    "Loose transit bolts"
   ],
   recommendations: {
     diy: [
-      "Check and redistribute laundry load evenly in the drum",
-      "Clean the drain filter and check for blockages",
-      "Inspect door seals for any trapped items or debris",
-      "Run an empty hot wash cycle with washing machine cleaner"
+      "Check if transit bolts were left in place",
+      "Inspect drum for loose objects",
+      "Ensure machine is level on floor",
+      "Check load distribution",
+      "Inspect visible belt for damage"
     ],
     professional: [
-      "Professional bearing replacement (requires dismantling machine)",
-      "Shock absorber inspection and replacement if needed",
+      "Bearing replacement service",
+      "Full mechanical inspection",
+      "Drive belt replacement",
+      "Shock absorber replacement"
+    ]
+  },
+  urgency: "medium",
+  estimatedCost: "£109-£149",
+  difficulty: "difficult",
+  recommendedService: "professional",
+  serviceReason: "Professional service needed for this repair",
+  skillsRequired: ["Mechanical knowledge", "Electrical safety awareness", "Special washing machine tools", "Heavy lifting capability"],
+  timeEstimate: "2-3 hours",
+  safetyWarnings: [
+    "Do not operate machine if noise is very severe - could cause further damage",
+    "Machine contains heavy components - lifting hazard",
+    "Electrical components present shock risk",
+    "Sharp edges when dismantling",
+    "Water damage risk if pipes not properly disconnected"
+  ]
+}"Shock absorber inspection and replacement if needed",
       "Complete drum assembly check and realignment",
       "Motor mount inspection and tightening of all connections"
     ]
