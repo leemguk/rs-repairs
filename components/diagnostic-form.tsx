@@ -1,34 +1,31 @@
-// FORCE UPDATE
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import {
-  AlertCircle,
-  Lightbulb,
-  Loader2,
-  Wrench,
-  Search,
-  Calendar,
-  Shield,
-  Clock,
-  AlertTriangle,
-  CheckCircle2,
-  ArrowRight,
-  Mail,
-  KeyRound,
-  ChevronUp,
-  Eye,
-  X,
-} from "lucide-react"
-import { diagnoseProblem } from "../actions/diagnose"
 import { Checkbox } from "@/components/ui/checkbox"
+import { 
+  AlertCircle, 
+  Lightbulb, 
+  Loader2, 
+  Wrench, 
+  Search, 
+  Calendar, 
+  Shield, 
+  Clock, 
+  AlertTriangle, 
+  CheckCircle2, 
+  ArrowRight, 
+  Mail, 
+  KeyRound, 
+  ChevronUp, 
+  Eye, 
+  X, 
+  Code 
+} from "lucide-react"
 
 interface DiagnosisResult {
   possibleCauses: string[]
@@ -55,17 +52,14 @@ const exampleDiagnosis: DiagnosisResult = {
     "Loose or damaged drum bearings",
     "Foreign object (coin, pin, etc.) stuck in drum",
     "Worn drive belt",
-    "Unbalanced load",
-    "Damaged shock absorbers",
-    "Loose transit bolts"
+    "Unbalanced load"
   ],
   recommendations: {
     diy: [
       "Check if transit bolts were left in place",
       "Inspect drum for loose objects",
       "Ensure machine is level on floor",
-      "Check load distribution",
-      "Inspect visible belt for damage"
+      "Check load distribution"
     ],
     professional: [
       "Bearing replacement service",
@@ -79,20 +73,18 @@ const exampleDiagnosis: DiagnosisResult = {
   difficulty: "difficult",
   recommendedService: "professional",
   serviceReason: "Professional service needed for this repair",
-  skillsRequired: ["Mechanical knowledge", "Electrical safety awareness", "Special washing machine tools", "Heavy lifting capability"],
+  skillsRequired: ["Mechanical knowledge", "Electrical safety awareness"],
   timeEstimate: "2 - 3 hours",
   safetyWarnings: [
-    "Do not operate machine if noise is very severe - could cause further damage",
-    "Machine contains heavy components - lifting hazard",
-    "Electrical components present shock risk",
-    "Sharp edges when dismantling",
-    "Water damage risk if pipes not properly disconnected"
+    "Do not operate machine if noise is very severe",
+    "Machine contains heavy components - lifting hazard"
   ]
 }
 
-export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
+export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
   const [appliance, setAppliance] = useState("")
   const [brand, setBrand] = useState("")
+  const [errorCode, setErrorCode] = useState("")
   const [problem, setProblem] = useState("")
   const [showEmailVerification, setShowEmailVerification] = useState(false)
   const [email, setEmail] = useState("")
@@ -123,8 +115,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     setShowExample(false)
   }
 
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleEmailSubmit = () => {
     if (!email.trim()) {
       setError("Please enter your email address")
       return
@@ -139,8 +130,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     }, 1500)
   }
 
-  const handleVerificationSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleVerificationSubmit = () => {
     if (!verificationCode.trim()) {
       setError("Please enter the verification code")
       return
@@ -168,8 +158,36 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     setShowExample(false)
 
     try {
-      const result = await diagnoseProblem(appliance, brand, problem, email)
-      setDiagnosis(result)
+      // Combine error code with problem description
+      const fullProblem = errorCode 
+        ? `${problem}${problem ? ' ' : ''}Error code: ${errorCode}`
+        : problem
+        
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Mock result based on inputs - shows how error codes would be handled
+      const mockResult: DiagnosisResult = {
+        possibleCauses: errorCode 
+          ? [`Error code ${errorCode} indicates specific system fault`, "Control board communication error", "Component malfunction requiring diagnosis"]
+          : ["Component wear and tear", "Electrical connection issues", "Internal sensor malfunction"],
+        recommendations: {
+          diy: ["Power cycle the appliance (unplug for 2 minutes)", "Check all connections are secure", "Consult user manual for error code information"],
+          professional: ["Professional diagnostic inspection with specialized equipment", "Component replacement using genuine parts", "Complete system testing after repair"]
+        },
+        urgency: errorCode ? "medium" : "medium",
+        estimatedCost: "£109 - £149",
+        difficulty: errorCode ? "expert" : "moderate",
+        recommendedService: errorCode ? "professional" : "professional",
+        serviceReason: errorCode 
+          ? `Error code ${errorCode} on ${brand || 'this'} ${appliance.toLowerCase()} requires professional diagnosis with specialized equipment to identify the exact component failure.`
+          : "This issue requires professional assessment to ensure safe and proper repair.",
+        skillsRequired: ["Specialized diagnostic tools", "Brand-specific technical knowledge"],
+        timeEstimate: "1 - 2 hours",
+        safetyWarnings: ["Always disconnect power before attempting any inspection", "Error codes often indicate electrical or safety-critical faults"]
+      }
+      
+      setDiagnosis(mockResult)
     } catch (err) {
       setError("Sorry, we encountered an error. Please try again.")
     } finally {
@@ -203,70 +221,20 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
-      case "high":
-        return "bg-red-100 text-red-800"
-      case "medium":
-        return "bg-yellow-100 text-yellow-800"
-      case "low":
-        return "bg-green-100 text-green-800"
-      default:
-        return "bg-gray-100 text-gray-800"
+      case "high": return "bg-red-100 text-red-800"
+      case "medium": return "bg-yellow-100 text-yellow-800"
+      case "low": return "bg-green-100 text-green-800"
+      default: return "bg-gray-100 text-gray-800"
     }
   }
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case "easy":
-        return "bg-green-100 text-green-800"
-      case "moderate":
-        return "bg-blue-100 text-blue-800"
-      case "difficult":
-        return "bg-orange-100 text-orange-800"
-      case "expert":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
-  const getServiceRecommendation = (service: string) => {
-    switch (service) {
-      case "diy":
-        return {
-          title: "DIY Repair Recommended",
-          icon: <Wrench className="h-5 w-5 text-blue-600" />,
-          color: "border-blue-200 bg-blue-50",
-          buttonText: "Find Parts",
-          buttonColor: "bg-blue-600 hover:bg-blue-700",
-          buttonAction: handleFindParts,
-        }
-      case "professional":
-        return {
-          title: "Professional Service Recommended",
-          icon: <Calendar className="h-5 w-5 text-orange-600" />,
-          color: "border-orange-200 bg-orange-50",
-          buttonText: "Book Engineer",
-          buttonColor: "bg-orange-600 hover:bg-orange-700",
-          buttonAction: handleBookEngineer,
-        }
-      case "warranty":
-        return {
-          title: "Warranty Protection Recommended",
-          icon: <Shield className="h-5 w-5 text-green-600" />,
-          color: "border-green-200 bg-green-50",
-          buttonText: "View Warranty Plans",
-          buttonColor: "bg-green-600 hover:bg-green-700",
-          buttonAction: scrollToServices,
-        }
-      default:
-        return {
-          title: "Service Recommendation",
-          icon: <AlertCircle className="h-5 w-5" />,
-          color: "border-gray-200 bg-gray-50",
-          buttonText: "Get Help",
-          buttonColor: "bg-gray-600 hover:bg-gray-700",
-          buttonAction: scrollToServices,
-        }
+      case "easy": return "bg-green-100 text-green-800"
+      case "moderate": return "bg-blue-100 text-blue-800"
+      case "difficult": return "bg-orange-100 text-orange-800"
+      case "expert": return "bg-red-100 text-red-800"
+      default: return "bg-gray-100 text-gray-800"
     }
   }
 
@@ -311,109 +279,82 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
           </Card>
         )}
 
-        {diagnosisData.recommendedService === "warranty" && (
-          <Card className={`border-l-4 ${getServiceRecommendation(diagnosisData.recommendedService).color}`}>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card className={`border-l-4 flex flex-col ${diagnosisData.recommendedService === "diy" ? "border-l-blue-600 bg-blue-50" : "border-l-gray-300 bg-gray-50"}`}>
             <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex items-center gap-3 flex-1">
-                  {getServiceRecommendation(diagnosisData.recommendedService).icon}
-                  <div className="flex-1">
-                    <CardTitle className="text-xl">
-                      {getServiceRecommendation(diagnosisData.recommendedService).title}
-                    </CardTitle>
-                    <CardDescription className="mt-1">{diagnosisData.serviceReason}</CardDescription>
-                  </div>
+              <div className="flex items-center gap-3">
+                <Wrench className={`h-5 w-5 ${diagnosisData.recommendedService === "diy" ? "text-blue-600" : "text-gray-600"}`} />
+                <div className="flex-1">
+                  <CardTitle className={`text-lg ${diagnosisData.recommendedService === "diy" ? "text-blue-800" : "text-gray-700"}`}>
+                    Try DIY First
+                    {diagnosisData.recommendedService === "diy" && (
+                      <Badge className="ml-2 bg-blue-100 text-blue-800 text-xs">Recommended</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Simple checks you can do yourself
+                  </CardDescription>
                 </div>
-                <Button
-                  className={`${getServiceRecommendation(diagnosisData.recommendedService).buttonColor} text-white w-full sm:w-auto`}
-                  onClick={getServiceRecommendation(diagnosisData.recommendedService).buttonAction}
-                >
-                  {getServiceRecommendation(diagnosisData.recommendedService).buttonText}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
               </div>
             </CardHeader>
+            <CardContent className="flex-1 flex flex-col">
+              <ul className="space-y-2 mb-4 flex-1">
+                {diagnosisData.recommendations.diy.map((rec, index) => (
+                  <li key={index} className="flex items-start gap-2 text-sm">
+                    <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosisData.recommendedService === "diy" ? "bg-blue-600" : "bg-gray-400"}`} />
+                    <span>{rec}</span>
+                  </li>
+                ))}
+              </ul>
+              <Button
+                variant={diagnosisData.recommendedService === "diy" ? "default" : "outline"}
+                className={`w-full mt-auto ${diagnosisData.recommendedService === "diy" ? "bg-blue-600 hover:bg-blue-700" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}
+                onClick={handleFindParts}
+              >
+                <Search className="mr-2 h-4 w-4" />
+                Find Parts
+              </Button>
+            </CardContent>
           </Card>
-        )}
 
-        {(diagnosisData.recommendedService === "diy" || diagnosisData.recommendedService === "professional") && (
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className={`border-l-4 flex flex-col ${diagnosisData.recommendedService === "diy" ? "border-l-blue-600 bg-blue-50" : "border-l-gray-300 bg-gray-50"}`}>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <Wrench className={`h-5 w-5 ${diagnosisData.recommendedService === "diy" ? "text-blue-600" : "text-gray-600"}`} />
-                  <div className="flex-1">
-                    <CardTitle className={`text-lg ${diagnosisData.recommendedService === "diy" ? "text-blue-800" : "text-gray-700"}`}>
-                      Try DIY First
-                      {diagnosisData.recommendedService === "diy" && (
-                        <Badge className="ml-2 bg-blue-100 text-blue-800 text-xs">Recommended</Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription className="text-sm">
-                      Simple checks you can do yourself
-                    </CardDescription>
-                  </div>
+          <Card className={`border-l-4 flex flex-col ${diagnosisData.recommendedService === "professional" ? "border-l-orange-600 bg-orange-50" : "border-l-gray-300 bg-gray-50"}`}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <Calendar className={`h-5 w-5 ${diagnosisData.recommendedService === "professional" ? "text-orange-600" : "text-gray-600"}`} />
+                <div className="flex-1">
+                  <CardTitle className={`text-lg ${diagnosisData.recommendedService === "professional" ? "text-orange-800" : "text-gray-700"}`}>
+                    Book an Engineer
+                    {diagnosisData.recommendedService === "professional" && (
+                      <Badge className="ml-2 bg-orange-100 text-orange-800 text-xs">Recommended</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    {diagnosisData.recommendedService === "professional" 
+                      ? "Professional service needed for this repair" 
+                      : "If DIY doesn't work, book a professional"}
+                  </CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col">
-                <ul className="space-y-2 mb-4 flex-1">
-                  {diagnosisData.recommendations.diy.map((rec, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm">
-                      <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosisData.recommendedService === "diy" ? "bg-blue-600" : "bg-gray-400"}`} />
-                      <span>{rec}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  variant={diagnosisData.recommendedService === "diy" ? "default" : "outline"}
-                  className={`w-full mt-auto ${diagnosisData.recommendedService === "diy" ? "bg-blue-600 hover:bg-blue-700" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}
-                  onClick={handleFindParts}
-                >
-                  <Search className="mr-2 h-4 w-4" />
-                  Find Parts
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className={`border-l-4 flex flex-col ${diagnosisData.recommendedService === "professional" ? "border-l-orange-600 bg-orange-50" : "border-l-gray-300 bg-gray-50"}`}>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <Calendar className={`h-5 w-5 ${diagnosisData.recommendedService === "professional" ? "text-orange-600" : "text-gray-600"}`} />
-                  <div className="flex-1">
-                    <CardTitle className={`text-lg ${diagnosisData.recommendedService === "professional" ? "text-orange-800" : "text-gray-700"}`}>
-                      Book an Engineer
-                      {diagnosisData.recommendedService === "professional" && (
-                        <Badge className="ml-2 bg-orange-100 text-orange-800 text-xs">Recommended</Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription className="text-sm">
-                      {diagnosisData.recommendedService === "professional" 
-                        ? "Professional service needed for this repair" 
-                        : "If DIY doesn't work, book a professional"}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col">
-                <ul className="space-y-2 mb-4 flex-1">
-                  {diagnosisData.recommendations.professional.map((rec, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm">
-                      <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosisData.recommendedService === "professional" ? "bg-orange-600" : "bg-gray-400"}`} />
-                      <span>{rec}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  className={`w-full mt-auto ${diagnosisData.recommendedService === "professional" ? "bg-orange-600 hover:bg-orange-700" : "bg-gray-600 hover:bg-gray-700"}`}
-                  onClick={handleBookEngineer}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Book Engineer
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col">
+              <ul className="space-y-2 mb-4 flex-1">
+                {diagnosisData.recommendations.professional.map((rec, index) => (
+                  <li key={index} className="flex items-start gap-2 text-sm">
+                    <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosisData.recommendedService === "professional" ? "bg-orange-600" : "bg-gray-400"}`} />
+                    <span>{rec}</span>
+                  </li>
+                ))}
+              </ul>
+              <Button
+                className={`w-full mt-auto ${diagnosisData.recommendedService === "professional" ? "bg-orange-600 hover:bg-orange-700" : "bg-gray-600 hover:bg-gray-700"}`}
+                onClick={handleBookEngineer}
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                Book Engineer
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
 
         <Card className="border-l-4 border-l-blue-600">
           <CardHeader>
@@ -458,22 +399,6 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
-
-            {diagnosisData.skillsRequired && diagnosisData.skillsRequired.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                <h3 className="font-semibold mb-3 flex items-center gap-2 text-blue-800">
-                  <CheckCircle2 className="h-5 w-5" />
-                  Skills Required
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {diagnosisData.skillsRequired.map((skill, index) => (
-                    <Badge key={index} variant="outline" className="border-blue-300 text-blue-700">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
               </div>
             )}
 
@@ -546,12 +471,28 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               </p>
             </div>
             <div className="space-y-2">
+              <label htmlFor="errorCode" className="text-sm font-medium flex items-center gap-2">
+                <Code className="h-4 w-4" />
+                Error code <span className="text-gray-500">(if displayed)</span>
+              </label>
+              <Input
+                id="errorCode"
+                placeholder="e.g., E17, F05, 4E, OE..."
+                value={errorCode}
+                onChange={(e) => setErrorCode(e.target.value.toUpperCase())}
+                className="w-full text-base font-mono"
+              />
+              <p className="text-xs text-gray-500">
+                If your appliance shows an error code on the display, enter it here for more accurate diagnosis
+              </p>
+            </div>
+            <div className="space-y-2">
               <label htmlFor="problem" className="text-sm font-medium">
                 Describe the problem in detail
               </label>
               <Textarea
                 id="problem"
-                placeholder="e.g., My washing machine makes loud banging noises during the spin cycle and clothes come out still wet. Error code E4 is showing..."
+                placeholder="e.g., My washing machine makes loud banging noises during the spin cycle and clothes come out still wet..."
                 value={problem}
                 onChange={(e) => setProblem(e.target.value)}
                 className="w-full min-h-[100px] text-base"
@@ -599,14 +540,13 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                 </p>
 
                 {!isEmailSent ? (
-                  <form onSubmit={handleEmailSubmit} className="space-y-3">
+                  <div className="space-y-3">
                     <Input
                       type="email"
                       placeholder="Enter your email address"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full text-base"
-                      required
                     />
                     <div className="flex items-start gap-2">
                       <Checkbox id="marketing-consent-diagnostic" defaultChecked={true} className="mt-1" />
@@ -621,7 +561,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                         {error}
                       </div>
                     )}
-                    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isVerifying}>
+                    <Button onClick={handleEmailSubmit} className="w-full bg-blue-600 hover:bg-blue-700" disabled={isVerifying}>
                       {isVerifying ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -634,7 +574,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                         </>
                       )}
                     </Button>
-                  </form>
+                  </div>
                 ) : !isEmailVerified ? (
                   <div className="space-y-3">
                     <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
@@ -643,14 +583,13 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                         Verification code sent to <strong>{email}</strong>
                       </p>
                     </div>
-                    <form onSubmit={handleVerificationSubmit} className="space-y-3">
+                    <div className="space-y-3">
                       <Input
                         placeholder="Enter 6-digit code"
                         value={verificationCode}
                         onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                         className="w-full text-center text-base tracking-wider"
                         maxLength={6}
-                        required
                       />
                       <p className="text-xs text-gray-500 text-center">
                         For demo: enter any 6-digit code (e.g., 123456)
@@ -662,7 +601,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                         </div>
                       )}
                       <Button
-                        type="submit"
+                        onClick={handleVerificationSubmit}
                         className="w-full bg-green-600 hover:bg-green-700"
                         disabled={isVerifying || isLoading}
                       >
@@ -678,7 +617,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                           </>
                         )}
                       </Button>
-                    </form>
+                    </div>
                     <div className="text-center">
                       <button
                         onClick={resendVerificationCode}
