@@ -90,7 +90,7 @@ const exampleDiagnosis: DiagnosisResult = {
   ]
 }
 
-export default function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
+export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
   const [appliance, setAppliance] = useState("")
   const [brand, setBrand] = useState("")
   const [errorCode, setErrorCode] = useState("")
