@@ -25,7 +25,6 @@ import {
   ChevronUp,
   Eye,
   X,
-  Code,
 } from "lucide-react"
 import { diagnoseProblem } from "../actions/diagnose"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -93,7 +92,6 @@ const exampleDiagnosis: DiagnosisResult = {
 export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
   const [appliance, setAppliance] = useState("")
   const [brand, setBrand] = useState("")
-  const [errorCode, setErrorCode] = useState("")
   const [problem, setProblem] = useState("")
   const [showEmailVerification, setShowEmailVerification] = useState(false)
   const [email, setEmail] = useState("")
@@ -169,12 +167,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     setShowExample(false)
 
     try {
-      // IMPORTANT: Combine error code with problem description
-      const fullProblem = errorCode 
-        ? `${problem}${problem ? ' ' : ''}Error code: ${errorCode}`
-        : problem
-        
-      const result = await diagnoseProblem(appliance, brand, fullProblem, email)
+      const result = await diagnoseProblem(appliance, brand, problem, email)
       setDiagnosis(result)
     } catch (err) {
       setError("Sorry, we encountered an error. Please try again.")
@@ -552,32 +545,19 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               </p>
             </div>
             <div className="space-y-2">
-              <label htmlFor="errorCode" className="text-sm font-medium flex items-center gap-2">
-                <Code className="h-4 w-4" />
-                Error code <span className="text-gray-500">(if displayed)</span>
-              </label>
-              <Input
-                id="errorCode"
-                placeholder="e.g., E17, F05, 4E, OE..."
-                value={errorCode}
-                onChange={(e) => setErrorCode(e.target.value.toUpperCase())}
-                className="w-full text-base font-mono"
-              />
-              <p className="text-xs text-gray-500">
-                If your appliance shows an error code on the display, enter it here for more accurate diagnosis
-              </p>
-            </div>
-            <div className="space-y-2">
               <label htmlFor="problem" className="text-sm font-medium">
                 Describe the problem in detail
               </label>
               <Textarea
                 id="problem"
-                placeholder="e.g., My washing machine makes loud banging noises during the spin cycle and clothes come out still wet..."
+                placeholder="e.g., My washing machine makes loud banging noises during the spin cycle and clothes come out still wet. Error code E4 is showing on the display..."
                 value={problem}
                 onChange={(e) => setProblem(e.target.value)}
                 className="w-full min-h-[100px] text-base"
               />
+              <p className="text-xs text-gray-500">
+                Include any error codes if displayed on your appliance
+              </p>
             </div>
             {error && !showEmailVerification && (
               <div className="flex items-center gap-2 text-red-600 text-sm">
