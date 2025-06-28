@@ -2,7 +2,15 @@
     console.log('All AI analysis failed, using basic fallback')
     const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
     await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
-    return fallbackResult"use server"
+    return fallbackResult
+
+  } catch (error) {
+    console.error("Diagnosis error:", error)
+    const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
+    await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
+    return fallbackResult
+  }
+}"use server"
 
 import { supabase } from '@/lib/supabase'
 
