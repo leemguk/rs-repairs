@@ -252,16 +252,71 @@ function parseStructuredResponse(
     }
   }
   
-  // If we found causes, add the main description. If not, use defaults
-  if (possibleCauses.length > 0) {
-    possibleCauses.unshift(`${brand} ${appliance} error code ${errorCode} - water fill problem`)
+  // Build the main error description based on what we actually found
+  let mainErrorDescription = `${brand} ${appliance} error code ${errorCode}`
+  
+  // Try to extract the actual error meaning from the AI's error meaning response
+  if (errorMeaning) {
+    const meaningLower = errorMeaning.toLowerCase()
+    
+    // Look for specific problem types mentioned in the error meaning
+    if (meaningLower.includes('drainage') || meaningLower.includes('drain')) {
+      mainErrorDescription += ' - drainage problem'
+    } else if (meaningLower.includes('water inlet') || meaningLower.includes('water fill')) {
+      mainErrorDescription += ' - water fill problem'
+    } else if (meaningLower.includes('heating') || meaningLower.includes('temperature')) {
+      mainErrorDescription += ' - heating/temperature problem'
+    } else if (meaningLower.includes('door') || meaningLower.includes('lock')) {
+      mainErrorDescription += ' - door lock problem'
+    } else if (meaningLower.includes('pump')) {
+      mainErrorDescription += ' - pump problem'
+    } else if (meaningLower.includes('sensor')) {
+      mainErrorDescription += ' - sensor problem'
+    } else {
+      // If we can't determine the specific type, use generic description
+      mainErrorDescription += ' - system fault detected'
+    }
   } else {
-    possibleCauses = [
-      `${brand} ${appliance} error code ${errorCode} - water fill problem`,
-      "Water supply valve closed or restricted",
-      "Inlet hose blocked, kinked, or disconnected", 
-      "Door not properly closed or door lock fault"
-    ]
+    mainErrorDescription += ' - system fault detected'
+  }
+  
+  // If we found specific causes from AI, add the main description at the start
+  if (possibleCauses.length > 0) {
+    possibleCauses.unshift(mainErrorDescription)
+  } else {
+    // Fallback causes based on the error meaning we found
+    const meaningLower = errorMeaning ? errorMeaning.toLowerCase() : ''
+    
+    if (meaningLower.includes('drainage') || meaningLower.includes('drain')) {
+      possibleCauses = [
+        mainErrorDescription,
+        "Blocked or clogged drain pump filter",
+        "Kinked or blocked drain hose",
+        "Faulty drain pump or drainage system"
+      ]
+    } else if (meaningLower.includes('water inlet') || meaningLower.includes('water fill')) {
+      possibleCauses = [
+        mainErrorDescription,
+        "Water supply valve closed or restricted",
+        "Inlet hose blocked, kinked, or disconnected",
+        "Door not properly closed or door lock fault"
+      ]
+    } else if (meaningLower.includes('heating') || meaningLower.includes('temperature')) {
+      possibleCauses = [
+        mainErrorDescription,
+        "Faulty heating element",
+        "Temperature sensor malfunction",
+        "Control board communication issue with heating system"
+      ]
+    } else {
+      // Generic fallback when we can't determine the specific problem type
+      possibleCauses = [
+        mainErrorDescription,
+        "Electronic control system issue requiring professional diagnosis",
+        "Internal component malfunction needing specialized diagnostic equipment",
+        "Sensor or communication error between system components"
+      ]
+    }
   }
   
   // Parse service recommendation
@@ -383,29 +438,47 @@ function parseStructuredResponse(
   // Generate recommendations based on service type and specific error details
   const diyRecommendations = generateDIYRecommendations(errorMeaning, recommendedService)
   
-  // Generate specific professional recommendations based on the extracted causes
+  // Generate specific professional recommendations based on what the error actually means
   let professionalRecommendations = [
     `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-    "Check for faulty water inlet valve and replace if needed",
-    "Inspect control board or wiring issues affecting water fill",
-    "Test all water intake systems and calibrate pressure settings"
+    "Specialized diagnostic equipment to identify exact component failure",
+    "Professional repair using appropriate replacement parts",
+    "Complete system testing and calibration after repair"
   ]
   
-  // Customize professional recommendations based on specific causes found
-  if (possibleCauses.some(cause => cause.toLowerCase().includes('inlet valve'))) {
-    professionalRecommendations = [
-      `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-      "Check for faulty water inlet valve and replace if needed",
-      "Inspect control board or wiring issues affecting water fill",
-      "Test all water intake systems and calibrate pressure settings"
-    ]
-  } else if (possibleCauses.some(cause => cause.toLowerCase().includes('door lock'))) {
-    professionalRecommendations = [
-      `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-      "Check for faulty door lock mechanism and repair if needed",
-      "Inspect wiring issues preventing proper door detection",
-      "Test complete door safety and locking system"
-    ]
+  // Customize professional recommendations based on the actual error meaning
+  if (errorMeaning) {
+    const meaningLower = errorMeaning.toLowerCase()
+    
+    if (meaningLower.includes('drainage') || meaningLower.includes('drain')) {
+      professionalRecommendations = [
+        `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
+        "Check for faulty drain pump and replace if needed",
+        "Inspect drainage system and clear internal blockages",
+        "Test complete drainage cycle and water flow systems"
+      ]
+    } else if (possibleCauses.some(cause => cause.toLowerCase().includes('inlet valve'))) {
+      professionalRecommendations = [
+        `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
+        "Check for faulty water inlet valve and replace if needed",
+        "Inspect control board or wiring issues affecting water fill",
+        "Test all water intake systems and calibrate pressure settings"
+      ]
+    } else if (meaningLower.includes('heating') || meaningLower.includes('temperature')) {
+      professionalRecommendations = [
+        `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
+        "Check for faulty heating element and replace if needed",
+        "Test temperature sensor and heating system wiring",
+        "Inspect control board communication with heating components"
+      ]
+    } else if (possibleCauses.some(cause => cause.toLowerCase().includes('door lock'))) {
+      professionalRecommendations = [
+        `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
+        "Check for faulty door lock mechanism and repair if needed",
+        "Inspect wiring issues preventing proper door detection",
+        "Test complete door safety and locking system"
+      ]
+    }
   }
   
   const result = {
