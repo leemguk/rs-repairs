@@ -280,7 +280,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                   <Eye className="h-5 w-5 text-blue-600" />
                   <div>
                     <p className="font-medium text-blue-800">Example Diagnostic Report</p>
-                    <p className="text-xs text-blue-600">This is what your AI diagnosis will look like</p>
+                    <p className="text-xs text-blue-600">This is what your report from kAI will look like</p>
                   </div>
                 </div>
                 <Button
@@ -493,7 +493,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
 
             <div className="text-center text-sm text-gray-500 border-t pt-4">
               <p>
-                This is an AI-generated diagnosis. For accurate assessment, we recommend professional inspection for
+                This is a kAI-generated diagnosis. For accurate assessment, we recommend professional inspection for
                 complex or safety-critical repairs.
               </p>
             </div>
@@ -510,10 +510,9 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
             <Lightbulb className="h-8 w-8 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl">AI Appliance Diagnostics</CardTitle>
+          <CardTitle className="text-2xl">kAI - Appliance Fault Assistant</CardTitle>
           <CardDescription>
-            Tell us about your appliance problem and we'll help identify potential causes and recommend the best
-            solution
+            Tell kAI about your appliance and get a detailed fault diagnosis and recommended best solutions
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -551,11 +550,14 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               </label>
               <Textarea
                 id="problem"
-                placeholder="e.g., My washing machine makes loud banging noises during the spin cycle and clothes come out still wet. Error code E4 is showing..."
+                placeholder="e.g., My washing machine makes loud banging noises during the spin cycle and clothes come out still wet. Error code E4 is showing on the display..."
                 value={problem}
                 onChange={(e) => setProblem(e.target.value)}
                 className="w-full min-h-[100px] text-base"
               />
+              <p className="text-xs text-gray-500">
+                Include any error codes if displayed on your appliance
+              </p>
             </div>
             {error && !showEmailVerification && (
               <div className="flex items-center gap-2 text-red-600 text-sm">
@@ -568,7 +570,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button onClick={handleAskAI} className="flex-1 bg-blue-600 hover:bg-blue-700" size="lg">
                   <Lightbulb className="mr-2 h-4 w-4" />
-                  Ask AI
+                  Diagnose Your Fault
                 </Button>
                 <Button
                   variant="outline"
@@ -599,14 +601,13 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                 </p>
 
                 {!isEmailSent ? (
-                  <form onSubmit={handleEmailSubmit} className="space-y-3">
+                  <div className="space-y-3">
                     <Input
                       type="email"
                       placeholder="Enter your email address"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full text-base"
-                      required
                     />
                     <div className="flex items-start gap-2">
                       <Checkbox id="marketing-consent-diagnostic" defaultChecked={true} className="mt-1" />
@@ -621,7 +622,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                         {error}
                       </div>
                     )}
-                    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isVerifying}>
+                    <Button onClick={handleEmailSubmit} className="w-full bg-blue-600 hover:bg-blue-700" disabled={isVerifying}>
                       {isVerifying ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -634,7 +635,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                         </>
                       )}
                     </Button>
-                  </form>
+                  </div>
                 ) : !isEmailVerified ? (
                   <div className="space-y-3">
                     <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
@@ -643,14 +644,13 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                         Verification code sent to <strong>{email}</strong>
                       </p>
                     </div>
-                    <form onSubmit={handleVerificationSubmit} className="space-y-3">
+                    <div className="space-y-3">
                       <Input
                         placeholder="Enter 6-digit code"
                         value={verificationCode}
                         onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                         className="w-full text-center text-base tracking-wider"
                         maxLength={6}
-                        required
                       />
                       <p className="text-xs text-gray-500 text-center">
                         For demo: enter any 6-digit code (e.g., 123456)
@@ -662,7 +662,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                         </div>
                       )}
                       <Button
-                        type="submit"
+                        onClick={handleVerificationSubmit}
                         className="w-full bg-green-600 hover:bg-green-700"
                         disabled={isVerifying || isLoading}
                       >
@@ -678,7 +678,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                           </>
                         )}
                       </Button>
-                    </form>
+                    </div>
                     <div className="text-center">
                       <button
                         onClick={resendVerificationCode}
@@ -702,7 +702,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
             <div className="flex flex-col items-center gap-4 text-center">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
               <div>
-                <p className="font-medium text-blue-800">AI Analyzing Your Appliance Problem...</p>
+                <p className="font-medium text-blue-800">kAI Analyzing Your Appliance Problem...</p>
                 <p className="text-sm text-blue-600 mt-1">This may take a few seconds</p>
               </div>
             </div>
