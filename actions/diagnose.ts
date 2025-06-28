@@ -364,7 +364,7 @@ function parseStructuredResponse(
     else urgency = 'medium'
   }
   
-  // Set consistent cost based on service recommendation
+  // Set consistent cost based on service recommendation with £149 cap
   let estimatedCost = '£109 - £149'
   if (recommendedService === 'diy') {
     estimatedCost = '£0 - £50'
@@ -372,7 +372,23 @@ function parseStructuredResponse(
     if (costLine) {
       const costText = costLine.replace(/^COST:\s*/i, '').trim()
       if (costText && costText !== '£' && costText.length > 1) {
-        estimatedCost = costText.includes('£') ? costText : `£${costText}`
+        let parsedCost = costText.includes('£') ? costText : `£${costText}`
+        
+        // Cap the maximum cost at £149
+        const costMatch = parsedCost.match(/£(\d+)\s*-\s*£(\d+)/)
+        if (costMatch) {
+          const maxCost = Math.min(parseInt(costMatch[2]), 149)
+          const minCost = Math.min(parseInt(costMatch[1]), maxCost)
+          parsedCost = `£${minCost} - £${maxCost}`
+        } else {
+          // Single cost value - cap at £149
+          const singleCostMatch = parsedCost.match(/£(\d+)/)
+          if (singleCostMatch && parseInt(singleCostMatch[1]) > 149) {
+            parsedCost = '£109 - £149'
+          }
+        }
+        
+        estimatedCost = parsedCost
       }
     }
   }
@@ -618,10 +634,24 @@ export async function diagnoseProblem(
       return errorCodeFallback
     }
     
-    // Step 2: Fallback for non-error-code issues
-    const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
-    await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
-    return fallbackResult
+    // Step 2: For general problems (no error code), use AI analysis
+    if (!detectedErrorCode) {
+      console.log('No error code detected, analyzing general problem with AI')
+      const generalResult = await diagnoseGeneralProblem(
+        appliance,
+        brand,
+        problem, 
+        openRouterApiKey
+      )
+      
+      if (generalResult) {
+        console.log('General problem AI diagnosis successful')
+        await saveDiagnosticToDatabase(appliance, brand, problem, email, generalResult)
+        return generalResult
+      }
+      
+      console.log('General AI diagnosis failed, using fallback')
+    }
 
   } catch (error) {
     console.error("Diagnosis error:", error)
