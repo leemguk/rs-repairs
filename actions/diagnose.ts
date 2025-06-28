@@ -327,24 +327,24 @@ function parseStructuredResponse(
   // Generate specific professional recommendations based on the extracted causes
   let professionalRecommendations = [
     `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-    "Repair or replace faulty water inlet valve if needed",
-    "Fix internal wiring or control board issues",
-    "Complete testing to ensure proper water flow and pressure"
+    "Check for faulty water inlet valve and replace if needed",
+    "Inspect control board or wiring issues affecting water fill",
+    "Test all water intake systems and calibrate pressure settings"
   ]
   
   // Customize professional recommendations based on specific causes found
   if (possibleCauses.some(cause => cause.toLowerCase().includes('inlet valve'))) {
     professionalRecommendations = [
       `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-      "Replace faulty water inlet valve and associated components",
-      "Repair control board or wiring issues affecting water fill",
+      "Check for faulty water inlet valve and replace if needed",
+      "Inspect control board or wiring issues affecting water fill",
       "Test all water intake systems and calibrate pressure settings"
     ]
   } else if (possibleCauses.some(cause => cause.toLowerCase().includes('door lock'))) {
     professionalRecommendations = [
       `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-      "Repair or replace faulty door lock mechanism",
-      "Fix wiring issues preventing proper door detection",
+      "Check for faulty door lock mechanism and repair if needed",
+      "Inspect wiring issues preventing proper door detection",
       "Test complete door safety and locking system"
     ]
   }
@@ -517,9 +517,9 @@ function getErrorCodeFallback(errorCode: string, appliance: string, brand: strin
       ],
       professional: [
         `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-        "Repair or replace faulty components identified during diagnosis",
-        "Fix internal wiring or control system issues",
-        "Complete testing and calibration after repair"
+        "Check for faulty components and replace if needed",
+        "Inspect internal wiring or control system issues",
+        "Test all systems and calibrate after repair"
       ]
     },
     urgency: "medium",
