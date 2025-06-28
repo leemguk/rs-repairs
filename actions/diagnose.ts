@@ -1,16 +1,4 @@
-// Step 3: Final fallback for any remaining cases
-    console.log('All AI analysis failed, using basic fallback')
-    const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
-    await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
-    return fallbackResult
-
-  } catch (error) {
-    console.error("Diagnosis error:", error)
-    const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
-    await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
-    return fallbackResult
-  }
-}"use server"
+"use server"
 
 import { supabase } from '@/lib/supabase'
 
@@ -51,6 +39,46 @@ function detectErrorCode(problem: string): string | null {
   }
   
   return null
+}
+
+// Check if the AI response contains useful error code information
+function isUsefulErrorCodeResponse(response: string, errorCode: string): boolean {
+  const responseLower = response.toLowerCase()
+  const codeLower = errorCode.toLowerCase()
+  
+  // Check for dismissive responses
+  const dismissivePatterns = [
+    'i apologize, but',
+    'i don\'t see a specific definition',
+    'i cannot find',
+    'not specifically mentioned',
+    'not listed',
+    'would recommend checking',
+    'contact the manufacturer',
+    'consulting your manual',
+    'i cannot make specific claims'
+  ]
+  
+  if (dismissivePatterns.some(pattern => responseLower.includes(pattern))) {
+    return false
+  }
+  
+  // Check for useful content
+  const usefulPatterns = [
+    'indicates',
+    'means',
+    'signifies',
+    'refers to',
+    'problem with',
+    'issue with',
+    'fault',
+    'typically indicates',
+    'usually means'
+  ]
+  
+  // Must contain the error code and useful information
+  return responseLower.includes(codeLower) && 
+         usefulPatterns.some(pattern => responseLower.includes(pattern))
 }
 
 // Websearch-enabled error code lookup with validation
@@ -177,44 +205,139 @@ Be specific to what error code ${errorCode} actually means for ${brand} applianc
   }
 }
 
-// Check if the AI response contains useful error code information
-function isUsefulErrorCodeResponse(response: string, errorCode: string): boolean {
-  const responseLower = response.toLowerCase()
-  const codeLower = errorCode.toLowerCase()
+// Generate specific DIY recommendations based on error meaning
+function generateDIYRecommendations(errorMeaning: string, recommendedService: string): string[] {
+  const errorLower = errorMeaning.toLowerCase()
   
-  // Check for dismissive responses
-  const dismissivePatterns = [
-    'i apologize, but',
-    'i don\'t see a specific definition',
-    'i cannot find',
-    'not specifically mentioned',
-    'not listed',
-    'would recommend checking',
-    'contact the manufacturer',
-    'consulting your manual',
-    'i cannot make specific claims'
-  ]
-  
-  if (dismissivePatterns.some(pattern => responseLower.includes(pattern))) {
-    return false
+  // Water fill issues (E4 on Beko) - these are often DIY-checkable
+  if (errorLower.includes('water') && (errorLower.includes('fill') || errorLower.includes('intake'))) {
+    if (recommendedService === 'diy') {
+      return [
+        "Check that water supply taps are fully turned on",
+        "Inspect inlet hose for kinks or blockages",
+        "Ensure door is properly closed and latched",
+        "Check water pressure is adequate (if recently changed)"
+      ]
+    } else {
+      return [
+        "Check water supply taps are fully turned on (safe user check)",
+        "Verify door is properly closed and latched",
+        "Power cycle the appliance (unplug for 2 minutes)",
+        "Professional diagnosis recommended for internal water valve issues"
+      ]
+    }
   }
   
-  // Check for useful content
-  const usefulPatterns = [
-    'indicates',
-    'means',
-    'signifies',
-    'refers to',
-    'problem with',
-    'issue with',
-    'fault',
-    'typically indicates',
-    'usually means'
-  ]
+  // Drainage issues
+  if (errorLower.includes('drain') || errorLower.includes('pump')) {
+    return [
+      "Check and clean the drain pump filter",
+      "Inspect drain hose for kinks or blockages", 
+      "Ensure drain hose is positioned correctly",
+      "Run an empty cycle to test drainage"
+    ]
+  }
   
-  // Must contain the error code and useful information
-  return responseLower.includes(codeLower) && 
-         usefulPatterns.some(pattern => responseLower.includes(pattern))
+  // Heating issues
+  if (errorLower.includes('heat') || errorLower.includes('temperature')) {
+    return [
+      "Check that hot water supply is working",
+      "Verify temperature settings are correct",
+      "Power cycle the appliance (unplug for 2 minutes)",
+      "Professional service recommended for heating element issues"
+    ]
+  }
+  
+  // Door issues
+  if (errorLower.includes('door') || errorLower.includes('lock')) {
+    return [
+      "Ensure door is properly closed and aligned",
+      "Check for obstructions around door seal",
+      "Clean door latch and strike mechanism",
+      "Try opening and closing door firmly several times"
+    ]
+  }
+  
+  // For professional service recommendations
+  if (recommendedService === 'professional') {
+    return [
+      "Power cycle the appliance (unplug for 2 minutes)",
+      "Check that all connections are secure",
+      "Verify appliance settings are correct",
+      "Professional service recommended for this error code"
+    ]
+  }
+  
+  // Default DIY recommendations
+  return [
+    "Power cycle the appliance (unplug for 2 minutes)",
+    "Check all connections and settings",
+    "Consult user manual for basic troubleshooting",
+    "Contact professional service if issue persists"
+  ]
+}
+
+// Fallback for general problems without error codes
+async function diagnoseGeneralProblem(
+  appliance: string,
+  brand: string, 
+  problem: string,
+  apiKey: string
+): Promise<DiagnosisResult | null> {
+  try {
+    console.log(`Analyzing general problem: ${problem} for ${brand} ${appliance}`)
+    
+    const prompt = `A customer has a ${brand ? brand + ' ' : ''}${appliance} with this problem: "${problem}"
+
+Please provide a professional appliance repair diagnosis:
+
+CAUSES: List 3-4 most likely specific causes for this exact problem
+SERVICE: State if this is typically "diy" or "professional" 
+COST: Estimated repair cost range in £ (maximum £149 for professional service)
+DIFFICULTY: Rate as easy/moderate/difficult/expert
+URGENCY: Rate as low/medium/high
+REASON: Explain why DIY or professional service is recommended
+SAFETY: Any specific safety warnings for this problem
+
+Be specific to the exact problem described and provide actionable recommendations.`
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST", 
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "X-Title": "RS Repairs General Diagnosis"
+      },
+      body: JSON.stringify({
+        model: 'anthropic/claude-3.5-sonnet',
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 600,
+        temperature: 0.1
+      })
+    })
+
+    if (!response.ok) {
+      console.error(`OpenRouter API error: ${response.status}`)
+      return null
+    }
+
+    const data = await response.json()
+    const aiResponse = data.choices[0]?.message?.content?.trim()
+    
+    if (!aiResponse) {
+      console.error('No AI response for general problem')
+      return null
+    }
+
+    console.log(`AI general diagnosis: ${aiResponse}`)
+    
+    // Parse the AI response using the same logic as error codes
+    return parseStructuredResponse(aiResponse, 'N/A', brand, appliance, problem)
+
+  } catch (error) {
+    console.error('Error in general diagnosis:', error)
+    return null
+  }
 }
 
 // Parse structured AI response into DiagnosisResult format
@@ -531,141 +654,6 @@ function parseStructuredResponse(
   return result
 }
 
-// Generate specific DIY recommendations based on error meaning
-function generateDIYRecommendations(errorMeaning: string, recommendedService: string): string[] {
-  const errorLower = errorMeaning.toLowerCase()
-  
-  // Water fill issues (E4 on Beko) - these are often DIY-checkable
-  if (errorLower.includes('water') && (errorLower.includes('fill') || errorLower.includes('intake'))) {
-    if (recommendedService === 'diy') {
-      return [
-        "Check that water supply taps are fully turned on",
-        "Inspect inlet hose for kinks or blockages",
-        "Ensure door is properly closed and latched",
-        "Check water pressure is adequate (if recently changed)"
-      ]
-    } else {
-      return [
-        "Check water supply taps are fully turned on (safe user check)",
-        "Verify door is properly closed and latched",
-        "Power cycle the appliance (unplug for 2 minutes)",
-        "Professional diagnosis recommended for internal water valve issues"
-      ]
-    }
-  }
-  
-  // Drainage issues
-  if (errorLower.includes('drain') || errorLower.includes('pump')) {
-    return [
-      "Check and clean the drain pump filter",
-      "Inspect drain hose for kinks or blockages", 
-      "Ensure drain hose is positioned correctly",
-      "Run an empty cycle to test drainage"
-    ]
-  }
-  
-  // Heating issues
-  if (errorLower.includes('heat') || errorLower.includes('temperature')) {
-    return [
-      "Check that hot water supply is working",
-      "Verify temperature settings are correct",
-      "Power cycle the appliance (unplug for 2 minutes)",
-      "Professional service recommended for heating element issues"
-    ]
-  }
-  
-  // Door issues
-  if (errorLower.includes('door') || errorLower.includes('lock')) {
-    return [
-      "Ensure door is properly closed and aligned",
-      "Check for obstructions around door seal",
-      "Clean door latch and strike mechanism",
-      "Try opening and closing door firmly several times"
-    ]
-  }
-  
-  // For professional service recommendations
-  if (recommendedService === 'professional') {
-    return [
-      "Power cycle the appliance (unplug for 2 minutes)",
-      "Check that all connections are secure",
-      "Verify appliance settings are correct",
-      "Professional service recommended for this error code"
-    ]
-  }
-  
-  // Default DIY recommendations
-  return [
-    "Power cycle the appliance (unplug for 2 minutes)",
-    "Check all connections and settings",
-    "Consult user manual for basic troubleshooting",
-    "Contact professional service if issue persists"
-  ]
-}
-
-// Fallback for general problems without error codes
-async function diagnoseGeneralProblem(
-  appliance: string,
-  brand: string, 
-  problem: string,
-  apiKey: string
-): Promise<DiagnosisResult | null> {
-  try {
-    console.log(`Analyzing general problem: ${problem} for ${brand} ${appliance}`)
-    
-    const prompt = `A customer has a ${brand ? brand + ' ' : ''}${appliance} with this problem: "${problem}"
-
-Please provide a professional appliance repair diagnosis:
-
-CAUSES: List 3-4 most likely specific causes for this exact problem
-SERVICE: State if this is typically "diy" or "professional" 
-COST: Estimated repair cost range in £ (maximum £149 for professional service)
-DIFFICULTY: Rate as easy/moderate/difficult/expert
-URGENCY: Rate as low/medium/high
-REASON: Explain why DIY or professional service is recommended
-SAFETY: Any specific safety warnings for this problem
-
-Be specific to the exact problem described and provide actionable recommendations.`
-
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST", 
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "X-Title": "RS Repairs General Diagnosis"
-      },
-      body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet',
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 600,
-        temperature: 0.1
-      })
-    })
-
-    if (!response.ok) {
-      console.error(`OpenRouter API error: ${response.status}`)
-      return null
-    }
-
-    const data = await response.json()
-    const aiResponse = data.choices[0]?.message?.content?.trim()
-    
-    if (!aiResponse) {
-      console.error('No AI response for general problem')
-      return null
-    }
-
-    console.log(`AI general diagnosis: ${aiResponse}`)
-    
-    // Parse the AI response using the same logic as error codes
-    return parseStructuredResponse(aiResponse, 'N/A', brand, appliance, problem)
-
-  } catch (error) {
-    console.error('Error in general diagnosis:', error)
-    return null
-  }
-}
-
 // Main diagnosis function
 export async function diagnoseProblem(
   appliance: string, 
@@ -728,6 +716,12 @@ export async function diagnoseProblem(
       console.log('General AI diagnosis failed, using fallback')
     }
 
+    // Step 3: Final fallback for any remaining cases
+    console.log('All AI analysis failed, using basic fallback')
+    const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
+    await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
+    return fallbackResult
+
   } catch (error) {
     console.error("Diagnosis error:", error)
     const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
@@ -738,37 +732,76 @@ export async function diagnoseProblem(
 
 // Enhanced fallback specifically for error codes
 function getErrorCodeFallback(errorCode: string, appliance: string, brand: string, problem: string): DiagnosisResult {
+  // Special handling for Beko E4 - water fill issue
+  if (errorCode.toUpperCase() === 'E4' && brand.toLowerCase().includes('beko') && appliance.toLowerCase().includes('washing')) {
+    return {
+      possibleCauses: [
+        "Beko washing machine error code E4 - water fill problem",
+        "Water supply valve closed or restricted",
+        "Inlet hose blocked, kinked, or disconnected",
+        "Door not properly closed or door lock fault"
+      ],
+      recommendations: {
+        diy: [
+          "Check that water supply taps are fully turned on",
+          "Inspect inlet hose for kinks or blockages",
+          "Ensure door is properly closed and latched",
+          "Check water pressure is adequate (if recently changed)"
+        ],
+        professional: [
+          "Professional diagnosis of Beko washing machine error code E4",
+          "Check for faulty water inlet valve and replace if needed",
+          "Inspect internal wiring or control board issues",
+          "Test all water intake systems and calibrate pressure settings"
+        ]
+      },
+      urgency: "medium",
+      estimatedCost: "£0 - £50",
+      difficulty: "moderate",
+      recommendedService: "diy",
+      serviceReason: "Error code E4 often indicates water supply issues that can be checked by the user (taps, hoses, door) before calling a professional.",
+      skillsRequired: ["Basic tools", "Manual reading", "Safety awareness"],
+      timeEstimate: "30 - 60 minutes",
+      safetyWarnings: [
+        "Always disconnect power before attempting any inspection",
+        "Check water supply connections carefully",
+        "If DIY checks don't resolve the issue, contact professional service"
+      ]
+    }
+  }
+  
+  // Unknown error code fallback - be honest that we don't know
   return {
     possibleCauses: [
-      `${brand} ${appliance} error code ${errorCode} indicates a specific system fault`,
-      "Component malfunction requiring professional diagnostic equipment",
-      "Electronic control system communication error",
-      "Sensor or component failure specific to this error code"
+      `${brand} ${appliance} error code ${errorCode} - specific meaning not found in available documentation`,
+      "Electronic control system issue requiring professional diagnosis",
+      "Internal component malfunction needing specialized diagnostic equipment",
+      "Sensor or communication error between system components"
     ],
     recommendations: {
       diy: [
         "Power cycle the appliance (unplug for 2 minutes, then restart)",
-        "Check all connections are secure and properly seated",
+        "Check that all connections are secure and clean",
         "Verify appliance settings are correct for current operation",
-        "Consult user manual for error code specific troubleshooting"
+        "Check user manual for any error code information"
       ],
       professional: [
         `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-        "Check for faulty components and replace if needed",
-        "Inspect internal wiring or control system issues",
-        "Test all systems and calibrate after repair"
+        "Use specialized diagnostic equipment to identify the exact fault",
+        "Access manufacturer technical documentation for error code meaning",
+        "Repair or replace faulty components once identified"
       ]
     },
     urgency: "medium",
     estimatedCost: "£109 - £149",
     difficulty: "expert",
     recommendedService: "professional",
-    serviceReason: `Error code ${errorCode} on ${brand} ${appliance} requires professional diagnosis with specialized equipment to identify the exact component failure and ensure safe, accurate repair.`,
-    skillsRequired: ["Specialized diagnostic tools", "Brand-specific technical knowledge", "Electronic component testing"],
+    serviceReason: `Error code ${errorCode} requires professional diagnosis as the specific meaning is not documented in standard resources. Professional technicians have access to manufacturer diagnostic tools and documentation.`,
+    skillsRequired: ["Specialized diagnostic equipment", "Manufacturer technical documentation", "Electronic component testing"],
     timeEstimate: "1 - 2 hours",
     safetyWarnings: [
       "Always disconnect power before attempting any inspection",
-      "Error codes often indicate electrical or safety-critical component faults",
+      "Unknown error codes may indicate safety-critical component issues",
       "Professional diagnosis strongly recommended for accurate identification and safe repair"
     ]
   }
