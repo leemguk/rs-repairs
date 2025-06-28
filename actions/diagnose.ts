@@ -165,11 +165,30 @@ function parseStructuredResponse(
   const reasonLine = lines.find(line => line.toUpperCase().startsWith('REASON:'))
   const safetyLine = lines.find(line => line.toUpperCase().startsWith('SAFETY:'))
   
-  // Parse causes
-  let possibleCauses = [`${brand} ${appliance} error code ${errorCode}: ${errorMeaning}`]
+  // Clean and shorten error meaning for causes
+  const cleanErrorMeaning = errorMeaning
+    .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
+    .replace(/\([^)]*\)/g, '') // Remove parenthetical content
+    .trim()
+    .substring(0, 100) // Limit length
+  
+  // Parse causes - keep them short and specific
+  let possibleCauses = [`${brand} ${appliance} error code ${errorCode} - water fill problem`]
   if (causesLine) {
-    const extractedCauses = causesLine.replace(/^CAUSES:\s*/i, '').split(/[,;]/).map(cause => cause.trim())
-    possibleCauses = [...possibleCauses, ...extractedCauses.slice(0, 3)]
+    const extractedCauses = causesLine.replace(/^CAUSES:\s*/i, '')
+      .split(/[,;]/)
+      .map(cause => cause.trim().substring(0, 80)) // Limit cause length
+      .filter(cause => cause.length > 0)
+      .slice(0, 3)
+    possibleCauses = [...possibleCauses, ...extractedCauses]
+  } else {
+    // Default causes for water fill issues
+    possibleCauses = [
+      `${brand} ${appliance} error code ${errorCode} - water fill problem`,
+      "Water supply valve closed or restricted",
+      "Inlet hose blocked, kinked, or disconnected", 
+      "Door not properly closed or door lock fault"
+    ]
   }
   
   // Parse service recommendation
@@ -189,27 +208,44 @@ function parseStructuredResponse(
   if (urgencyText.includes('low')) urgency = 'low'
   else if (urgencyText.includes('high')) urgency = 'high'
   
-  // Parse cost
-  const costText = costLine ? costLine.replace(/^COST:\s*/i, '') : '£109 - £149'
-  const estimatedCost = costText.includes('£') ? costText : `£${costText}`
+  // Parse and fix cost formatting
+  let estimatedCost = '£109 - £149'
+  if (costLine) {
+    const costText = costLine.replace(/^COST:\s*/i, '').trim()
+    if (costText && costText !== '£' && costText.length > 1) {
+      estimatedCost = costText.includes('£') ? costText : `£${costText}`
+    }
+  }
+  // For DIY water fill issues, lower cost estimate
+  if (recommendedService === 'diy') {
+    estimatedCost = '£0 - £50'
+  }
   
   // Parse reason
   const serviceReason = reasonLine 
-    ? reasonLine.replace(/^REASON:\s*/i, '')
-    : `Error code ${errorCode} on ${brand} ${appliance} requires ${recommendedService} service for proper resolution.`
+    ? reasonLine.replace(/^REASON:\s*/i, '').substring(0, 200)
+    : recommendedService === 'diy' 
+    ? `Error code ${errorCode} often indicates water supply issues that can be checked by the user before calling a professional.`
+    : `Error code ${errorCode} requires professional diagnosis with specialized equipment for accurate repair.`
   
-  // Parse safety warnings
+  // Parse safety warnings - keep them concise
   let safetyWarnings = [
     "Always disconnect power before attempting any inspection",
     "If unsure about any step, contact professional service"
   ]
   if (safetyLine) {
-    const extractedSafety = safetyLine.replace(/^SAFETY:\s*/i, '').split(/[,;]/).map(warning => warning.trim())
-    safetyWarnings = [...safetyWarnings, ...extractedSafety]
+    const extractedSafety = safetyLine.replace(/^SAFETY:\s*/i, '')
+      .split(/[,;]/)
+      .map(warning => warning.trim().substring(0, 80))
+      .filter(warning => warning.length > 0)
+      .slice(0, 2)
+    if (extractedSafety.length > 0) {
+      safetyWarnings = [...safetyWarnings, ...extractedSafety]
+    }
   }
   
   // Generate specific recommendations based on error meaning
-  const diyRecommendations = generateDIYRecommendations(errorMeaning, recommendedService)
+  const diyRecommendations = generateDIYRecommendations(cleanErrorMeaning, recommendedService)
   const professionalRecommendations = [
     `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
     "Specialized diagnostic equipment to identify exact component failure",
@@ -232,7 +268,7 @@ function parseStructuredResponse(
       ? ["Basic tools", "Manual reading", "Safety awareness"]
       : ["Specialized diagnostic equipment", "Brand-specific technical knowledge"],
     timeEstimate: recommendedService === "diy" ? "30 - 60 minutes" : "1 - 2 hours",
-    safetyWarnings
+    safetyWarnings: safetyWarnings.slice(0, 3) // Limit to 3 warnings max
   }
 }
 
@@ -240,30 +276,30 @@ function parseStructuredResponse(
 function generateDIYRecommendations(errorMeaning: string, recommendedService: string): string[] {
   const errorLower = errorMeaning.toLowerCase()
   
-  if (recommendedService === 'professional') {
-    return [
-      "Power cycle the appliance (unplug for 2 minutes)",
-      "Check that all connections are secure",
-      "Verify appliance settings are correct",
-      "Professional service recommended for this error code"
-    ]
-  }
-  
-  // Water fill issues (E4 on Beko)
-  if (errorLower.includes('water') && errorLower.includes('fill')) {
-    return [
-      "Check that water supply taps are fully turned on",
-      "Inspect inlet hose for kinks or blockages",
-      "Ensure door is properly closed and latched",
-      "Check water pressure is adequate (if recently changed)"
-    ]
+  // Water fill issues (E4 on Beko) - these are often DIY-checkable
+  if (errorLower.includes('water') && (errorLower.includes('fill') || errorLower.includes('intake'))) {
+    if (recommendedService === 'diy') {
+      return [
+        "Check that water supply taps are fully turned on",
+        "Inspect inlet hose for kinks or blockages",
+        "Ensure door is properly closed and latched",
+        "Check water pressure is adequate (if recently changed)"
+      ]
+    } else {
+      return [
+        "Check water supply taps are fully turned on (safe user check)",
+        "Verify door is properly closed and latched",
+        "Power cycle the appliance (unplug for 2 minutes)",
+        "Professional diagnosis recommended for internal water valve issues"
+      ]
+    }
   }
   
   // Drainage issues
   if (errorLower.includes('drain') || errorLower.includes('pump')) {
     return [
       "Check and clean the drain pump filter",
-      "Inspect drain hose for kinks or blockages",
+      "Inspect drain hose for kinks or blockages", 
       "Ensure drain hose is positioned correctly",
       "Run an empty cycle to test drainage"
     ]
@@ -274,7 +310,7 @@ function generateDIYRecommendations(errorMeaning: string, recommendedService: st
     return [
       "Check that hot water supply is working",
       "Verify temperature settings are correct",
-      "Ensure adequate power supply to the appliance",
+      "Power cycle the appliance (unplug for 2 minutes)",
       "Professional service recommended for heating element issues"
     ]
   }
@@ -289,7 +325,17 @@ function generateDIYRecommendations(errorMeaning: string, recommendedService: st
     ]
   }
   
-  // Default recommendations
+  // For professional service recommendations
+  if (recommendedService === 'professional') {
+    return [
+      "Power cycle the appliance (unplug for 2 minutes)",
+      "Check that all connections are secure",
+      "Verify appliance settings are correct",
+      "Professional service recommended for this error code"
+    ]
+  }
+  
+  // Default DIY recommendations
   return [
     "Power cycle the appliance (unplug for 2 minutes)",
     "Check all connections and settings",
