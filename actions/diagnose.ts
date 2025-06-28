@@ -177,36 +177,32 @@ function parseStructuredResponse(
     const causesIndex = lines.findIndex(line => line.toUpperCase().startsWith('CAUSES:'))
     if (causesIndex !== -1) {
       // Get the next few lines that start with numbers
-      for (let i = causesIndex + 1; i < lines.length && i < causesIndex + 6; i++) {
+      for (let i = causesIndex + 1; i < lines.length && i < causesIndex + 8; i++) {
         const line = lines[i]
         if (line.match(/^\d+\.\s/) || line.match(/^[-•]\s/)) {
           // Extract cause text, remove numbering/bullets
           const cause = line.replace(/^\d+\.\s*/, '').replace(/^[-•]\s*/, '').trim()
-          if (cause.length > 0 && cause.length < 100) {
+          if (cause.length > 0 && cause.length < 150) {
             possibleCauses.push(cause)
           }
-        } else if (line.length > 0 && !line.toUpperCase().startsWith('SERVICE:') && possibleCauses.length < 4) {
-          // If it's not empty and not the next section, might be a cause
-          const cause = line.trim()
-          if (cause.length > 10 && cause.length < 100) {
-            possibleCauses.push(cause)
-          }
+        } else if (line.toUpperCase().startsWith('SERVICE:') || line.toUpperCase().startsWith('COST:')) {
+          // Stop when we hit the next section
+          break
         }
       }
     }
   }
   
-  // If no detailed causes found, use default
-  if (possibleCauses.length === 0) {
+  // If we found causes, add the main description. If not, use defaults
+  if (possibleCauses.length > 0) {
+    possibleCauses.unshift(`${brand} ${appliance} error code ${errorCode} - water fill problem`)
+  } else {
     possibleCauses = [
       `${brand} ${appliance} error code ${errorCode} - water fill problem`,
       "Water supply valve closed or restricted",
       "Inlet hose blocked, kinked, or disconnected", 
       "Door not properly closed or door lock fault"
     ]
-  } else {
-    // Add the main error description at the start
-    possibleCauses.unshift(`${brand} ${appliance} error code ${errorCode} - water fill problem`)
   }
   
   // Parse service recommendation
@@ -240,12 +236,19 @@ function parseStructuredResponse(
     else difficulty = 'expert'
   }
   
-  // Parse urgency
+  // Set consistent urgency - water fill issues are typically medium unless safety critical
   const urgencyText = urgencyLine ? urgencyLine.replace(/^URGENCY:\s*/i, '').toLowerCase() : 'medium'
   let urgency: "low" | "medium" | "high" = 'medium'
-  if (urgencyText.includes('low')) urgency = 'low'
-  else if (urgencyText.includes('high') || urgencyText.includes('urgent')) urgency = 'high'
-  else urgency = 'medium'
+  
+  // For E4 water fill issues, typically medium priority (machine doesn't work but not dangerous)
+  if (errorCode.toUpperCase() === 'E4') {
+    urgency = 'medium'
+  } else {
+    // For other error codes, use AI assessment
+    if (urgencyText.includes('low')) urgency = 'low'
+    else if (urgencyText.includes('high') || urgencyText.includes('urgent')) urgency = 'high'
+    else urgency = 'medium'
+  }
   
   // Set consistent cost based on service recommendation
   let estimatedCost = '£109 - £149'
@@ -318,17 +321,36 @@ function parseStructuredResponse(
     ]
   }
   
-  // Generate recommendations based on service type
+  // Generate recommendations based on service type and specific error details
   const diyRecommendations = generateDIYRecommendations(errorMeaning, recommendedService)
-  const professionalRecommendations = [
+  
+  // Generate specific professional recommendations based on the extracted causes
+  let professionalRecommendations = [
     `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-    "Specialized diagnostic equipment to identify exact component failure",
-    "Brand-specific repair procedures using genuine parts",
-    "Complete system testing and warranty-backed repair"
+    "Repair or replace faulty water inlet valve if needed",
+    "Fix internal wiring or control board issues",
+    "Complete testing to ensure proper water flow and pressure"
   ]
   
+  // Customize professional recommendations based on specific causes found
+  if (possibleCauses.some(cause => cause.toLowerCase().includes('inlet valve'))) {
+    professionalRecommendations = [
+      `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
+      "Replace faulty water inlet valve and associated components",
+      "Repair control board or wiring issues affecting water fill",
+      "Test all water intake systems and calibrate pressure settings"
+    ]
+  } else if (possibleCauses.some(cause => cause.toLowerCase().includes('door lock'))) {
+    professionalRecommendations = [
+      `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
+      "Repair or replace faulty door lock mechanism",
+      "Fix wiring issues preventing proper door detection",
+      "Test complete door safety and locking system"
+    ]
+  }
+  
   const result = {
-    possibleCauses: possibleCauses.slice(0, 4), // Limit to 4 causes max
+    possibleCauses: possibleCauses.slice(0, 5), // Allow up to 5 causes (main + 4 specific)
     recommendations: {
       diy: diyRecommendations,
       professional: professionalRecommendations
@@ -340,9 +362,9 @@ function parseStructuredResponse(
     serviceReason,
     skillsRequired: recommendedService === "diy" 
       ? ["Basic tools", "Manual reading", "Safety awareness"]
-      : ["Specialized diagnostic equipment", "Brand-specific technical knowledge"],
+      : ["Specialized diagnostic equipment", "Technical knowledge"],
     timeEstimate,
-    safetyWarnings: safetyWarnings.slice(0, 4) // Limit to 4 warnings max
+    safetyWarnings: safetyWarnings.slice(0, 4) // Allow up to 4 safety warnings
   }
   
   console.log(`Final diagnosis result:`, JSON.stringify(result, null, 2))
@@ -495,9 +517,9 @@ function getErrorCodeFallback(errorCode: string, appliance: string, brand: strin
       ],
       professional: [
         `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-        "Specialized diagnostic equipment to identify exact component failure",
-        "Brand-specific repair procedures using genuine parts",
-        "Complete system testing and calibration after repair"
+        "Repair or replace faulty components identified during diagnosis",
+        "Fix internal wiring or control system issues",
+        "Complete testing and calibration after repair"
       ]
     },
     urgency: "medium",
