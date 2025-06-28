@@ -205,78 +205,6 @@ Be specific to what error code ${errorCode} actually means for ${brand} applianc
   }
 }
 
-// Generate specific DIY recommendations based on error meaning
-function generateDIYRecommendations(errorMeaning: string, recommendedService: string): string[] {
-  const errorLower = errorMeaning.toLowerCase()
-  
-  // Water fill issues (E4 on Beko) - these are often DIY-checkable
-  if (errorLower.includes('water') && (errorLower.includes('fill') || errorLower.includes('intake'))) {
-    if (recommendedService === 'diy') {
-      return [
-        "Check that water supply taps are fully turned on",
-        "Inspect inlet hose for kinks or blockages",
-        "Ensure door is properly closed and latched",
-        "Check water pressure is adequate (if recently changed)"
-      ]
-    } else {
-      return [
-        "Check water supply taps are fully turned on (safe user check)",
-        "Verify door is properly closed and latched",
-        "Power cycle the appliance (unplug for 2 minutes)",
-        "Professional diagnosis recommended for internal water valve issues"
-      ]
-    }
-  }
-  
-  // Drainage issues
-  if (errorLower.includes('drain') || errorLower.includes('pump')) {
-    return [
-      "Check and clean the drain pump filter",
-      "Inspect drain hose for kinks or blockages", 
-      "Ensure drain hose is positioned correctly",
-      "Run an empty cycle to test drainage"
-    ]
-  }
-  
-  // Heating issues
-  if (errorLower.includes('heat') || errorLower.includes('temperature')) {
-    return [
-      "Check that hot water supply is working",
-      "Verify temperature settings are correct",
-      "Power cycle the appliance (unplug for 2 minutes)",
-      "Professional service recommended for heating element issues"
-    ]
-  }
-  
-  // Door issues
-  if (errorLower.includes('door') || errorLower.includes('lock')) {
-    return [
-      "Ensure door is properly closed and aligned",
-      "Check for obstructions around door seal",
-      "Clean door latch and strike mechanism",
-      "Try opening and closing door firmly several times"
-    ]
-  }
-  
-  // For professional service recommendations
-  if (recommendedService === 'professional') {
-    return [
-      "Power cycle the appliance (unplug for 2 minutes)",
-      "Check that all connections are secure",
-      "Verify appliance settings are correct",
-      "Professional service recommended for this error code"
-    ]
-  }
-  
-  // Default DIY recommendations
-  return [
-    "Power cycle the appliance (unplug for 2 minutes)",
-    "Check all connections and settings",
-    "Consult user manual for basic troubleshooting",
-    "Contact professional service if issue persists"
-  ]
-}
-
 // Fallback for general problems without error codes
 async function diagnoseGeneralProblem(
   appliance: string,
@@ -677,44 +605,6 @@ export async function diagnoseProblem(
 
 // Enhanced fallback specifically for error codes
 function getErrorCodeFallback(errorCode: string, appliance: string, brand: string, problem: string): DiagnosisResult {
-  // Special handling for Beko E4 - water fill issue
-  if (errorCode.toUpperCase() === 'E4' && brand.toLowerCase().includes('beko') && appliance.toLowerCase().includes('washing')) {
-    return {
-      possibleCauses: [
-        "Beko washing machine error code E4 - water fill problem",
-        "Water supply valve closed or restricted",
-        "Inlet hose blocked, kinked, or disconnected",
-        "Door not properly closed or door lock fault"
-      ],
-      recommendations: {
-        diy: [
-          "Check that water supply taps are fully turned on",
-          "Inspect inlet hose for kinks or blockages",
-          "Ensure door is properly closed and latched",
-          "Check water pressure is adequate (if recently changed)"
-        ],
-        professional: [
-          "Professional diagnosis of Beko washing machine error code E4",
-          "Check for faulty water inlet valve and replace if needed",
-          "Inspect internal wiring or control board issues",
-          "Test all water intake systems and calibrate pressure settings"
-        ]
-      },
-      urgency: "medium",
-      estimatedCost: "£0 - £50",
-      difficulty: "moderate",
-      recommendedService: "diy",
-      serviceReason: "Error code E4 often indicates water supply issues that can be checked by the user (taps, hoses, door) before calling a professional.",
-      skillsRequired: ["Basic tools", "Manual reading", "Safety awareness"],
-      timeEstimate: "30 - 60 minutes",
-      safetyWarnings: [
-        "Always disconnect power before attempting any inspection",
-        "Check water supply connections carefully",
-        "If DIY checks don't resolve the issue, contact professional service"
-      ]
-    }
-  }
-  
   // Unknown error code fallback - be honest that we don't know
   return {
     possibleCauses: [
@@ -787,69 +677,6 @@ async function saveDiagnosticToDatabase(
     }
   } catch (error) {
     console.error('Failed to save diagnostic to database:', error)
-  }
-}
-
-// Fallback for general problems without error codes
-async function diagnoseGeneralProblem(
-  appliance: string,
-  brand: string, 
-  problem: string,
-  apiKey: string
-): Promise<DiagnosisResult | null> {
-  try {
-    console.log(`Analyzing general problem: ${problem} for ${brand} ${appliance}`)
-    
-    const prompt = `A customer has a ${brand ? brand + ' ' : ''}${appliance} with this problem: "${problem}"
-
-Please provide a professional appliance repair diagnosis:
-
-CAUSES: List 3-4 most likely specific causes for this exact problem
-SERVICE: State if this is typically "diy" or "professional" 
-COST: Estimated repair cost range in £ (maximum £149 for professional service)
-DIFFICULTY: Rate as easy/moderate/difficult/expert
-URGENCY: Rate as low/medium/high
-REASON: Explain why DIY or professional service is recommended
-SAFETY: Any specific safety warnings for this problem
-
-Be specific to the exact problem described and provide actionable recommendations.`
-
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST", 
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "X-Title": "RS Repairs General Diagnosis"
-      },
-      body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet',
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 600,
-        temperature: 0.1
-      })
-    })
-
-    if (!response.ok) {
-      console.error(`OpenRouter API error: ${response.status}`)
-      return null
-    }
-
-    const data = await response.json()
-    const aiResponse = data.choices[0]?.message?.content?.trim()
-    
-    if (!aiResponse) {
-      console.error('No AI response for general problem')
-      return null
-    }
-
-    console.log(`AI general diagnosis: ${aiResponse}`)
-    
-    // Parse the AI response using the same logic as error codes
-    return parseStructuredResponse(aiResponse, 'N/A', brand, appliance, problem)
-
-  } catch (error) {
-    console.error('Error in general diagnosis:', error)
-    return null
   }
 }
 
