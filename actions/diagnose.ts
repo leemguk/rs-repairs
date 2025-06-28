@@ -1,4 +1,8 @@
-"use server"
+// Step 3: Final fallback for any remaining cases
+    console.log('All AI analysis failed, using basic fallback')
+    const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
+    await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
+    return fallbackResult"use server"
 
 import { supabase } from '@/lib/supabase'
 
@@ -589,6 +593,69 @@ function generateDIYRecommendations(errorMeaning: string, recommendedService: st
     "Consult user manual for basic troubleshooting",
     "Contact professional service if issue persists"
   ]
+}
+
+// Fallback for general problems without error codes
+async function diagnoseGeneralProblem(
+  appliance: string,
+  brand: string, 
+  problem: string,
+  apiKey: string
+): Promise<DiagnosisResult | null> {
+  try {
+    console.log(`Analyzing general problem: ${problem} for ${brand} ${appliance}`)
+    
+    const prompt = `A customer has a ${brand ? brand + ' ' : ''}${appliance} with this problem: "${problem}"
+
+Please provide a professional appliance repair diagnosis:
+
+CAUSES: List 3-4 most likely specific causes for this exact problem
+SERVICE: State if this is typically "diy" or "professional" 
+COST: Estimated repair cost range in £ (maximum £149 for professional service)
+DIFFICULTY: Rate as easy/moderate/difficult/expert
+URGENCY: Rate as low/medium/high
+REASON: Explain why DIY or professional service is recommended
+SAFETY: Any specific safety warnings for this problem
+
+Be specific to the exact problem described and provide actionable recommendations.`
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST", 
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "X-Title": "RS Repairs General Diagnosis"
+      },
+      body: JSON.stringify({
+        model: 'anthropic/claude-3.5-sonnet',
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 600,
+        temperature: 0.1
+      })
+    })
+
+    if (!response.ok) {
+      console.error(`OpenRouter API error: ${response.status}`)
+      return null
+    }
+
+    const data = await response.json()
+    const aiResponse = data.choices[0]?.message?.content?.trim()
+    
+    if (!aiResponse) {
+      console.error('No AI response for general problem')
+      return null
+    }
+
+    console.log(`AI general diagnosis: ${aiResponse}`)
+    
+    // Parse the AI response using the same logic as error codes
+    return parseStructuredResponse(aiResponse, 'N/A', brand, appliance, problem)
+
+  } catch (error) {
+    console.error('Error in general diagnosis:', error)
+    return null
+  }
 }
 
 // Main diagnosis function
