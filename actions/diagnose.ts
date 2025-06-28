@@ -154,6 +154,8 @@ function parseStructuredResponse(
   appliance: string,
   errorMeaning: string
 ): DiagnosisResult {
+  console.log(`Parsing AI response: ${response}`)
+  
   const lines = response.split('\n').map(line => line.trim())
   
   // Extract structured data
@@ -165,24 +167,91 @@ function parseStructuredResponse(
   const reasonLine = lines.find(line => line.toUpperCase().startsWith('REASON:'))
   const safetyLine = lines.find(line => line.toUpperCase().startsWith('SAFETY:'))
   
-  // Clean and shorten error meaning for causes
+  console.log(`Found structured lines: SERVICE=${serviceLine}, DIFFICULTY=${difficultyLine}, URGENCY=${urgencyLine}`)
+  
+  // Parse service recommendation first - this drives everything else
+  const serviceText = serviceLine ? serviceLine.replace(/^SERVICE:\s*/i, '').toLowerCase() : 'unknown'
+  console.log(`Service text extracted: "${serviceText}"`)
+  
+  // For Beko E4 (water fill), determine if it's DIY or Professional based on specific logic
+  let recommendedService: "diy" | "professional" | "warranty" = 'professional'
+  
+  // E4 water fill issues can often be DIY if they're external (taps, hoses, door)
+  if (errorCode.toUpperCase() === 'E4' && brand.toLowerCase().includes('beko')) {
+    if (serviceText.includes('diy') || serviceText.includes('user') || serviceText.includes('simple')) {
+      recommendedService = 'diy'
+    } else {
+      // Default to professional for E4 since it can involve internal water valves
+      recommendedService = 'professional'
+    }
+  } else {
+    recommendedService = serviceText.includes('diy') ? 'diy' : 'professional'
+  }
+  
+  console.log(`Final recommended service: ${recommendedService}`)
+  
+  // Set consistent difficulty based on service recommendation
+  let difficulty: "easy" | "moderate" | "difficult" | "expert"
+  if (recommendedService === 'diy') {
+    difficulty = 'moderate' // DIY should never be "expert"
+  } else {
+    // Professional service
+    const difficultyText = difficultyLine ? difficultyLine.replace(/^DIFFICULTY:\s*/i, '').toLowerCase() : 'expert'
+    if (difficultyText.includes('easy')) difficulty = 'easy'
+    else if (difficultyText.includes('moderate')) difficulty = 'moderate' 
+    else if (difficultyText.includes('difficult')) difficulty = 'difficult'
+    else difficulty = 'expert'
+  }
+  
+  // Set consistent urgency
+  const urgencyText = urgencyLine ? urgencyLine.replace(/^URGENCY:\s*/i, '').toLowerCase() : 'medium'
+  let urgency: "low" | "medium" | "high" = 'medium'
+  if (urgencyText.includes('low')) urgency = 'low'
+  else if (urgencyText.includes('high') || urgencyText.includes('urgent')) urgency = 'high'
+  else urgency = 'medium'
+  
+  // For water fill issues, typically not high priority unless safety related
+  if (errorCode.toUpperCase() === 'E4' && !urgencyText.includes('high')) {
+    urgency = 'medium'
+  }
+  
+  // Set consistent cost based on service recommendation
+  let estimatedCost = '£109 - £149'
+  if (recommendedService === 'diy') {
+    estimatedCost = '£0 - £50'
+  } else {
+    if (costLine) {
+      const costText = costLine.replace(/^COST:\s*/i, '').trim()
+      if (costText && costText !== '£' && costText.length > 1) {
+        estimatedCost = costText.includes('£') ? costText : `£${costText}`
+      }
+    }
+  }
+  
+  // Set consistent time estimate
+  const timeEstimate = recommendedService === 'diy' ? "30 - 60 minutes" : "1 - 2 hours"
+  
+  // Clean up error meaning for display
   const cleanErrorMeaning = errorMeaning
     .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
     .replace(/\([^)]*\)/g, '') // Remove parenthetical content
     .trim()
-    .substring(0, 100) // Limit length
   
-  // Parse causes - keep them short and specific
-  let possibleCauses = [`${brand} ${appliance} error code ${errorCode} - water fill problem`]
+  // Generate specific possible causes
+  let possibleCauses: string[]
   if (causesLine) {
     const extractedCauses = causesLine.replace(/^CAUSES:\s*/i, '')
       .split(/[,;]/)
-      .map(cause => cause.trim().substring(0, 80)) // Limit cause length
+      .map(cause => cause.trim().substring(0, 80))
       .filter(cause => cause.length > 0)
       .slice(0, 3)
-    possibleCauses = [...possibleCauses, ...extractedCauses]
+    
+    possibleCauses = [
+      `${brand} ${appliance} error code ${errorCode} - water fill problem`,
+      ...extractedCauses
+    ]
   } else {
-    // Default causes for water fill issues
+    // Default specific causes for E4 water fill
     possibleCauses = [
       `${brand} ${appliance} error code ${errorCode} - water fill problem`,
       "Water supply valve closed or restricted",
@@ -191,48 +260,28 @@ function parseStructuredResponse(
     ]
   }
   
-  // Parse service recommendation
-  const serviceText = serviceLine ? serviceLine.replace(/^SERVICE:\s*/i, '').toLowerCase() : 'professional'
-  const recommendedService = serviceText.includes('diy') ? 'diy' : 'professional'
-  
-  // Parse difficulty
-  const difficultyText = difficultyLine ? difficultyLine.replace(/^DIFFICULTY:\s*/i, '').toLowerCase() : 'expert'
-  let difficulty: "easy" | "moderate" | "difficult" | "expert" = 'expert'
-  if (difficultyText.includes('easy')) difficulty = 'easy'
-  else if (difficultyText.includes('moderate')) difficulty = 'moderate'
-  else if (difficultyText.includes('difficult')) difficulty = 'difficult'
-  
-  // Parse urgency
-  const urgencyText = urgencyLine ? urgencyLine.replace(/^URGENCY:\s*/i, '').toLowerCase() : 'medium'
-  let urgency: "low" | "medium" | "high" = 'medium'
-  if (urgencyText.includes('low')) urgency = 'low'
-  else if (urgencyText.includes('high')) urgency = 'high'
-  
-  // Parse and fix cost formatting
-  let estimatedCost = '£109 - £149'
-  if (costLine) {
-    const costText = costLine.replace(/^COST:\s*/i, '').trim()
-    if (costText && costText !== '£' && costText.length > 1) {
-      estimatedCost = costText.includes('£') ? costText : `£${costText}`
-    }
-  }
-  // For DIY water fill issues, lower cost estimate
-  if (recommendedService === 'diy') {
-    estimatedCost = '£0 - £50'
-  }
-  
-  // Parse reason
+  // Generate consistent service reason
   const serviceReason = reasonLine 
     ? reasonLine.replace(/^REASON:\s*/i, '').substring(0, 200)
     : recommendedService === 'diy' 
     ? `Error code ${errorCode} often indicates water supply issues that can be checked by the user before calling a professional.`
     : `Error code ${errorCode} requires professional diagnosis with specialized equipment for accurate repair.`
   
-  // Parse safety warnings - keep them concise
+  // Generate recommendations based on service type
+  const diyRecommendations = generateDIYRecommendations(cleanErrorMeaning, recommendedService)
+  const professionalRecommendations = [
+    `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
+    "Specialized diagnostic equipment to identify exact component failure",
+    "Brand-specific repair procedures using genuine parts",
+    "Complete system testing and warranty-backed repair"
+  ]
+  
+  // Set safety warnings
   let safetyWarnings = [
     "Always disconnect power before attempting any inspection",
     "If unsure about any step, contact professional service"
   ]
+  
   if (safetyLine) {
     const extractedSafety = safetyLine.replace(/^SAFETY:\s*/i, '')
       .split(/[,;]/)
@@ -244,16 +293,7 @@ function parseStructuredResponse(
     }
   }
   
-  // Generate specific recommendations based on error meaning
-  const diyRecommendations = generateDIYRecommendations(cleanErrorMeaning, recommendedService)
-  const professionalRecommendations = [
-    `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-    "Specialized diagnostic equipment to identify exact component failure",
-    "Brand-specific repair procedures using genuine parts",
-    "Complete system testing and warranty-backed repair"
-  ]
-  
-  return {
+  const result = {
     possibleCauses,
     recommendations: {
       diy: diyRecommendations,
@@ -267,9 +307,12 @@ function parseStructuredResponse(
     skillsRequired: recommendedService === "diy" 
       ? ["Basic tools", "Manual reading", "Safety awareness"]
       : ["Specialized diagnostic equipment", "Brand-specific technical knowledge"],
-    timeEstimate: recommendedService === "diy" ? "30 - 60 minutes" : "1 - 2 hours",
-    safetyWarnings: safetyWarnings.slice(0, 3) // Limit to 3 warnings max
+    timeEstimate,
+    safetyWarnings: safetyWarnings.slice(0, 3)
   }
+  
+  console.log(`Final diagnosis result:`, JSON.stringify(result, null, 2))
+  return result
 }
 
 // Generate specific DIY recommendations based on error meaning
