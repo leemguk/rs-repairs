@@ -51,44 +51,63 @@ async function lookupErrorCodeWithWebsearch(
   try {
     console.log(`Looking up error code ${errorCode} for ${brand} ${appliance} with websearch`)
     
-    // First, get the specific meaning of this error code
-    const lookupPrompt = `What does error code ${errorCode} specifically mean on a ${brand} ${appliance}? I need the exact technical meaning of this error code for this brand.`
-
-    const lookupResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "X-Title": "RS Repairs Error Code Lookup"
-      },
-      body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet:online', // FIXED: Using correct websearch model
-        messages: [{ role: "user", content: lookupPrompt }],
-        max_tokens: 300,
-        temperature: 0.1
+    // Try multiple search approaches for better coverage
+    const searchQueries = [
+      `${brand} ${appliance} error code ${errorCode} meaning`,
+      `${brand} washing machine ${errorCode} error code`,
+      `${errorCode} error code ${brand}`,
+      `"error code ${errorCode}" ${brand} ${appliance}`
+    ]
+    
+    let errorMeaning = null
+    
+    // Try each search query until we find useful information
+    for (const query of searchQueries) {
+      console.log(`Trying search query: ${query}`)
+      
+      const lookupResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "X-Title": "RS Repairs Error Code Lookup"
+        },
+        body: JSON.stringify({
+          model: 'anthropic/claude-3.5-sonnet:online',
+          messages: [{ role: "user", content: `What does error code ${errorCode} specifically mean on a ${brand} ${appliance}? Search for the exact technical meaning of this error code.` }],
+          max_tokens: 300,
+          temperature: 0.1
+        })
       })
-    })
 
-    if (!lookupResponse.ok) {
-      console.error(`Lookup API error: ${lookupResponse.status}`)
-      return null
+      if (!lookupResponse.ok) {
+        console.log(`Search attempt failed: ${lookupResponse.status}`)
+        continue
+      }
+
+      const lookupData = await lookupResponse.json()
+      const response = lookupData.choices[0]?.message?.content?.trim()
+      
+      if (!response) {
+        console.log('No response content')
+        continue
+      }
+      
+      console.log(`Search response: ${response}`)
+      
+      // Check if this response contains useful information
+      if (isUsefulErrorCodeResponse(response, errorCode)) {
+        errorMeaning = response
+        console.log(`Found useful information: ${errorMeaning}`)
+        break
+      } else {
+        console.log('Response not useful, trying next query')
+      }
     }
-
-    const lookupData = await lookupResponse.json()
-    const errorMeaning = lookupData.choices[0]?.message?.content?.trim()
     
+    // If no useful information found, return null for fallback handling
     if (!errorMeaning) {
-      console.error('No error meaning returned')
-      return null
-    }
-
-    console.log(`Error meaning found: ${errorMeaning}`)
-    
-    // Validate that we got specific information (not generic)
-    if (errorMeaning.toLowerCase().includes('component malfunction') || 
-        errorMeaning.toLowerCase().includes('sensor failure') ||
-        !errorMeaning.toLowerCase().includes(errorCode.toLowerCase())) {
-      console.log('Got generic response, using fallback')
+      console.log('No useful error code information found after all attempts')
       return null
     }
 
@@ -115,7 +134,7 @@ Be specific to what error code ${errorCode} actually means for ${brand} applianc
         "X-Title": "RS Repairs Error Diagnosis"
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet', // No websearch needed for diagnosis
+        model: 'anthropic/claude-3.5-sonnet',
         messages: [{ role: "user", content: diagnosisPrompt }],
         max_tokens: 500,
         temperature: 0.1
@@ -144,6 +163,46 @@ Be specific to what error code ${errorCode} actually means for ${brand} applianc
     console.error(`Error in websearch lookup:`, error)
     return null
   }
+}
+
+// Check if the AI response contains useful error code information
+function isUsefulErrorCodeResponse(response: string, errorCode: string): boolean {
+  const responseLower = response.toLowerCase()
+  const codeLower = errorCode.toLowerCase()
+  
+  // Check for dismissive responses
+  const dismissivePatterns = [
+    'i apologize, but',
+    'i don\'t see a specific definition',
+    'i cannot find',
+    'not specifically mentioned',
+    'not listed',
+    'would recommend checking',
+    'contact the manufacturer',
+    'consulting your manual',
+    'i cannot make specific claims'
+  ]
+  
+  if (dismissivePatterns.some(pattern => responseLower.includes(pattern))) {
+    return false
+  }
+  
+  // Check for useful content
+  const usefulPatterns = [
+    'indicates',
+    'means',
+    'signifies',
+    'refers to',
+    'problem with',
+    'issue with',
+    'fault',
+    'typically indicates',
+    'usually means'
+  ]
+  
+  // Must contain the error code and useful information
+  return responseLower.includes(codeLower) && 
+         usefulPatterns.some(pattern => responseLower.includes(pattern))
 }
 
 // Parse structured AI response into DiagnosisResult format
