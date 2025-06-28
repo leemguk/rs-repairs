@@ -388,9 +388,12 @@ function parseStructuredResponse(
   }
   
   // Build the main error description based on what we actually found
-  let mainErrorDescription = `${brand} ${appliance} error code ${errorCode}`
+  let mainErrorDescription = `${brand} ${appliance}`
+  if (errorCode !== 'N/A') {
+    mainErrorDescription += ` error code ${errorCode}`
+  }
   
-  // Try to extract the actual error meaning from the AI's error meaning response
+  // Try to extract the actual problem type from the AI's error meaning response
   if (errorMeaning) {
     const meaningLower = errorMeaning.toLowerCase()
     
@@ -407,6 +410,8 @@ function parseStructuredResponse(
       mainErrorDescription += ' - pump problem'
     } else if (meaningLower.includes('sensor')) {
       mainErrorDescription += ' - sensor problem'
+    } else if (meaningLower.includes('not emptying') || meaningLower.includes('not draining')) {
+      mainErrorDescription += ' - drainage problem'
     } else {
       // If we can't determine the specific type, use generic description
       mainErrorDescription += ' - system fault detected'
@@ -419,39 +424,8 @@ function parseStructuredResponse(
   if (possibleCauses.length > 0) {
     possibleCauses.unshift(mainErrorDescription)
   } else {
-    // Fallback causes based on the error meaning we found
-    const meaningLower = errorMeaning ? errorMeaning.toLowerCase() : ''
-    
-    if (meaningLower.includes('drainage') || meaningLower.includes('drain')) {
-      possibleCauses = [
-        mainErrorDescription,
-        "Blocked or clogged drain pump filter",
-        "Kinked or blocked drain hose",
-        "Faulty drain pump or drainage system"
-      ]
-    } else if (meaningLower.includes('water inlet') || meaningLower.includes('water fill')) {
-      possibleCauses = [
-        mainErrorDescription,
-        "Water supply valve closed or restricted",
-        "Inlet hose blocked, kinked, or disconnected",
-        "Door not properly closed or door lock fault"
-      ]
-    } else if (meaningLower.includes('heating') || meaningLower.includes('temperature')) {
-      possibleCauses = [
-        mainErrorDescription,
-        "Faulty heating element",
-        "Temperature sensor malfunction",
-        "Control board communication issue with heating system"
-      ]
-    } else {
-      // Generic fallback when we can't determine the specific problem type
-      possibleCauses = [
-        mainErrorDescription,
-        "Electronic control system issue requiring professional diagnosis",
-        "Internal component malfunction needing specialized diagnostic equipment",
-        "Sensor or communication error between system components"
-      ]
-    }
+    // Only provide main description if no AI causes found
+    possibleCauses = [mainErrorDescription]
   }
   
   // Parse service recommendation
@@ -460,15 +434,11 @@ function parseStructuredResponse(
   
   let recommendedService: "diy" | "professional" | "warranty" = 'professional'
   
-  // For Beko E4, check if AI recommends DIY first
-  if (errorCode.toUpperCase() === 'E4' && brand.toLowerCase().includes('beko')) {
-    if (serviceText.includes('diy') || serviceText.includes('initially diy') || serviceText.includes('user') || serviceText.includes('simple')) {
-      recommendedService = 'diy'
-    } else {
-      recommendedService = 'professional'
-    }
+  // Determine service recommendation from AI response
+  if (serviceText.includes('diy') || serviceText.includes('initially diy') || serviceText.includes('user') || serviceText.includes('simple')) {
+    recommendedService = 'diy'
   } else {
-    recommendedService = serviceText.includes('diy') ? 'diy' : 'professional'
+    recommendedService = 'professional'
   }
   
   console.log(`Final recommended service: ${recommendedService}`)
@@ -485,19 +455,13 @@ function parseStructuredResponse(
     else difficulty = 'expert'
   }
   
-  // Set consistent urgency - water fill issues are typically medium unless safety critical
+  // Parse urgency from AI
   const urgencyText = urgencyLine ? urgencyLine.replace(/^URGENCY:\s*/i, '').toLowerCase() : 'medium'
   let urgency: "low" | "medium" | "high" = 'medium'
   
-  // For E4 water fill issues, typically medium priority (machine doesn't work but not dangerous)
-  if (errorCode.toUpperCase() === 'E4') {
-    urgency = 'medium'
-  } else {
-    // For other error codes, use AI assessment
-    if (urgencyText.includes('low')) urgency = 'low'
-    else if (urgencyText.includes('high') || urgencyText.includes('urgent')) urgency = 'high'
-    else urgency = 'medium'
-  }
+  if (urgencyText.includes('low')) urgency = 'low'
+  else if (urgencyText.includes('high') || urgencyText.includes('urgent')) urgency = 'high'
+  else urgency = 'medium'
   
   // Set consistent cost based on service recommendation with £149 cap
   let estimatedCost = '£109 - £149'
@@ -556,8 +520,8 @@ function parseStructuredResponse(
   // Default reason if not extracted
   if (!serviceReason || serviceReason.length < 10) {
     serviceReason = recommendedService === 'diy' 
-      ? `Error code ${errorCode} often indicates water supply issues that can be checked by the user before calling a professional.`
-      : `Error code ${errorCode} requires professional diagnosis with specialized equipment for accurate repair.`
+      ? `Basic troubleshooting steps can be attempted by the user before calling a professional.`
+      : `Professional diagnosis with specialized equipment recommended for accurate repair.`
   }
   
   // Extract detailed safety warnings
@@ -586,54 +550,35 @@ function parseStructuredResponse(
     ]
   }
   
-  // Generate recommendations based on service type and specific error details
-  const diyRecommendations = generateDIYRecommendations(errorMeaning, recommendedService)
+  // Extract DIY recommendations from AI response
+  let diyRecommendations: string[] = []
+  // Look for DIY section in AI response (this should come from AI, not hardcoded)
   
-  // Generate specific professional recommendations based on what the error actually means
-  let professionalRecommendations = [
-    `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-    "Specialized diagnostic equipment to identify exact component failure",
-    "Professional repair using appropriate replacement parts",
-    "Complete system testing and calibration after repair"
-  ]
+  // Extract Professional recommendations from AI response  
+  let professionalRecommendations: string[] = []
+  // Look for Professional section in AI response (this should come from AI, not hardcoded)
   
-  // Customize professional recommendations based on the actual error meaning
-  if (errorMeaning) {
-    const meaningLower = errorMeaning.toLowerCase()
-    
-    if (meaningLower.includes('drainage') || meaningLower.includes('drain')) {
-      professionalRecommendations = [
-        `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-        "Check for faulty drain pump and replace if needed",
-        "Inspect drainage system and clear internal blockages",
-        "Test complete drainage cycle and water flow systems"
-      ]
-    } else if (possibleCauses.some(cause => cause.toLowerCase().includes('inlet valve'))) {
-      professionalRecommendations = [
-        `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-        "Check for faulty water inlet valve and replace if needed",
-        "Inspect control board or wiring issues affecting water fill",
-        "Test all water intake systems and calibrate pressure settings"
-      ]
-    } else if (meaningLower.includes('heating') || meaningLower.includes('temperature')) {
-      professionalRecommendations = [
-        `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-        "Check for faulty heating element and replace if needed",
-        "Test temperature sensor and heating system wiring",
-        "Inspect control board communication with heating components"
-      ]
-    } else if (possibleCauses.some(cause => cause.toLowerCase().includes('door lock'))) {
-      professionalRecommendations = [
-        `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-        "Check for faulty door lock mechanism and repair if needed",
-        "Inspect wiring issues preventing proper door detection",
-        "Test complete door safety and locking system"
-      ]
-    }
+  // If AI didn't provide recommendations, use minimal defaults
+  if (diyRecommendations.length === 0) {
+    diyRecommendations = [
+      "Power cycle the appliance (unplug for 2 minutes)",
+      "Check basic connections and settings",
+      "Consult user manual for troubleshooting",
+      "Contact professional service if issue persists"
+    ]
+  }
+  
+  if (professionalRecommendations.length === 0) {
+    professionalRecommendations = [
+      `Professional diagnosis of ${brand} ${appliance}${errorCode !== 'N/A' ? ` error code ${errorCode}` : ''}`,
+      "Specialized diagnostic equipment to identify exact issue",
+      "Professional repair using appropriate replacement parts",  
+      "Complete system testing after repair"
+    ]
   }
   
   const result = {
-    possibleCauses: possibleCauses.slice(0, 5), // Allow up to 5 causes (main + 4 specific)
+    possibleCauses: possibleCauses.slice(0, 5),
     recommendations: {
       diy: diyRecommendations,
       professional: professionalRecommendations
@@ -647,7 +592,7 @@ function parseStructuredResponse(
       ? ["Basic tools", "Manual reading", "Safety awareness"]
       : ["Specialized diagnostic equipment", "Technical knowledge"],
     timeEstimate,
-    safetyWarnings: safetyWarnings.slice(0, 4) // Allow up to 4 safety warnings
+    safetyWarnings: safetyWarnings.slice(0, 4)
   }
   
   console.log(`Final diagnosis result:`, JSON.stringify(result, null, 2))
@@ -845,64 +790,112 @@ async function saveDiagnosticToDatabase(
   }
 }
 
-// Standard fallback for non-error-code problems
+// Fallback for general problems without error codes
+async function diagnoseGeneralProblem(
+  appliance: string,
+  brand: string, 
+  problem: string,
+  apiKey: string
+): Promise<DiagnosisResult | null> {
+  try {
+    console.log(`Analyzing general problem: ${problem} for ${brand} ${appliance}`)
+    
+    const prompt = `A customer has a ${brand ? brand + ' ' : ''}${appliance} with this problem: "${problem}"
+
+Please provide a professional appliance repair diagnosis:
+
+CAUSES: List 3-4 most likely specific causes for this exact problem
+SERVICE: State if this is typically "diy" or "professional" 
+COST: Estimated repair cost range in £ (maximum £149 for professional service)
+DIFFICULTY: Rate as easy/moderate/difficult/expert
+URGENCY: Rate as low/medium/high
+REASON: Explain why DIY or professional service is recommended
+SAFETY: Any specific safety warnings for this problem
+
+Be specific to the exact problem described and provide actionable recommendations.`
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST", 
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "X-Title": "RS Repairs General Diagnosis"
+      },
+      body: JSON.stringify({
+        model: 'anthropic/claude-3.5-sonnet',
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 600,
+        temperature: 0.1
+      })
+    })
+
+    if (!response.ok) {
+      console.error(`OpenRouter API error: ${response.status}`)
+      return null
+    }
+
+    const data = await response.json()
+    const aiResponse = data.choices[0]?.message?.content?.trim()
+    
+    if (!aiResponse) {
+      console.error('No AI response for general problem')
+      return null
+    }
+
+    console.log(`AI general diagnosis: ${aiResponse}`)
+    
+    // Parse the AI response using the same logic as error codes
+    return parseStructuredResponse(aiResponse, 'N/A', brand, appliance, problem)
+
+  } catch (error) {
+    console.error('Error in general diagnosis:', error)
+    return null
+  }
+}
+
+// Standard fallback for non-error-code problems - ONLY used when AI completely fails
 function getFallbackDiagnosis(appliance: string, brand: string, problem: string): DiagnosisResult {
   const problemLower = problem.toLowerCase()
   
-  const isElectrical = appliance.toLowerCase().includes('oven') || 
-                      appliance.toLowerCase().includes('cooker') ||
-                      appliance.toLowerCase().includes('microwave') ||
-                      problemLower.includes('electrical')
-  
-  const isWaterRelated = appliance.toLowerCase().includes('washing') ||
-                        appliance.toLowerCase().includes('dishwasher') ||
-                        appliance.toLowerCase().includes('dryer')
-
   const isSafetyIssue = problemLower.includes('smoke') || 
                        problemLower.includes('sparking') || 
                        problemLower.includes('burning')
 
   const brandText = brand ? ` ${brand}` : ""
   const urgency = isSafetyIssue ? "high" : "medium"
-  const recommendedService = isSafetyIssue || isElectrical ? "professional" : "professional"
 
   return {
     possibleCauses: [
-      `${brandText} ${appliance} component wear or malfunction`,
-      isElectrical ? "Electrical system or component issue" : 
-      isWaterRelated ? "Water system blockage or pump malfunction" : "Mechanical component failure",
-      "Internal sensor or control system issue",
-      "Regular maintenance required or component replacement needed"
+      `${brandText} ${appliance} - diagnostic system temporarily unavailable`,
+      "Unable to provide specific diagnosis at this time",
+      "Professional inspection recommended for accurate assessment"
     ],
     recommendations: {
       diy: [
-        "Power cycle the appliance (unplug for 2 minutes, then restart)",
-        isWaterRelated ? "Check and clean filters, inspect for blockages" : "Inspect for visible debris or loose connections",
-        "Verify all settings are correct for intended operation",
-        "Consult user manual for basic troubleshooting steps"
+        "Power cycle the appliance (unplug for 2 minutes)",
+        "Check basic connections and settings",
+        "Consult user manual for troubleshooting",
+        "Contact professional service for detailed diagnosis"
       ],
       professional: [
         `Professional diagnostic inspection of${brandText} ${appliance}`,
-        "Specialized equipment testing and component analysis", 
-        "Genuine parts replacement with warranty coverage",
-        "Complete safety inspection and performance optimization"
+        "Complete system analysis and testing",
+        "Accurate problem identification and repair",
+        "Warranty-backed service and parts"
       ]
     },
     urgency,
-    estimatedCost: isElectrical ? "£109 - £149" : "£50 - £149",
-    difficulty: isElectrical || isSafetyIssue ? "expert" : "difficult",
-    recommendedService,
-    serviceReason: isSafetyIssue 
-      ? "Safety issues require immediate professional assessment to prevent potential hazards."
-      : "Professional service ensures accurate diagnosis, quality repair, and safety compliance.",
-    skillsRequired: ["Specialized diagnostic equipment", "Brand-specific technical knowledge"],
+    estimatedCost: "£109 - £149",
+    difficulty: "expert",
+    recommendedService: "professional",
+    serviceReason: "Professional inspection recommended to ensure accurate diagnosis and safe repair.",
+    skillsRequired: ["Specialized diagnostic equipment", "Technical knowledge"],
     timeEstimate: "1 - 2 hours",
     safetyWarnings: isSafetyIssue ? [
       "SAFETY CRITICAL: Disconnect power immediately",
-      "Do not operate appliance until professionally inspected", 
-      "Potential fire or electrical hazard - professional service required"
+      "Do not operate appliance until professionally inspected"
     ] : [
-      "Always disconnect power before any inspection or repair attempts",
+      "Always disconnect power before any inspection attempts",
       "Professional service recommended for warranty protection and safety"
     ]
   }
