@@ -57,20 +57,30 @@ async function checkCachedDiagnosis(
   errorCode: string | null
 ): Promise<DiagnosisResult | null> {
   try {
+    // Validate inputs
+    if (!appliance || !brand || !problem) {
+      console.log('Invalid inputs for cache check')
+      return null
+    }
+
+    console.log('Checking cache for:', { appliance, brand, problem, errorCode })
+
     // Call the fuzzy matching function we created in the database
     const { data, error } = await supabase
       .rpc('search_similar_diagnostics', {
-        p_appliance: appliance,
-        p_brand: brand,
-        p_problem: problem,
-        p_error_code: errorCode,
-        p_threshold: 0.3
+        p_appliance: appliance || '',
+        p_brand: brand || '',
+        p_problem: problem || '',
+        p_error_code: errorCode || null,
+        p_threshold: 0.2  // Lowered threshold for easier matching
       })
 
     if (error) {
       console.error('Error searching cached diagnostics:', error)
       return null
     }
+
+    console.log(`Found ${data?.length || 0} cached matches`)
 
     if (!data || data.length === 0) {
       console.log('No similar cached diagnostics found')
@@ -80,36 +90,78 @@ async function checkCachedDiagnosis(
     // Get the best match (first result, already sorted by similarity)
     const bestMatch = data[0]
     
+    console.log('Best match data:', JSON.stringify(bestMatch, null, 2))
+    
+    // Validate bestMatch has required fields
+    if (!bestMatch || 
+        !bestMatch.priority_level || 
+        !bestMatch.estimated_cost || 
+        !bestMatch.difficulty_level || 
+        !bestMatch.recommended_action ||
+        !bestMatch.estimated_time) {
+      console.log('Cached result missing required fields:', {
+        has_priority: !!bestMatch.priority_level,
+        has_cost: !!bestMatch.estimated_cost,
+        has_difficulty: !!bestMatch.difficulty_level,
+        has_action: !!bestMatch.recommended_action,
+        has_time: !!bestMatch.estimated_time
+      })
+      return null
+    }
+    
     // Only use cached result if similarity is very high or exact error code match
-    if (bestMatch.similarity_score < 0.7 && bestMatch.error_code !== errorCode) {
+    if (bestMatch.similarity_score < 0.6 && bestMatch.error_code !== errorCode) {
       console.log(`Similarity score too low: ${bestMatch.similarity_score}`)
       return null
     }
 
     console.log(`Found cached diagnosis with similarity: ${bestMatch.similarity_score}`)
     
-    // Convert cached result to DiagnosisResult format
+    // Convert cached result to DiagnosisResult format with careful validation
     const cachedResult: DiagnosisResult = {
       errorCodeMeaning: bestMatch.error_code_meaning || undefined,
-      possibleCauses: bestMatch.possible_causes || [],
+      possibleCauses: Array.isArray(bestMatch.possible_causes) && bestMatch.possible_causes.length > 0 
+        ? bestMatch.possible_causes 
+        : [`${brand} ${appliance} fault - ${problem}`],
       recommendations: {
-        diy: bestMatch.diy_solutions || [],
-        professional: bestMatch.professional_services || []
+        diy: Array.isArray(bestMatch.diy_solutions) && bestMatch.diy_solutions.length > 0 
+          ? bestMatch.diy_solutions 
+          : [
+              "Check power connection and restart appliance",
+              "Verify settings are correct for intended operation", 
+              "Consult user manual for basic troubleshooting",
+              "If problems persist after these steps, contact a professional"
+            ],
+        professional: Array.isArray(bestMatch.professional_services) && bestMatch.professional_services.length > 0
+          ? bestMatch.professional_services
+          : [
+              `Full diagnostic check of ${appliance} system`,
+              "Professional inspection and testing",
+              "Installation of new components if required",
+              "Post-repair testing and verification"
+            ]
       },
-      urgency: bestMatch.priority_level as "low" | "medium" | "high",
-      estimatedCost: bestMatch.estimated_cost,
-      difficulty: bestMatch.difficulty_level as "easy" | "moderate" | "difficult" | "expert",
-      recommendedService: bestMatch.recommended_action as "diy" | "professional" | "warranty",
-      serviceReason: `Based on ${bestMatch.occurrence_count} similar cases, this issue typically requires ${bestMatch.recommended_action} service.`,
-      timeEstimate: bestMatch.estimated_time,
-      skillsRequired: bestMatch.recommended_action === 'diy' 
-        ? ["Basic tools", "Manual reading", "Safety awareness"]
-        : ["Specialised diagnostic equipment", "Professional training", "Technical expertise"],
-      safetyWarnings: [
-        "Always disconnect power before attempting any inspection",
-        "If unsure about any step, contact professional service immediately"
-      ],
-      sourceUrls: bestMatch.source_urls || undefined
+      urgency: (bestMatch.priority_level || 'medium') as "low" | "medium" | "high",
+      estimatedCost: bestMatch.estimated_cost || '£109-£149',
+      difficulty: (bestMatch.difficulty_level || 'moderate') as "easy" | "moderate" | "difficult" | "expert",
+      recommendedService: (bestMatch.recommended_action || 'professional') as "diy" | "professional" | "warranty",
+      serviceReason: bestMatch.recommended_action 
+        ? `Based on ${bestMatch.occurrence_count || 'previous'} similar cases, this issue typically requires ${bestMatch.recommended_action} service.`
+        : "Professional assessment recommended for accurate diagnosis.",
+      timeEstimate: bestMatch.estimated_time || '1-2 hours',
+      skillsRequired: Array.isArray(bestMatch.skills_required) && bestMatch.skills_required.length > 0
+        ? bestMatch.skills_required
+        : (bestMatch.recommended_action === 'diy' 
+            ? ["Basic tools", "Manual reading", "Safety awareness"]
+            : ["Specialised diagnostic equipment", "Professional training", "Technical expertise"]),
+      safetyWarnings: Array.isArray(bestMatch.safety_warnings) && bestMatch.safety_warnings.length > 0
+        ? bestMatch.safety_warnings
+        : [
+            "Always disconnect power before attempting any inspection",
+            "If unsure about any step, contact professional service immediately",
+            "Never attempt repairs on electrical components unless qualified"
+          ],
+      sourceUrls: Array.isArray(bestMatch.source_urls) ? bestMatch.source_urls : undefined
     }
 
     return cachedResult
@@ -351,15 +403,21 @@ export async function diagnoseProblem(
     const openRouterApiKey = process.env.OPENROUTER_API_KEY
     const searchApiKey = process.env.SERP_API_KEY || process.env.BRAVE_SEARCH_API_KEY
 
+    // Normalize appliance type (remove "spares", "parts", etc.)
+    const normalizedAppliance = appliance.toLowerCase()
+      .replace(/\s*(spares?|parts?|accessories)\s*/gi, '')
+      .trim()
+
     // Detect error code if present
     const detectedErrorCode = detectErrorCode(problem)
-    console.log(`Analysing: ${brand} ${appliance} - ${problem}${detectedErrorCode ? ` (Error: ${detectedErrorCode})` : ''}`)
+    console.log(`Analysing: ${brand} ${normalizedAppliance} - ${problem}${detectedErrorCode ? ` (Error: ${detectedErrorCode})` : ''}`)
 
     // NEW: Check for cached similar diagnosis first
-    const cachedDiagnosis = await checkCachedDiagnosis(appliance, brand, problem, detectedErrorCode)
+    const cachedDiagnosis = await checkCachedDiagnosis(normalizedAppliance, brand, problem, detectedErrorCode)
 
     if (cachedDiagnosis) {
       console.log('✨ Using cached diagnosis result - faster and cheaper!')
+      console.log('Cached diagnosis data:', JSON.stringify(cachedDiagnosis, null, 2))
       // Save this as a new entry but mark it as cached
       await saveDiagnosticToDatabase(appliance, brand, problem, email, cachedDiagnosis, detectedErrorCode, true)
       return cachedDiagnosis
