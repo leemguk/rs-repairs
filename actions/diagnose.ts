@@ -346,76 +346,7 @@ Be specific to ${brand} ${appliance} and base your response on the search result
     return null
   }
 }
-// Function to check for cached similar diagnostics before calling AI
-async function checkCachedDiagnosis(
-  appliance: string,
-  brand: string,
-  problem: string,
-  errorCode: string | null
-): Promise<DiagnosisResult | null> {
-  try {
-    // Call the fuzzy matching function we created in the database
-    const { data, error } = await supabase
-      .rpc('search_similar_diagnostics', {
-        p_appliance: appliance,
-        p_brand: brand,
-        p_problem: problem,
-        p_error_code: errorCode,
-        p_threshold: 0.3
-      })
 
-    if (error) {
-      console.error('Error searching cached diagnostics:', error)
-      return null
-    }
-
-    if (!data || data.length === 0) {
-      console.log('No similar cached diagnostics found')
-      return null
-    }
-
-    // Get the best match (first result, already sorted by similarity)
-    const bestMatch = data[0]
-    
-    // Only use cached result if similarity is very high or exact error code match
-    if (bestMatch.similarity_score < 0.7 && bestMatch.error_code !== errorCode) {
-      console.log(`Similarity score too low: ${bestMatch.similarity_score}`)
-      return null
-    }
-
-    console.log(`Found cached diagnosis with similarity: ${bestMatch.similarity_score}`)
-    
-    // Convert cached result to DiagnosisResult format
-    const cachedResult: DiagnosisResult = {
-      errorCodeMeaning: bestMatch.error_code_meaning || undefined,
-      possibleCauses: bestMatch.possible_causes,
-      recommendations: {
-        diy: bestMatch.diy_solutions,
-        professional: bestMatch.professional_services
-      },
-      urgency: bestMatch.priority_level as "low" | "medium" | "high",
-      estimatedCost: bestMatch.estimated_cost,
-      difficulty: bestMatch.difficulty_level as "easy" | "moderate" | "difficult" | "expert",
-      recommendedService: bestMatch.recommended_action as "diy" | "professional" | "warranty",
-      serviceReason: `Based on ${bestMatch.occurrence_count} similar cases, this issue typically requires ${bestMatch.recommended_action} service.`,
-      timeEstimate: bestMatch.estimated_time,
-      skillsRequired: bestMatch.recommended_action === 'diy' 
-        ? ["Basic tools", "Manual reading", "Safety awareness"]
-        : ["Specialised diagnostic equipment", "Professional training", "Technical expertise"],
-      safetyWarnings: [
-        "Always disconnect power before attempting any inspection",
-        "If unsure about any step, contact professional service immediately"
-      ],
-      sourceUrls: bestMatch.source_urls || undefined
-    }
-
-    return cachedResult
-
-  } catch (error) {
-    console.error('Failed to check cached diagnostics:', error)
-    return null
-  }
-}
 // Main diagnosis function with search integration and fuzzy matching
 export async function diagnoseProblem(
   appliance: string, 
@@ -430,19 +361,6 @@ export async function diagnoseProblem(
     // Detect error code if present
     const detectedErrorCode = detectErrorCode(problem)
     console.log(`Analysing: ${brand} ${appliance} - ${problem}${detectedErrorCode ? ` (Error: ${detectedErrorCode})` : ''}`)
-
-    // NEW: Check for cached similar diagnosis first
-    const cachedDiagnosis = await checkCachedDiagnosis(appliance, brand, problem, detectedErrorCode)
-
-    if (cachedDiagnosis) {
-   console.log('✨ Using cached diagnosis result - faster and cheaper!')
-   // Save this as a new entry but mark it as cached
-   await saveDiagnosticToDatabase(appliance, brand, problem, email, cachedDiagnosis, detectedErrorCode, true)
-   return cachedDiagnosis
-}
-
-// Continue with normal AI diagnosis if no cache hit
-console.log('No cache match - proceeding with AI diagnosis')
 
     // NEW: Check for cached similar diagnosis first
     const cachedDiagnosis = await checkCachedDiagnosis(appliance, brand, problem, detectedErrorCode)
@@ -797,7 +715,6 @@ async function saveDiagnosticToDatabase(
   diagnosis: DiagnosisResult,
   errorCode?: string | null,
   wasCached: boolean = false
-  was_cached: wasCached,  // ADD THIS LINE
 ): Promise<void> {
   try {
     const { error } = await supabase
