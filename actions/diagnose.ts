@@ -179,7 +179,7 @@ async function diagnoseWithAI(
   try {
     const errorCodeText = errorCode ? ` showing error code ${errorCode}` : ''
     
-    const prompt = `You are a professional appliance repair technician. A customer has a ${brand} ${appliance}${errorCodeText} with this problem: "${problem}"
+    const prompt = `You are a professional appliance repair engineer in the UK. A customer has a ${brand} ${appliance}${errorCodeText} with this problem: "${problem}"
 
 ${errorCode && searchInfo ? `
 SEARCH RESULTS FOR ${brand} ${errorCode}:
@@ -188,7 +188,7 @@ ${searchInfo}
 Based on the search results above, provide accurate information about this specific error code.
 ` : ''}
 
-Please provide a comprehensive diagnosis using this EXACT format:
+Please provide a comprehensive diagnosis using this EXACT format. Use BRITISH ENGLISH spelling and terminology throughout (e.g. programme not program, colour not color, authorised not authorized):
 
 **ERROR CODE MEANING:** ${errorCode ? `[Based on the search results, explain what error code ${errorCode} means on ${brand} ${appliance} models]` : 'N/A - No error code present'}
 
@@ -200,7 +200,7 @@ Please provide a comprehensive diagnosis using this EXACT format:
 5. [Fifth possible cause if applicable]
 
 **DIY RECOMMENDATIONS:**
-• [Specific step customer can try - be detailed]
+• [Specific step customer can try - be detailed, use British terminology]
 • [Second DIY step with clear instructions]
 • [Third DIY step if safe and appropriate]
 • [Fourth DIY step if applicable]
@@ -229,7 +229,7 @@ Please provide a comprehensive diagnosis using this EXACT format:
 
 **SERVICE REASON:** [Detailed explanation of why DIY or professional service is recommended]
 
-Be specific to ${brand} ${appliance} and base your response on the search results provided when available.`
+Be specific to ${brand} ${appliance} and base your response on the search results provided when available. Use British English throughout.`
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -294,7 +294,7 @@ export async function diagnoseProblem(
 
     // Detect error code if present
     const detectedErrorCode = detectErrorCode(problem)
-    console.log(`Analyzing: ${brand} ${appliance} - ${problem}${detectedErrorCode ? ` (Error: ${detectedErrorCode})` : ''}`)
+    console.log(`Analysing: ${brand} ${appliance} - ${problem}${detectedErrorCode ? ` (Error: ${detectedErrorCode})` : ''}`)
 
     let searchInfo = ''
     let searchUrls: string[] = []
@@ -405,11 +405,11 @@ function parseAIResponse(
   // Parse professional recommendations from AI response
   const professionalRecommendations = sections.professionalRecs.length > 0 ? sections.professionalRecs : [
     `Professional diagnosis of ${brand} ${appliance}`,
-    "Specialized diagnostic equipment and tools",
+    "Specialised diagnostic equipment and tools",
     "Expert repair with genuine replacement parts",
     "Complete testing and warranty on repair work",
     "Follow-up service and support",
-    "Certified technician assessment"
+    "Certified engineer assessment"
   ]
 
   // Parse service type
@@ -463,7 +463,7 @@ function parseAIResponse(
   if (skillsRequired.length === 0) {
     skillsRequired = recommendedService === 'diy' 
       ? ["Basic tools", "Manual reading", "Safety awareness"]
-      : ["Specialized diagnostic equipment", "Professional training", "Technical expertise"]
+      : ["Specialised diagnostic equipment", "Professional training", "Technical expertise"]
   }
 
   // Parse safety warnings from AI response
@@ -477,7 +477,7 @@ function parseAIResponse(
   if (!serviceReason || serviceReason.length < 20) {
     serviceReason = recommendedService === 'diy'
       ? `Basic troubleshooting steps can be safely attempted for this ${brand} ${appliance} issue before requiring professional service.`
-      : `This ${brand} ${appliance} issue requires professional diagnosis with specialized equipment for safe and accurate repair.`
+      : `This ${brand} ${appliance} issue requires professional diagnosis with specialised equipment for safe and accurate repair.`
   }
 
   const result: DiagnosisResult = {
@@ -604,7 +604,7 @@ function getEmergencyFallback(appliance: string, brand: string, problem: string)
         `Emergency diagnostic service for ${brand} ${appliance}`,
         "Complete safety inspection and testing", 
         "Professional repair with warranty coverage",
-        "Certified technician assessment"
+        "Certified engineer assessment"
       ]
     },
     urgency: isSafetyIssue ? "high" : "medium",
@@ -612,7 +612,7 @@ function getEmergencyFallback(appliance: string, brand: string, problem: string)
     difficulty: "expert",
     recommendedService: "professional",
     serviceReason: "Diagnostic system unavailable - professional inspection required for safety and accurate diagnosis.",
-    skillsRequired: ["Professional certification", "Specialized equipment"],
+    skillsRequired: ["Professional certification", "Specialised equipment"],
     timeEstimate: "1-2 hours",
     safetyWarnings: isSafetyIssue ? [
       "IMMEDIATE SAFETY RISK - Disconnect power now",
