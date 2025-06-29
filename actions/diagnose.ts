@@ -17,7 +17,7 @@ interface DiagnosisResult {
   skillsRequired?: string[]
   timeEstimate: string
   safetyWarnings?: string[]
-  sourceUrls?: string[] // Add source URLs for transparency
+  sourceUrls?: string[]
 }
 
 interface SearchResult {
@@ -26,7 +26,7 @@ interface SearchResult {
   snippet: string
 }
 
-// Enhanced error code detection (keeping your existing function)
+// Enhanced error code detection
 function detectErrorCode(problem: string): string | null {
   const problemLower = problem.toLowerCase()
   
@@ -49,7 +49,7 @@ function detectErrorCode(problem: string): string | null {
   return null
 }
 
-// New function to search for error code information
+// Search for error code information
 async function searchForErrorCode(
   brand: string,
   appliance: string,
@@ -57,7 +57,6 @@ async function searchForErrorCode(
   serpApiKey: string
 ): Promise<{ searchResults: SearchResult[], relevantInfo: string }> {
   try {
-    // Construct specific search queries
     const queries = [
       `${brand} ${appliance} error code ${errorCode} meaning fix`,
       `"${brand}" "${errorCode}" error washing machine solution`,
@@ -67,7 +66,6 @@ async function searchForErrorCode(
     let allResults: SearchResult[] = []
     let relevantSnippets: string[] = []
     
-    // Try multiple search queries to get comprehensive results
     for (const query of queries) {
       const searchUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${serpApiKey}&num=5`
       
@@ -76,7 +74,6 @@ async function searchForErrorCode(
         if (response.ok) {
           const data = await response.json()
           
-          // Extract organic results
           if (data.organic_results) {
             const results = data.organic_results.map((result: any) => ({
               title: result.title,
@@ -86,7 +83,6 @@ async function searchForErrorCode(
             
             allResults = allResults.concat(results)
             
-            // Extract relevant information from snippets
             results.forEach((result: SearchResult) => {
               if (result.snippet.toLowerCase().includes(errorCode.toLowerCase()) &&
                   result.snippet.toLowerCase().includes(brand.toLowerCase())) {
@@ -95,7 +91,6 @@ async function searchForErrorCode(
             })
           }
           
-          // Also check for answer box or featured snippet
           if (data.answer_box?.snippet) {
             relevantSnippets.push(data.answer_box.snippet)
           }
@@ -105,11 +100,10 @@ async function searchForErrorCode(
       }
     }
     
-    // Combine relevant information
     const relevantInfo = relevantSnippets.join('\n\n')
     
     return {
-      searchResults: allResults.slice(0, 10), // Return top 10 results
+      searchResults: allResults.slice(0, 10),
       relevantInfo
     }
   } catch (error) {
@@ -118,7 +112,7 @@ async function searchForErrorCode(
   }
 }
 
-// Alternative: Use a free search API (if SerpAPI is not available)
+// Alternative Brave search API
 async function searchWithBraveAPI(
   brand: string,
   appliance: string,
@@ -166,7 +160,7 @@ async function searchWithBraveAPI(
   }
 }
 
-// Function to check for cached similar diagnostics before calling AI
+// Check for cached similar diagnostics
 async function checkCachedDiagnosis(
   appliance: string,
   brand: string,
@@ -174,14 +168,13 @@ async function checkCachedDiagnosis(
   errorCode: string | null
 ): Promise<DiagnosisResult | null> {
   try {
-    // Call the fuzzy matching function we created in the database
     const { data, error } = await supabase
       .rpc('search_similar_diagnostics', {
         p_appliance: appliance,
         p_brand: brand,
         p_problem: problem,
         p_error_code: errorCode,
-        p_threshold: 0.4 // Adjust this threshold (0-1) based on how strict you want matching
+        p_threshold: 0.4
       })
 
     if (error) {
@@ -194,10 +187,8 @@ async function checkCachedDiagnosis(
       return null
     }
 
-    // Get the best match (first result, already sorted by similarity)
     const bestMatch = data[0]
     
-    // Only use cached result if similarity is very high or exact error code match
     if (bestMatch.similarity_score < 0.7 && bestMatch.error_code !== errorCode) {
       console.log(`Similarity score too low: ${bestMatch.similarity_score}`)
       return null
@@ -205,7 +196,6 @@ async function checkCachedDiagnosis(
 
     console.log(`Found cached diagnosis with similarity: ${bestMatch.similarity_score}`)
     
-    // Convert cached result to DiagnosisResult format
     const cachedResult: DiagnosisResult = {
       errorCodeMeaning: bestMatch.error_code_meaning || undefined,
       possibleCauses: bestMatch.possible_causes,
@@ -237,7 +227,7 @@ async function checkCachedDiagnosis(
   }
 }
 
-// Enhanced AI diagnosis with search results
+// AI diagnosis with search results
 async function diagnoseWithAI(
   appliance: string,
   brand: string, 
@@ -334,9 +324,8 @@ Be specific to ${brand} ${appliance} and base your response on the search result
     
     const result = parseAIResponse(aiResponse, appliance, brand, problem, errorCode)
     
-    // Add source URLs if we have them
     if (searchUrls.length > 0) {
-      result.sourceUrls = searchUrls.slice(0, 3) // Top 3 sources
+      result.sourceUrls = searchUrls.slice(0, 3)
     }
     
     return result
@@ -346,77 +335,8 @@ Be specific to ${brand} ${appliance} and base your response on the search result
     return null
   }
 }
-// Function to check for cached similar diagnostics before calling AI
-async function checkCachedDiagnosis(
-  appliance: string,
-  brand: string,
-  problem: string,
-  errorCode: string | null
-): Promise<DiagnosisResult | null> {
-  try {
-    // Call the fuzzy matching function we created in the database
-    const { data, error } = await supabase
-      .rpc('search_similar_diagnostics', {
-        p_appliance: appliance,
-        p_brand: brand,
-        p_problem: problem,
-        p_error_code: errorCode,
-        p_threshold: 0.3
-      })
 
-    if (error) {
-      console.error('Error searching cached diagnostics:', error)
-      return null
-    }
-
-    if (!data || data.length === 0) {
-      console.log('No similar cached diagnostics found')
-      return null
-    }
-
-    // Get the best match (first result, already sorted by similarity)
-    const bestMatch = data[0]
-    
-    // Only use cached result if similarity is very high or exact error code match
-    if (bestMatch.similarity_score < 0.7 && bestMatch.error_code !== errorCode) {
-      console.log(`Similarity score too low: ${bestMatch.similarity_score}`)
-      return null
-    }
-
-    console.log(`Found cached diagnosis with similarity: ${bestMatch.similarity_score}`)
-    
-    // Convert cached result to DiagnosisResult format
-    const cachedResult: DiagnosisResult = {
-      errorCodeMeaning: bestMatch.error_code_meaning || undefined,
-      possibleCauses: bestMatch.possible_causes,
-      recommendations: {
-        diy: bestMatch.diy_solutions,
-        professional: bestMatch.professional_services
-      },
-      urgency: bestMatch.priority_level as "low" | "medium" | "high",
-      estimatedCost: bestMatch.estimated_cost,
-      difficulty: bestMatch.difficulty_level as "easy" | "moderate" | "difficult" | "expert",
-      recommendedService: bestMatch.recommended_action as "diy" | "professional" | "warranty",
-      serviceReason: `Based on ${bestMatch.occurrence_count} similar cases, this issue typically requires ${bestMatch.recommended_action} service.`,
-      timeEstimate: bestMatch.estimated_time,
-      skillsRequired: bestMatch.recommended_action === 'diy' 
-        ? ["Basic tools", "Manual reading", "Safety awareness"]
-        : ["Specialised diagnostic equipment", "Professional training", "Technical expertise"],
-      safetyWarnings: [
-        "Always disconnect power before attempting any inspection",
-        "If unsure about any step, contact professional service immediately"
-      ],
-      sourceUrls: bestMatch.source_urls || undefined
-    }
-
-    return cachedResult
-
-  } catch (error) {
-    console.error('Failed to check cached diagnostics:', error)
-    return null
-  }
-}
-// Main diagnosis function with search integration and fuzzy matching
+// Main diagnosis function
 export async function diagnoseProblem(
   appliance: string, 
   brand: string, 
@@ -427,34 +347,17 @@ export async function diagnoseProblem(
     const openRouterApiKey = process.env.OPENROUTER_API_KEY
     const searchApiKey = process.env.SERP_API_KEY || process.env.BRAVE_SEARCH_API_KEY
 
-    // Detect error code if present
     const detectedErrorCode = detectErrorCode(problem)
     console.log(`Analysing: ${brand} ${appliance} - ${problem}${detectedErrorCode ? ` (Error: ${detectedErrorCode})` : ''}`)
 
-    // NEW: Check for cached similar diagnosis first
     const cachedDiagnosis = await checkCachedDiagnosis(appliance, brand, problem, detectedErrorCode)
 
-    if (cachedDiagnosis) {
-   console.log('✨ Using cached diagnosis result - faster and cheaper!')
-   // Save this as a new entry but mark it as cached
-   await saveDiagnosticToDatabase(appliance, brand, problem, email, cachedDiagnosis, detectedErrorCode, true)
-   return cachedDiagnosis
-}
-
-// Continue with normal AI diagnosis if no cache hit
-console.log('No cache match - proceeding with AI diagnosis')
-
-    // NEW: Check for cached similar diagnosis first
-    const cachedDiagnosis = await checkCachedDiagnosis(appliance, brand, problem, detectedErrorCode)
-    
     if (cachedDiagnosis) {
       console.log('✨ Using cached diagnosis result - faster and cheaper!')
-      // Save this as a new entry but mark it as cached
       await saveDiagnosticToDatabase(appliance, brand, problem, email, cachedDiagnosis, detectedErrorCode, true)
       return cachedDiagnosis
     }
 
-    // Continue with normal AI diagnosis if no cache hit
     console.log('No cache match - proceeding with AI diagnosis')
     
     if (!openRouterApiKey) {
@@ -467,7 +370,6 @@ console.log('No cache match - proceeding with AI diagnosis')
     let searchInfo = ''
     let searchUrls: string[] = []
 
-    // If we have an error code and search API, search for specific information
     if (detectedErrorCode && searchApiKey) {
       console.log(`Searching for ${brand} ${detectedErrorCode} information...`)
       
@@ -485,7 +387,6 @@ console.log('No cache match - proceeding with AI diagnosis')
       }
     }
 
-    // Use AI with search results for diagnosis
     const aiResult = await diagnoseWithAI(
       appliance,
       brand,
@@ -498,16 +399,13 @@ console.log('No cache match - proceeding with AI diagnosis')
 
     if (aiResult) {
       console.log('AI diagnosis successful')
-      // Include source URLs in the result if we have them
       if (searchUrls.length > 0 && !aiResult.sourceUrls) {
         aiResult.sourceUrls = searchUrls.slice(0, 3)
       }
-      // Save with the enhanced data
       await saveDiagnosticToDatabase(appliance, brand, problem, email, aiResult, detectedErrorCode, false)
       return aiResult
     }
 
-    // Fallback if AI fails
     console.log('AI diagnosis failed, using emergency fallback')
     const fallbackResult = getEmergencyFallback(appliance, brand, problem)
     await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult, detectedErrorCode, false)
@@ -521,7 +419,7 @@ console.log('No cache match - proceeding with AI diagnosis')
   }
 }
 
-// Parse AI response into structured format
+// Parse AI response
 function parseAIResponse(
   aiResponse: string, 
   appliance: string, 
@@ -529,8 +427,6 @@ function parseAIResponse(
   problem: string,
   errorCode: string | null
 ): DiagnosisResult {
-  
-  // Extract sections using more flexible parsing
   const sections = {
     errorCodeMeaning: extractSimpleField(aiResponse, ['ERROR CODE MEANING']),
     causes: extractSection(aiResponse, ['POSSIBLE CAUSES', 'CAUSES']),
@@ -546,18 +442,15 @@ function parseAIResponse(
     serviceReason: extractSimpleField(aiResponse, ['SERVICE REASON', 'REASON'])
   }
 
-  // Extract error code meaning if present
   let errorCodeMeaning = undefined
   if (sections.errorCodeMeaning && !sections.errorCodeMeaning.includes('N/A')) {
     errorCodeMeaning = sections.errorCodeMeaning
   }
 
-  // Parse possible causes from AI response
   const possibleCauses = sections.causes.length > 0 ? sections.causes : [
     `${brand} ${appliance}${errorCode ? ` error ${errorCode}` : ''} - ${problem}`
   ]
 
-  // Parse DIY recommendations from AI response
   const diyRecommendations = sections.diyRecs.length > 0 ? sections.diyRecs : [
     "Check power connection and restart appliance",
     "Verify settings are correct for intended operation",
@@ -565,7 +458,6 @@ function parseAIResponse(
     "Contact professional if basic steps don't resolve issue"
   ]
 
-  // Parse professional recommendations from AI response
   const professionalRecommendations = sections.professionalRecs.length > 0 ? sections.professionalRecs : [
     `Professional diagnosis of ${brand} ${appliance}`,
     "Specialised diagnostic equipment and tools",
@@ -575,7 +467,6 @@ function parseAIResponse(
     "Certified engineer assessment"
   ]
 
-  // Parse service type
   const serviceTypeText = sections.serviceType.toLowerCase()
   let recommendedService: "diy" | "professional" | "warranty" = 'professional'
   
@@ -585,7 +476,6 @@ function parseAIResponse(
     recommendedService = 'warranty'
   }
 
-  // Parse difficulty
   const difficultyText = sections.difficulty.toLowerCase()
   let difficulty: "easy" | "moderate" | "difficult" | "expert" = 'moderate'
   
@@ -594,20 +484,17 @@ function parseAIResponse(
   else if (difficultyText.includes('difficult')) difficulty = 'difficult'
   else if (difficultyText.includes('expert')) difficulty = 'expert'
 
-  // Parse urgency
   const urgencyText = sections.urgency.toLowerCase()
   let urgency: "low" | "medium" | "high" = 'medium'
   
   if (urgencyText.includes('low')) urgency = 'low'
   else if (urgencyText.includes('high')) urgency = 'high'
 
-  // Parse time estimate from AI or set default
   let timeEstimate = sections.timeEstimate || "1-2 hours"
   if (recommendedService === 'diy' && !timeEstimate.includes('minutes')) {
     timeEstimate = "30-60 minutes"
   }
 
-  // Parse cost estimate with £149 cap
   let estimatedCost = sections.costEstimate || "£109-£149"
   if (recommendedService === 'diy') {
     estimatedCost = extractDIYCost(estimatedCost) || "£0-£50"
@@ -615,7 +502,6 @@ function parseAIResponse(
     estimatedCost = capProfessionalCost(estimatedCost)
   }
 
-  // Parse skills from AI response
   const skillsText = sections.skillsNeeded
   let skillsRequired: string[] = []
   
@@ -629,13 +515,11 @@ function parseAIResponse(
       : ["Specialised diagnostic equipment", "Professional training", "Technical expertise"]
   }
 
-  // Parse safety warnings from AI response
   const safetyWarnings = sections.safetyWarnings.length > 0 ? sections.safetyWarnings : [
     "Always disconnect power before attempting any inspection",
     "If unsure about any step, contact professional service immediately"
   ]
 
-  // Use AI service reason or create appropriate default
   let serviceReason = sections.serviceReason
   if (!serviceReason || serviceReason.length < 20) {
     serviceReason = recommendedService === 'diy'
@@ -664,7 +548,7 @@ function parseAIResponse(
   return result
 }
 
-// Helper function to extract bulleted/numbered sections
+// Extract bulleted/numbered sections
 function extractSection(text: string, sectionNames: string[]): string[] {
   for (const sectionName of sectionNames) {
     const regex = new RegExp(`\\*\\*${sectionName}[:\\*]*\\*\\*([\\s\\S]*?)(?=\\*\\*[A-Z]|$)`, 'i')
@@ -674,7 +558,6 @@ function extractSection(text: string, sectionNames: string[]): string[] {
       const sectionText = match[1].trim()
       const items: string[] = []
       
-      // Split by bullet points, numbers, or line breaks
       const lines = sectionText.split(/\n/)
       
       for (const line of lines) {
@@ -693,7 +576,7 @@ function extractSection(text: string, sectionNames: string[]): string[] {
   return []
 }
 
-// Helper function to extract simple field values
+// Extract simple field values
 function extractSimpleField(text: string, fieldNames: string[]): string {
   for (const fieldName of fieldNames) {
     const regex = new RegExp(`\\*\\*${fieldName}[:\\*]*\\*\\*\\s*([^\\n\\*]+(?:\\n(?!\\*\\*)[^\\n]*)*?)(?=\\n\\*\\*|$)`, 'i')
@@ -707,7 +590,7 @@ function extractSimpleField(text: string, fieldNames: string[]): string {
   return ''
 }
 
-// Helper function to extract DIY cost from mixed cost info
+// Extract DIY cost
 function extractDIYCost(costText: string): string | null {
   if (costText.includes('DIY') || costText.includes('£0')) {
     const diyMatch = costText.match(/DIY[^:]*:?\s*(£[\d\-£\s]+)/i)
@@ -720,13 +603,12 @@ function extractDIYCost(costText: string): string | null {
   return null
 }
 
-// Helper function to cap professional costs at £149
+// Cap professional costs
 function capProfessionalCost(costText: string): string {
   if (!costText.includes('£')) {
     return '£109-£149'
   }
   
-  // Extract cost ranges and cap them
   const costMatch = costText.match(/£(\d+)\s*[-–]\s*£(\d+)/)
   if (costMatch) {
     const minCost = Math.max(parseInt(costMatch[1]), 80)
@@ -734,7 +616,6 @@ function capProfessionalCost(costText: string): string {
     return `£${minCost}-£${maxCost}`
   }
   
-  // Single cost value
   const singleMatch = costText.match(/£(\d+)/)
   if (singleMatch) {
     const cost = Math.min(parseInt(singleMatch[1]), 149)
@@ -744,7 +625,7 @@ function capProfessionalCost(costText: string): string {
   return '£109-£149'
 }
 
-// Minimal emergency fallback - only used when API is completely unavailable
+// Emergency fallback
 function getEmergencyFallback(appliance: string, brand: string, problem: string): DiagnosisResult {
   const isSafetyIssue = problem.toLowerCase().includes('smoke') || 
                        problem.toLowerCase().includes('sparking') || 
@@ -788,7 +669,7 @@ function getEmergencyFallback(appliance: string, brand: string, problem: string)
   }
 }
 
-// Enhanced database save function with fuzzy matching fields
+// Save diagnostic to database
 async function saveDiagnosticToDatabase(
   appliance: string,
   brand: string, 
@@ -796,7 +677,7 @@ async function saveDiagnosticToDatabase(
   email: string, 
   diagnosis: DiagnosisResult,
   errorCode?: string | null,
-  was_cached: wasCached,  // ADD THIS LINE
+  wasCached: boolean = false
 ): Promise<void> {
   try {
     const { error } = await supabase
