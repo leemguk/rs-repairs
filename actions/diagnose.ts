@@ -19,7 +19,7 @@ interface DiagnosisResult {
   safetyWarnings?: string[]
 }
 
-// Enhanced error code detection (keep existing)
+// Enhanced error code detection
 function detectErrorCode(problem: string): string | null {
   const problemLower = problem.toLowerCase()
   
@@ -42,6 +42,31 @@ function detectErrorCode(problem: string): string | null {
   return null
 }
 
+// Validate AI error code response
+function validateErrorCodeResponse(response: string, expectedBrand: string, expectedCode: string): boolean {
+  if (!response || !expectedBrand || !expectedCode) return false
+  
+  const responseLower = response.toLowerCase()
+  const brandLower = expectedBrand.toLowerCase()
+  const codeLower = expectedCode.toLowerCase()
+  
+  // Must mention the correct brand
+  const hasBrand = responseLower.includes(brandLower)
+  
+  // Must mention the correct error code
+  const hasCode = responseLower.includes(codeLower)
+  
+  // Must not mention other brands (common confusion)
+  const otherBrands = ['samsung', 'lg', 'whirlpool', 'hotpoint', 'indesit', 'zanussi', 'aeg', 'electrolux', 'miele', 'siemens', 'neff', 'gaggenau', 'fisher', 'paykel', 'ge', 'kenmore', 'maytag', 'frigidaire', 'haier', 'hisense', 'beko', 'candy', 'hoover', 'smeg', 'bauknecht', 'grundig']
+  const mentionsOtherBrand = otherBrands
+    .filter(brand => brand !== brandLower)
+    .some(brand => responseLower.includes(brand))
+  
+  console.log(`Validation: brand=${hasBrand}, code=${hasCode}, otherBrand=${mentionsOtherBrand}`)
+  
+  return hasBrand && hasCode && !mentionsOtherBrand
+}
+
 // Improved AI prompt for more structured responses
 async function diagnoseWithAI(
   appliance: string,
@@ -53,13 +78,21 @@ async function diagnoseWithAI(
   try {
     const errorCodeText = errorCode ? ` showing error code ${errorCode}` : ''
     
-    const prompt = `You are a professional appliance repair technician. A customer has a ${brand} ${appliance}${errorCodeText} with this problem: "${problem}"
+    const prompt = `You are a professional appliance repair technician with access to manufacturer documentation. A customer has a ${brand} ${appliance}${errorCodeText} with this problem: "${problem}"
 
-${errorCode ? `CRITICAL: You must explain what error code ${errorCode} specifically means on ${brand} ${appliance} models. Do NOT confuse this with other brands or error codes. If you don't know the exact meaning for ${brand} error code ${errorCode}, state that clearly.` : ''}
+${errorCode ? `
+CRITICAL INSTRUCTION: You MUST provide accurate information about error code ${errorCode} specifically for ${brand} appliances. 
+
+- If you know what ${errorCode} means on ${brand} ${appliance}, explain it precisely
+- If you are unsure about ${errorCode} on ${brand} specifically, state: "I don't have specific information about error code ${errorCode} for ${brand} appliances"
+- DO NOT provide information about other brands or other error codes
+- DO NOT guess or provide generic error code information
+
+` : ''}
 
 Please provide a comprehensive diagnosis using this EXACT format:
 
-**ERROR CODE MEANING:** ${errorCode ? `[Explain what error code ${errorCode} specifically indicates on ${brand} ${appliance} models - be precise about the brand and code]` : 'N/A - No error code present'}
+**ERROR CODE MEANING:** ${errorCode ? `[State exactly what error code ${errorCode} means on ${brand} ${appliance} models, or clearly state if you don't have specific information for this brand/code combination]` : 'N/A - No error code present'}
 
 **POSSIBLE CAUSES:**
 1. [Most likely cause with brief explanation]
@@ -163,20 +196,24 @@ function parseAIResponse(
     serviceReason: extractSimpleField(aiResponse, ['SERVICE REASON', 'REASON'])
   }
 
-  // Extract error code meaning if present
+  // Extract error code meaning if present and validate it
   let errorCodeMeaning = undefined
   if (sections.errorCodeMeaning && !sections.errorCodeMeaning.includes('N/A')) {
-    // Validate that the error code meaning matches the input
-    const meaningText = sections.errorCodeMeaning.toLowerCase()
-    const expectedBrand = brand.toLowerCase()
-    const expectedCode = errorCode?.toLowerCase()
-    
-    // Only use if it mentions the correct brand and error code, or if no error code was detected
-    if (!errorCode || 
-        (meaningText.includes(expectedBrand) && meaningText.includes(expectedCode))) {
-      errorCodeMeaning = sections.errorCodeMeaning
+    // Validate that the AI response is accurate for the requested brand/code
+    if (errorCode && brand) {
+      const isValid = validateErrorCodeResponse(sections.errorCodeMeaning, brand, errorCode)
+      if (isValid) {
+        errorCodeMeaning = sections.errorCodeMeaning
+        console.log('Error code meaning validated and accepted')
+      } else {
+        console.log(`Error code meaning rejected - AI provided incorrect information for ${brand} ${errorCode}`)
+        console.log(`AI Response: ${sections.errorCodeMeaning}`)
+        // Don't use the incorrect error code meaning
+        errorCodeMeaning = undefined
+      }
     } else {
-      console.log(`Error code meaning validation failed - expected ${brand} ${errorCode}, got: ${sections.errorCodeMeaning}`)
+      // No error code to validate against, use as-is
+      errorCodeMeaning = sections.errorCodeMeaning
     }
   }
 
