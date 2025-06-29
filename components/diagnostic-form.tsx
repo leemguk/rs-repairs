@@ -274,7 +274,27 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     }
   }
 
+  // Helper function to safely capitalize strings
+  const safeCapitalize = (str: string | null | undefined): string => {
+    if (!str) return ''
+    return str.charAt(0).toUpperCase() + str.slice(1)
+  }
+
   const renderDiagnosticResults = (diagnosisData: DiagnosisResult, isExample: boolean = false) => {
+    // Validate the diagnosis data has required fields
+    if (!diagnosisData || !diagnosisData.possibleCauses || !diagnosisData.recommendations) {
+      return (
+        <Card className="border-2 border-red-200 bg-red-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <p className="text-red-800">Unable to display diagnosis results. Please try again.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
     return (
       <div className="space-y-6">
         {isExample && (
@@ -379,7 +399,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               </CardHeader>
               <CardContent className="flex-1 flex flex-col">
                 <ul className="space-y-2 mb-4 flex-1">
-                  {diagnosisData.recommendations.diy.map((rec, index) => (
+                  {(diagnosisData.recommendations?.diy || []).map((rec, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
                       <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosisData.recommendedService === "diy" ? "bg-blue-600" : "bg-gray-400"}`} />
                       <span>{rec}</span>
@@ -418,7 +438,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               </CardHeader>
               <CardContent className="flex-1 flex flex-col">
                 <ul className="space-y-2 mb-4 flex-1">
-                  {diagnosisData.recommendations.professional.map((rec, index) => (
+                  {(diagnosisData.recommendations?.professional || []).map((rec, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
                       <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosisData.recommendedService === "professional" ? "bg-orange-600" : "bg-gray-400"}`} />
                       <span>{rec}</span>
@@ -442,11 +462,11 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
             <div className="flex items-center justify-between flex-wrap gap-2">
               <CardTitle className="text-xl">Diagnostic Results</CardTitle>
               <div className="flex gap-2 flex-wrap">
-                <Badge className={getDifficultyColor(diagnosisData.difficulty)}>
-                  {diagnosisData.difficulty.charAt(0).toUpperCase() + diagnosisData.difficulty.slice(1)} Difficulty
+                <Badge className={getDifficultyColor(diagnosisData.difficulty || 'moderate')}>
+                  {safeCapitalize(diagnosisData.difficulty || 'moderate')} Difficulty
                 </Badge>
-                <Badge className={getUrgencyColor(diagnosisData.urgency)}>
-                  {diagnosisData.urgency.charAt(0).toUpperCase() + diagnosisData.urgency.slice(1)} Priority
+                <Badge className={getUrgencyColor(diagnosisData.urgency || 'medium')}>
+                  {safeCapitalize(diagnosisData.urgency || 'medium')} Priority
                 </Badge>
               </div>
             </div>
@@ -458,11 +478,11 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                   <Clock className="h-4 w-4 text-gray-600" />
                   <h3 className="font-semibold text-gray-900">Estimated Time</h3>
                 </div>
-                <p className="text-xl font-bold text-blue-600">{diagnosisData.timeEstimate}</p>
+                <p className="text-xl font-bold text-blue-600">{diagnosisData.timeEstimate || 'Varies'}</p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-900 mb-3">Estimated Cost</h3>
-                <p className="text-xl font-bold text-green-600">{diagnosisData.estimatedCost}</p>
+                <p className="text-xl font-bold text-green-600">{diagnosisData.estimatedCost || 'Contact for quote'}</p>
               </div>
             </div>
 
@@ -505,7 +525,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                 Possible Causes
               </h3>
               <ul className="space-y-2">
-                {diagnosisData.possibleCauses.map((cause, index) => (
+                {(diagnosisData.possibleCauses || []).map((cause, index) => (
                   <li key={index} className="flex items-start gap-2">
                     <div className="h-2 w-2 rounded-full bg-orange-600 mt-2 flex-shrink-0" />
                     <span className="text-gray-700">{cause}</span>
