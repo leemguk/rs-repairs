@@ -696,8 +696,8 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                         maxLength={6}
                       />
                       <p className="text-xs text-gray-500 text-center">
-                        For demo: enter any 6-digit code (e.g., 123456)
-                      </p>
+  Check your email for the 6-digit verification code
+</p>
                       {error && (
                         <div className="flex items-center gap-2 text-red-600 text-sm">
                           <AlertCircle className="h-4 w-4" />
