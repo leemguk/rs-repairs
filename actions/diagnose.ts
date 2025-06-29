@@ -3,6 +3,7 @@
 import { supabase } from '@/lib/supabase'
 
 interface DiagnosisResult {
+  errorCodeMeaning?: string
   possibleCauses: string[]
   recommendations: {
     diy: string[]
@@ -54,18 +55,25 @@ async function diagnoseWithAI(
     
     const prompt = `You are a professional appliance repair technician. A customer has a ${brand} ${appliance}${errorCodeText} with this problem: "${problem}"
 
+${errorCode ? `First, explain what error code ${errorCode} specifically means on ${brand} ${appliance} models.` : ''}
+
 Please provide a comprehensive diagnosis using this EXACT format:
+
+**ERROR CODE MEANING:** ${errorCode ? `[Explain what ${errorCode} indicates on ${brand} ${appliance}]` : 'N/A - No error code present'}
 
 **POSSIBLE CAUSES:**
 1. [Most likely cause with brief explanation]
 2. [Second most likely cause]
 3. [Third possible cause]
 4. [Fourth possible cause if applicable]
+5. [Fifth possible cause if applicable]
 
 **DIY RECOMMENDATIONS:**
 • [Specific step customer can try - be detailed]
 • [Second DIY step with clear instructions]
 • [Third DIY step if safe and appropriate]
+• [Fourth DIY step if applicable]
+• [Fifth DIY step if applicable]
 • [When to stop DIY and call professional]
 
 **PROFESSIONAL SERVICES:**
@@ -73,6 +81,8 @@ Please provide a comprehensive diagnosis using this EXACT format:
 • [Equipment/tools professional would use]
 • [Type of repair/replacement typically required]
 • [Professional testing after repair]
+• [Warranty coverage and follow-up service]
+• [Additional professional services if needed]
 
 **SERVICE TYPE:** DIY or PROFESSIONAL
 **DIFFICULTY:** Easy, Moderate, Difficult, or Expert
@@ -139,6 +149,7 @@ function parseAIResponse(
   
   // Extract sections using more flexible parsing
   const sections = {
+    errorCodeMeaning: extractSimpleField(aiResponse, ['ERROR CODE MEANING']),
     causes: extractSection(aiResponse, ['POSSIBLE CAUSES', 'CAUSES']),
     diyRecs: extractSection(aiResponse, ['DIY RECOMMENDATIONS', 'DIY STEPS', 'DIY']),
     professionalRecs: extractSection(aiResponse, ['PROFESSIONAL SERVICES', 'PROFESSIONAL']),
@@ -152,12 +163,18 @@ function parseAIResponse(
     serviceReason: extractSimpleField(aiResponse, ['SERVICE REASON', 'REASON'])
   }
 
+  // Extract error code meaning if present
+  let errorCodeMeaning = undefined
+  if (sections.errorCodeMeaning && !sections.errorCodeMeaning.includes('N/A')) {
+    errorCodeMeaning = sections.errorCodeMeaning
+  }
+
   // Parse possible causes from AI response
   const possibleCauses = sections.causes.length > 0 ? sections.causes : [
     `${brand} ${appliance}${errorCode ? ` error ${errorCode}` : ''} - ${problem}`
   ]
 
-  // Parse DIY recommendations from AI response
+  // Parse DIY recommendations from AI response - ensure we get up to 6 items
   const diyRecommendations = sections.diyRecs.length > 0 ? sections.diyRecs : [
     "Check power connection and restart appliance",
     "Verify settings are correct for intended operation",
@@ -165,12 +182,14 @@ function parseAIResponse(
     "Contact professional if basic steps don't resolve issue"
   ]
 
-  // Parse professional recommendations from AI response
+  // Parse professional recommendations from AI response - ensure we get up to 6 items
   const professionalRecommendations = sections.professionalRecs.length > 0 ? sections.professionalRecs : [
     `Professional diagnosis of ${brand} ${appliance}`,
     "Specialized diagnostic equipment and tools",
     "Expert repair with genuine replacement parts",
-    "Complete testing and warranty on repair work"
+    "Complete testing and warranty on repair work",
+    "Follow-up service and support",
+    "Certified technician assessment"
   ]
 
   // Parse service type
@@ -242,10 +261,11 @@ function parseAIResponse(
   }
 
   const result: DiagnosisResult = {
+    errorCodeMeaning,
     possibleCauses: possibleCauses.slice(0, 5),
     recommendations: {
       diy: diyRecommendations.slice(0, 6),
-      professional: professionalRecommendations.slice(0, 5)
+      professional: professionalRecommendations.slice(0, 6)
     },
     urgency,
     estimatedCost,
@@ -293,7 +313,7 @@ function extractSection(text: string, sectionNames: string[]): string[] {
 // Helper function to extract simple field values
 function extractSimpleField(text: string, fieldNames: string[]): string {
   for (const fieldName of fieldNames) {
-    const regex = new RegExp(`\\*\\*${fieldName}[:\\*]*\\*\\*\\s*([^\\n\\*]+)`, 'i')
+    const regex = new RegExp(`\\*\\*${fieldName}[:\\*]*\\*\\*\\s*([^\\n\\*]+(?:\\n(?!\\*\\*)[^\\n]*)*?)(?=\\n\\*\\*|$)`, 'i')
     const match = text.match(regex)
     
     if (match) {
