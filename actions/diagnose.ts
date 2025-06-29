@@ -3,6 +3,7 @@
 import { supabase } from '@/lib/supabase'
 
 interface DiagnosisResult {
+  errorCodeMeaning?: string
   possibleCauses: string[]
   recommendations: {
     diy: string[]
@@ -16,9 +17,16 @@ interface DiagnosisResult {
   skillsRequired?: string[]
   timeEstimate: string
   safetyWarnings?: string[]
+  sourceUrls?: string[] // Add source URLs for transparency
 }
 
-// Enhanced error code detection
+interface SearchResult {
+  title: string
+  url: string
+  snippet: string
+}
+
+// Enhanced error code detection (keeping your existing function)
 function detectErrorCode(problem: string): string | null {
   const problemLower = problem.toLowerCase()
   
@@ -26,8 +34,8 @@ function detectErrorCode(problem: string): string | null {
     /\berror\s+code\s*[:\-]?\s*([a-z]?\d{1,3}[a-z]?)\b/gi,
     /\bcode\s*[:\-]?\s*([a-z]?\d{1,3}[a-z]?)\b/gi,
     /\b[ef][-]?(\d{1,3}[a-z]?)\b/gi,
-    /\b(\d{1,2}[ef])\b/gi,  // Samsung: 4E, 5E
-    /\b([a-z]{1,2}\d{1,2})\b/gi,  // LG: OE, IE, Beko: E4
+    /\b(\d{1,2}[ef])\b/gi,
+    /\b([a-z]{1,2}\d{1,2})\b/gi,
   ]
   
   for (const pattern of errorCodePatterns) {
@@ -41,409 +49,234 @@ function detectErrorCode(problem: string): string | null {
   return null
 }
 
-// Websearch-enabled error code lookup with validation
-async function lookupErrorCodeWithWebsearch(
-  errorCode: string, 
+// New function to search for error code information
+async function searchForErrorCode(
+  brand: string,
+  appliance: string,
+  errorCode: string,
+  serpApiKey: string
+): Promise<{ searchResults: SearchResult[], relevantInfo: string }> {
+  try {
+    // Construct specific search queries
+    const queries = [
+      `${brand} ${appliance} error code ${errorCode} meaning fix`,
+      `"${brand}" "${errorCode}" error washing machine solution`,
+      `${brand} error ${errorCode} troubleshooting guide`
+    ]
+    
+    let allResults: SearchResult[] = []
+    let relevantSnippets: string[] = []
+    
+    // Try multiple search queries to get comprehensive results
+    for (const query of queries) {
+      const searchUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${serpApiKey}&num=5`
+      
+      try {
+        const response = await fetch(searchUrl)
+        if (response.ok) {
+          const data = await response.json()
+          
+          // Extract organic results
+          if (data.organic_results) {
+            const results = data.organic_results.map((result: any) => ({
+              title: result.title,
+              url: result.link,
+              snippet: result.snippet || ''
+            }))
+            
+            allResults = allResults.concat(results)
+            
+            // Extract relevant information from snippets
+            results.forEach((result: SearchResult) => {
+              if (result.snippet.toLowerCase().includes(errorCode.toLowerCase()) &&
+                  result.snippet.toLowerCase().includes(brand.toLowerCase())) {
+                relevantSnippets.push(result.snippet)
+              }
+            })
+          }
+          
+          // Also check for answer box or featured snippet
+          if (data.answer_box?.snippet) {
+            relevantSnippets.push(data.answer_box.snippet)
+          }
+        }
+      } catch (error) {
+        console.error(`Search query failed for: ${query}`, error)
+      }
+    }
+    
+    // Combine relevant information
+    const relevantInfo = relevantSnippets.join('\n\n')
+    
+    return {
+      searchResults: allResults.slice(0, 10), // Return top 10 results
+      relevantInfo
+    }
+  } catch (error) {
+    console.error('Error searching for error code:', error)
+    return { searchResults: [], relevantInfo: '' }
+  }
+}
+
+// Alternative: Use a free search API (if SerpAPI is not available)
+async function searchWithBraveAPI(
+  brand: string,
+  appliance: string,
+  errorCode: string,
+  apiKey: string
+): Promise<{ searchResults: SearchResult[], relevantInfo: string }> {
+  try {
+    const query = `${brand} ${appliance} error code ${errorCode} meaning troubleshooting`
+    const response = await fetch('https://api.search.brave.com/res/v1/web/search', {
+      headers: {
+        'X-Subscription-Token': apiKey,
+        'Accept': 'application/json'
+      },
+      method: 'GET',
+      // @ts-ignore
+      searchParams: {
+        q: query,
+        count: 10
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Brave search failed: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    const searchResults = data.web?.results?.map((result: any) => ({
+      title: result.title,
+      url: result.url,
+      snippet: result.description || ''
+    })) || []
+    
+    const relevantInfo = searchResults
+      .filter((r: SearchResult) => 
+        r.snippet.toLowerCase().includes(errorCode.toLowerCase()) &&
+        r.snippet.toLowerCase().includes(brand.toLowerCase())
+      )
+      .map((r: SearchResult) => r.snippet)
+      .join('\n\n')
+    
+    return { searchResults, relevantInfo }
+  } catch (error) {
+    console.error('Brave search error:', error)
+    return { searchResults: [], relevantInfo: '' }
+  }
+}
+
+// Enhanced AI diagnosis with search results
+async function diagnoseWithAI(
+  appliance: string,
   brand: string, 
-  appliance: string, 
+  problem: string,
+  errorCode: string | null,
+  searchInfo: string,
+  searchUrls: string[],
   apiKey: string
 ): Promise<DiagnosisResult | null> {
   try {
-    console.log(`Looking up error code ${errorCode} for ${brand} ${appliance} with websearch`)
+    const errorCodeText = errorCode ? ` showing error code ${errorCode}` : ''
     
-    // First, get the specific meaning of this error code
-    const lookupPrompt = `What does error code ${errorCode} specifically mean on a ${brand} ${appliance}? I need the exact technical meaning of this error code for this brand.`
+    const prompt = `You are a professional appliance repair engineer in the UK. A customer has a ${brand} ${appliance}${errorCodeText} with this problem: "${problem}"
 
-    const lookupResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+${errorCode && searchInfo ? `
+SEARCH RESULTS FOR ${brand} ${errorCode}:
+${searchInfo}
+
+Based on the search results above, provide accurate information about this specific error code.
+` : ''}
+
+Please provide a comprehensive diagnosis using this EXACT format. Use BRITISH ENGLISH spelling and terminology throughout (e.g. programme not program, colour not color, authorised not authorized):
+
+**ERROR CODE MEANING:** ${errorCode ? `[Based on the search results, explain what error code ${errorCode} means on ${brand} ${appliance} models]` : 'N/A - No error code present'}
+
+**POSSIBLE CAUSES:**
+1. [Most likely cause based on search results and expertise]
+2. [Second most likely cause]
+3. [Third possible cause]
+4. [Fourth possible cause if applicable]
+5. [Fifth possible cause if applicable]
+
+**DIY RECOMMENDATIONS:**
+• [Specific step customer can try - be detailed, use British terminology]
+• [Second DIY step with clear instructions]
+• [Third DIY step if safe and appropriate]
+• [Fourth DIY step if applicable]
+• [Fifth DIY step if applicable]
+• [When to stop DIY and call professional]
+
+**PROFESSIONAL SERVICES:**
+• [Specific professional diagnostic service needed]
+• [Equipment/tools professional would use]
+• [Type of repair/replacement typically required]
+• [Professional testing after repair]
+• [Warranty coverage and follow-up service]
+• [Additional professional services if needed]
+
+**SERVICE TYPE:** DIY or PROFESSIONAL
+**DIFFICULTY:** Easy, Moderate, Difficult, or Expert
+**URGENCY:** Low, Medium, or High
+**TIME ESTIMATE:** [Realistic time range]
+**COST ESTIMATE:** [Range in £, max £149 for professional]
+**SKILLS NEEDED:** [Specific skills required]
+
+**SAFETY WARNINGS:**
+• [Specific safety concern for this problem]
+• [Power/electrical safety if applicable]
+• [When to immediately stop and call professional]
+
+**SERVICE REASON:** [Detailed explanation of why DIY or professional service is recommended]
+
+Be specific to ${brand} ${appliance} and base your response on the search results provided when available. Use British English throughout.`
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "X-Title": "RS Repairs Error Code Lookup"
+        "X-Title": "RS Repairs AI Diagnosis"
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet:online', // FIXED: Using correct websearch model
-        messages: [{ role: "user", content: lookupPrompt }],
-        max_tokens: 300,
+        model: 'anthropic/claude-3.5-sonnet',
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 1000,
         temperature: 0.1
       })
     })
 
-    if (!lookupResponse.ok) {
-      console.error(`Lookup API error: ${lookupResponse.status}`)
+    if (!response.ok) {
+      console.error(`AI diagnosis failed: ${response.status}`)
       return null
     }
 
-    const lookupData = await lookupResponse.json()
-    const errorMeaning = lookupData.choices[0]?.message?.content?.trim()
+    const data = await response.json()
+    const aiResponse = data.choices[0]?.message?.content?.trim()
     
-    if (!errorMeaning) {
-      console.error('No error meaning returned')
+    if (!aiResponse) {
+      console.error('No AI response received')
       return null
     }
 
-    console.log(`Error meaning found: ${errorMeaning}`)
+    console.log('AI Response:', aiResponse)
     
-    // Validate that we got specific information (not generic)
-    if (errorMeaning.toLowerCase().includes('component malfunction') || 
-        errorMeaning.toLowerCase().includes('sensor failure') ||
-        !errorMeaning.toLowerCase().includes(errorCode.toLowerCase())) {
-      console.log('Got generic response, using fallback')
-      return null
-    }
-
-    // Now get detailed diagnosis based on the specific error meaning
-    const diagnosisPrompt = `Based on this specific error code information: "${errorMeaning}"
-
-For a ${brand} ${appliance} showing error code ${errorCode}, provide:
-
-CAUSES: List 3-4 specific possible causes for this exact error
-SERVICE: State if this is typically "diy" or "professional" 
-COST: Estimated repair cost range in £
-DIFFICULTY: Rate as easy/moderate/difficult/expert
-URGENCY: Rate as low/medium/high
-REASON: Explain why DIY or professional service is recommended
-SAFETY: Any specific safety warnings for this error
-
-Be specific to what error code ${errorCode} actually means for ${brand} appliances.`
-
-    const diagnosisResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "X-Title": "RS Repairs Error Diagnosis"
-      },
-      body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet', // No websearch needed for diagnosis
-        messages: [{ role: "user", content: diagnosisPrompt }],
-        max_tokens: 500,
-        temperature: 0.1
-      })
-    })
-
-    if (!diagnosisResponse.ok) {
-      console.error(`Diagnosis API error: ${diagnosisResponse.status}`)
-      return null
-    }
-
-    const diagnosisData = await diagnosisResponse.json()
-    const diagnosis = diagnosisData.choices[0]?.message?.content?.trim()
+    const result = parseAIResponse(aiResponse, appliance, brand, problem, errorCode)
     
-    if (!diagnosis) {
-      console.error('No diagnosis returned')
-      return null
+    // Add source URLs if we have them
+    if (searchUrls.length > 0) {
+      result.sourceUrls = searchUrls.slice(0, 3) // Top 3 sources
     }
-
-    console.log(`AI diagnosis: ${diagnosis}`)
     
-    // Parse the structured response
-    return parseStructuredResponse(diagnosis, errorCode, brand, appliance, errorMeaning)
+    return result
 
   } catch (error) {
-    console.error(`Error in websearch lookup:`, error)
+    console.error('Error in AI diagnosis:', error)
     return null
   }
 }
 
-// Parse structured AI response into DiagnosisResult format
-function parseStructuredResponse(
-  response: string, 
-  errorCode: string, 
-  brand: string, 
-  appliance: string,
-  errorMeaning: string
-): DiagnosisResult {
-  console.log(`Parsing AI response: ${response}`)
-  
-  const lines = response.split('\n').map(line => line.trim())
-  
-  // Extract structured data with better pattern matching
-  const causesLine = lines.find(line => line.toUpperCase().startsWith('CAUSES:'))
-  const serviceLine = lines.find(line => line.toUpperCase().startsWith('SERVICE:'))
-  const costLine = lines.find(line => line.toUpperCase().startsWith('COST:'))
-  const difficultyLine = lines.find(line => line.toUpperCase().startsWith('DIFFICULTY:'))
-  const urgencyLine = lines.find(line => line.toUpperCase().startsWith('URGENCY:'))
-  const reasonLine = lines.find(line => line.toUpperCase().startsWith('REASON:'))
-  const safetyLine = lines.find(line => line.toUpperCase().startsWith('SAFETY:'))
-  
-  console.log(`Found structured lines: SERVICE=${serviceLine}, DIFFICULTY=${difficultyLine}, URGENCY=${urgencyLine}`)
-  
-  // Extract detailed causes from numbered list in AI response
-  let possibleCauses: string[] = []
-  
-  if (causesLine) {
-    // Look for numbered causes after CAUSES: line
-    const causesIndex = lines.findIndex(line => line.toUpperCase().startsWith('CAUSES:'))
-    if (causesIndex !== -1) {
-      // Get the next few lines that start with numbers
-      for (let i = causesIndex + 1; i < lines.length && i < causesIndex + 8; i++) {
-        const line = lines[i]
-        if (line.match(/^\d+\.\s/) || line.match(/^[-•]\s/)) {
-          // Extract cause text, remove numbering/bullets
-          const cause = line.replace(/^\d+\.\s*/, '').replace(/^[-•]\s*/, '').trim()
-          if (cause.length > 0 && cause.length < 150) {
-            possibleCauses.push(cause)
-          }
-        } else if (line.toUpperCase().startsWith('SERVICE:') || line.toUpperCase().startsWith('COST:')) {
-          // Stop when we hit the next section
-          break
-        }
-      }
-    }
-  }
-  
-  // If we found causes, add the main description. If not, use defaults
-  if (possibleCauses.length > 0) {
-    possibleCauses.unshift(`${brand} ${appliance} error code ${errorCode} - water fill problem`)
-  } else {
-    possibleCauses = [
-      `${brand} ${appliance} error code ${errorCode} - water fill problem`,
-      "Water supply valve closed or restricted",
-      "Inlet hose blocked, kinked, or disconnected", 
-      "Door not properly closed or door lock fault"
-    ]
-  }
-  
-  // Parse service recommendation
-  const serviceText = serviceLine ? serviceLine.replace(/^SERVICE:\s*/i, '').toLowerCase() : 'unknown'
-  console.log(`Service text extracted: "${serviceText}"`)
-  
-  let recommendedService: "diy" | "professional" | "warranty" = 'professional'
-  
-  // For Beko E4, check if AI recommends DIY first
-  if (errorCode.toUpperCase() === 'E4' && brand.toLowerCase().includes('beko')) {
-    if (serviceText.includes('diy') || serviceText.includes('initially diy') || serviceText.includes('user') || serviceText.includes('simple')) {
-      recommendedService = 'diy'
-    } else {
-      recommendedService = 'professional'
-    }
-  } else {
-    recommendedService = serviceText.includes('diy') ? 'diy' : 'professional'
-  }
-  
-  console.log(`Final recommended service: ${recommendedService}`)
-  
-  // Set consistent difficulty based on service recommendation
-  let difficulty: "easy" | "moderate" | "difficult" | "expert"
-  if (recommendedService === 'diy') {
-    difficulty = 'moderate' // DIY should never be "expert"
-  } else {
-    const difficultyText = difficultyLine ? difficultyLine.replace(/^DIFFICULTY:\s*/i, '').toLowerCase() : 'expert'
-    if (difficultyText.includes('easy')) difficulty = 'easy'
-    else if (difficultyText.includes('moderate')) difficulty = 'moderate' 
-    else if (difficultyText.includes('difficult')) difficulty = 'difficult'
-    else difficulty = 'expert'
-  }
-  
-  // Set consistent urgency - water fill issues are typically medium unless safety critical
-  const urgencyText = urgencyLine ? urgencyLine.replace(/^URGENCY:\s*/i, '').toLowerCase() : 'medium'
-  let urgency: "low" | "medium" | "high" = 'medium'
-  
-  // For E4 water fill issues, typically medium priority (machine doesn't work but not dangerous)
-  if (errorCode.toUpperCase() === 'E4') {
-    urgency = 'medium'
-  } else {
-    // For other error codes, use AI assessment
-    if (urgencyText.includes('low')) urgency = 'low'
-    else if (urgencyText.includes('high') || urgencyText.includes('urgent')) urgency = 'high'
-    else urgency = 'medium'
-  }
-  
-  // Set consistent cost based on service recommendation
-  let estimatedCost = '£109 - £149'
-  if (recommendedService === 'diy') {
-    estimatedCost = '£0 - £50'
-  } else {
-    if (costLine) {
-      const costText = costLine.replace(/^COST:\s*/i, '').trim()
-      if (costText && costText !== '£' && costText.length > 1) {
-        estimatedCost = costText.includes('£') ? costText : `£${costText}`
-      }
-    }
-  }
-  
-  // Set consistent time estimate
-  const timeEstimate = recommendedService === 'diy' ? "30 - 60 minutes" : "1 - 2 hours"
-  
-  // Extract detailed service reason
-  let serviceReason = ""
-  if (reasonLine) {
-    // Get the reason line and potentially multiple lines after it
-    const reasonIndex = lines.findIndex(line => line.toUpperCase().startsWith('REASON:'))
-    if (reasonIndex !== -1) {
-      let reasonText = lines[reasonIndex].replace(/^REASON:\s*/i, '')
-      
-      // Look for continuation lines until we hit the next section
-      for (let i = reasonIndex + 1; i < lines.length; i++) {
-        const line = lines[i]
-        if (line.toUpperCase().startsWith('SAFETY:') || line.toUpperCase().startsWith('COST:')) {
-          break
-        }
-        if (line.trim().length > 0) {
-          reasonText += ' ' + line.trim()
-        }
-      }
-      serviceReason = reasonText.substring(0, 300) // Limit length
-    }
-  }
-  
-  // Default reason if not extracted
-  if (!serviceReason || serviceReason.length < 10) {
-    serviceReason = recommendedService === 'diy' 
-      ? `Error code ${errorCode} often indicates water supply issues that can be checked by the user before calling a professional.`
-      : `Error code ${errorCode} requires professional diagnosis with specialized equipment for accurate repair.`
-  }
-  
-  // Extract detailed safety warnings
-  let safetyWarnings: string[] = []
-  if (safetyLine) {
-    const safetyIndex = lines.findIndex(line => line.toUpperCase().startsWith('SAFETY:'))
-    if (safetyIndex !== -1) {
-      // Look for bullet points or lines after SAFETY:
-      for (let i = safetyIndex; i < lines.length && i < safetyIndex + 8; i++) {
-        const line = lines[i]
-        if (line.match(/^[-•]\s/) || (i > safetyIndex && line.trim().length > 10)) {
-          const warning = line.replace(/^[-•]\s*/, '').replace(/^SAFETY:\s*/i, '').trim()
-          if (warning.length > 10 && warning.length < 100) {
-            safetyWarnings.push(warning)
-          }
-        }
-      }
-    }
-  }
-  
-  // Default safety warnings if none extracted
-  if (safetyWarnings.length === 0) {
-    safetyWarnings = [
-      "Always disconnect power before attempting any inspection",
-      "If unsure about any step, contact professional service"
-    ]
-  }
-  
-  // Generate recommendations based on service type and specific error details
-  const diyRecommendations = generateDIYRecommendations(errorMeaning, recommendedService)
-  
-  // Generate specific professional recommendations based on the extracted causes
-  let professionalRecommendations = [
-    `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-    "Check for faulty water inlet valve and replace if needed",
-    "Inspect control board or wiring issues affecting water fill",
-    "Test all water intake systems and calibrate pressure settings"
-  ]
-  
-  // Customize professional recommendations based on specific causes found
-  if (possibleCauses.some(cause => cause.toLowerCase().includes('inlet valve'))) {
-    professionalRecommendations = [
-      `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-      "Check for faulty water inlet valve and replace if needed",
-      "Inspect control board or wiring issues affecting water fill",
-      "Test all water intake systems and calibrate pressure settings"
-    ]
-  } else if (possibleCauses.some(cause => cause.toLowerCase().includes('door lock'))) {
-    professionalRecommendations = [
-      `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-      "Check for faulty door lock mechanism and repair if needed",
-      "Inspect wiring issues preventing proper door detection",
-      "Test complete door safety and locking system"
-    ]
-  }
-  
-  const result = {
-    possibleCauses: possibleCauses.slice(0, 5), // Allow up to 5 causes (main + 4 specific)
-    recommendations: {
-      diy: diyRecommendations,
-      professional: professionalRecommendations
-    },
-    urgency,
-    estimatedCost,
-    difficulty,
-    recommendedService,
-    serviceReason,
-    skillsRequired: recommendedService === "diy" 
-      ? ["Basic tools", "Manual reading", "Safety awareness"]
-      : ["Specialized diagnostic equipment", "Technical knowledge"],
-    timeEstimate,
-    safetyWarnings: safetyWarnings.slice(0, 4) // Allow up to 4 safety warnings
-  }
-  
-  console.log(`Final diagnosis result:`, JSON.stringify(result, null, 2))
-  return result
-}
-
-// Generate specific DIY recommendations based on error meaning
-function generateDIYRecommendations(errorMeaning: string, recommendedService: string): string[] {
-  const errorLower = errorMeaning.toLowerCase()
-  
-  // Water fill issues (E4 on Beko) - these are often DIY-checkable
-  if (errorLower.includes('water') && (errorLower.includes('fill') || errorLower.includes('intake'))) {
-    if (recommendedService === 'diy') {
-      return [
-        "Check that water supply taps are fully turned on",
-        "Inspect inlet hose for kinks or blockages",
-        "Ensure door is properly closed and latched",
-        "Check water pressure is adequate (if recently changed)"
-      ]
-    } else {
-      return [
-        "Check water supply taps are fully turned on (safe user check)",
-        "Verify door is properly closed and latched",
-        "Power cycle the appliance (unplug for 2 minutes)",
-        "Professional diagnosis recommended for internal water valve issues"
-      ]
-    }
-  }
-  
-  // Drainage issues
-  if (errorLower.includes('drain') || errorLower.includes('pump')) {
-    return [
-      "Check and clean the drain pump filter",
-      "Inspect drain hose for kinks or blockages", 
-      "Ensure drain hose is positioned correctly",
-      "Run an empty cycle to test drainage"
-    ]
-  }
-  
-  // Heating issues
-  if (errorLower.includes('heat') || errorLower.includes('temperature')) {
-    return [
-      "Check that hot water supply is working",
-      "Verify temperature settings are correct",
-      "Power cycle the appliance (unplug for 2 minutes)",
-      "Professional service recommended for heating element issues"
-    ]
-  }
-  
-  // Door issues
-  if (errorLower.includes('door') || errorLower.includes('lock')) {
-    return [
-      "Ensure door is properly closed and aligned",
-      "Check for obstructions around door seal",
-      "Clean door latch and strike mechanism",
-      "Try opening and closing door firmly several times"
-    ]
-  }
-  
-  // For professional service recommendations
-  if (recommendedService === 'professional') {
-    return [
-      "Power cycle the appliance (unplug for 2 minutes)",
-      "Check that all connections are secure",
-      "Verify appliance settings are correct",
-      "Professional service recommended for this error code"
-    ]
-  }
-  
-  // Default DIY recommendations
-  return [
-    "Power cycle the appliance (unplug for 2 minutes)",
-    "Check all connections and settings",
-    "Consult user manual for basic troubleshooting",
-    "Contact professional service if issue persists"
-  ]
-}
-
-// Main diagnosis function
+// Main diagnosis function with search integration
 export async function diagnoseProblem(
   appliance: string, 
   brand: string, 
@@ -452,92 +285,347 @@ export async function diagnoseProblem(
 ): Promise<DiagnosisResult> {
   try {
     const openRouterApiKey = process.env.OPENROUTER_API_KEY
+    const searchApiKey = process.env.SERP_API_KEY || process.env.BRAVE_SEARCH_API_KEY
 
     if (!openRouterApiKey) {
       console.error('OpenRouter API key not found')
-      const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
-      await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
-      return fallbackResult
+      return getEmergencyFallback(appliance, brand, problem)
     }
 
-    // Step 1: Check for error codes
+    // Detect error code if present
     const detectedErrorCode = detectErrorCode(problem)
-    
-    if (detectedErrorCode && brand) {
-      console.log(`Detected error code: ${detectedErrorCode} for ${brand} ${appliance}`)
+    console.log(`Analysing: ${brand} ${appliance} - ${problem}${detectedErrorCode ? ` (Error: ${detectedErrorCode})` : ''}`)
+
+    let searchInfo = ''
+    let searchUrls: string[] = []
+
+    // If we have an error code and search API, search for specific information
+    if (detectedErrorCode && searchApiKey) {
+      console.log(`Searching for ${brand} ${detectedErrorCode} information...`)
       
-      // Use websearch for error code lookup
-      const websearchResult = await lookupErrorCodeWithWebsearch(
-        detectedErrorCode, 
-        brand, 
-        appliance, 
-        openRouterApiKey
-      )
-      
-      if (websearchResult) {
-        console.log('Websearch diagnosis successful')
-        await saveDiagnosticToDatabase(appliance, brand, problem, email, websearchResult)
-        return websearchResult
+      let searchResults
+      if (process.env.SERP_API_KEY) {
+        searchResults = await searchForErrorCode(brand, appliance, detectedErrorCode, process.env.SERP_API_KEY)
+      } else if (process.env.BRAVE_SEARCH_API_KEY) {
+        searchResults = await searchWithBraveAPI(brand, appliance, detectedErrorCode, process.env.BRAVE_SEARCH_API_KEY)
       }
       
-      console.log('Websearch failed, using error code fallback')
-      const errorCodeFallback = getErrorCodeFallback(detectedErrorCode, appliance, brand, problem)
-      await saveDiagnosticToDatabase(appliance, brand, problem, email, errorCodeFallback)
-      return errorCodeFallback
+      if (searchResults) {
+        searchInfo = searchResults.relevantInfo
+        searchUrls = searchResults.searchResults.map(r => r.url)
+        console.log(`Found ${searchResults.searchResults.length} search results`)
+      }
     }
-    
-    // Step 2: Fallback for non-error-code issues
-    const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
+
+    // Use AI with search results for diagnosis
+    const aiResult = await diagnoseWithAI(
+      appliance,
+      brand,
+      problem,
+      detectedErrorCode,
+      searchInfo,
+      searchUrls,
+      openRouterApiKey
+    )
+
+    if (aiResult) {
+      console.log('AI diagnosis successful')
+      await saveDiagnosticToDatabase(appliance, brand, problem, email, aiResult)
+      return aiResult
+    }
+
+    // Fallback if AI fails
+    console.log('AI diagnosis failed, using emergency fallback')
+    const fallbackResult = getEmergencyFallback(appliance, brand, problem)
     await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
     return fallbackResult
 
   } catch (error) {
     console.error("Diagnosis error:", error)
-    const fallbackResult = getFallbackDiagnosis(appliance, brand, problem)
+    const fallbackResult = getEmergencyFallback(appliance, brand, problem)
     await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult)
     return fallbackResult
   }
 }
 
-// Enhanced fallback specifically for error codes
-function getErrorCodeFallback(errorCode: string, appliance: string, brand: string, problem: string): DiagnosisResult {
+// Keep all your existing helper functions below unchanged:
+// - parseAIResponse
+// - extractSection
+// - extractSimpleField
+// - extractDIYCost
+// - capProfessionalCost
+// - getEmergencyFallback
+// - saveDiagnosticToDatabase
+// - validateErrorCodeResponse
+
+// [Rest of your existing code remains the same...]
+function parseAIResponse(
+  aiResponse: string, 
+  appliance: string, 
+  brand: string, 
+  problem: string,
+  errorCode: string | null
+): DiagnosisResult {
+  
+  // Extract sections using more flexible parsing
+  const sections = {
+    errorCodeMeaning: extractSimpleField(aiResponse, ['ERROR CODE MEANING']),
+    causes: extractSection(aiResponse, ['POSSIBLE CAUSES', 'CAUSES']),
+    diyRecs: extractSection(aiResponse, ['DIY RECOMMENDATIONS', 'DIY STEPS', 'DIY']),
+    professionalRecs: extractSection(aiResponse, ['PROFESSIONAL SERVICES', 'PROFESSIONAL']),
+    serviceType: extractSimpleField(aiResponse, ['SERVICE TYPE', 'SERVICE']),
+    difficulty: extractSimpleField(aiResponse, ['DIFFICULTY']),
+    urgency: extractSimpleField(aiResponse, ['URGENCY']),
+    timeEstimate: extractSimpleField(aiResponse, ['TIME ESTIMATE', 'TIME']),
+    costEstimate: extractSimpleField(aiResponse, ['COST ESTIMATE', 'COST']),
+    skillsNeeded: extractSimpleField(aiResponse, ['SKILLS NEEDED', 'SKILLS']),
+    safetyWarnings: extractSection(aiResponse, ['SAFETY WARNINGS', 'SAFETY']),
+    serviceReason: extractSimpleField(aiResponse, ['SERVICE REASON', 'REASON'])
+  }
+
+  // Extract error code meaning if present
+  let errorCodeMeaning = undefined
+  if (sections.errorCodeMeaning && !sections.errorCodeMeaning.includes('N/A')) {
+    errorCodeMeaning = sections.errorCodeMeaning
+  }
+
+  // Parse possible causes from AI response
+  const possibleCauses = sections.causes.length > 0 ? sections.causes : [
+    `${brand} ${appliance}${errorCode ? ` error ${errorCode}` : ''} - ${problem}`
+  ]
+
+  // Parse DIY recommendations from AI response
+  const diyRecommendations = sections.diyRecs.length > 0 ? sections.diyRecs : [
+    "Check power connection and restart appliance",
+    "Verify settings are correct for intended operation",
+    "Consult user manual for basic troubleshooting",
+    "Contact professional if basic steps don't resolve issue"
+  ]
+
+  // Parse professional recommendations from AI response
+  const professionalRecommendations = sections.professionalRecs.length > 0 ? sections.professionalRecs : [
+    `Professional diagnosis of ${brand} ${appliance}`,
+    "Specialised diagnostic equipment and tools",
+    "Expert repair with genuine replacement parts",
+    "Complete testing and warranty on repair work",
+    "Follow-up service and support",
+    "Certified engineer assessment"
+  ]
+
+  // Parse service type
+  const serviceTypeText = sections.serviceType.toLowerCase()
+  let recommendedService: "diy" | "professional" | "warranty" = 'professional'
+  
+  if (serviceTypeText.includes('diy')) {
+    recommendedService = 'diy'
+  } else if (serviceTypeText.includes('warranty')) {
+    recommendedService = 'warranty'
+  }
+
+  // Parse difficulty
+  const difficultyText = sections.difficulty.toLowerCase()
+  let difficulty: "easy" | "moderate" | "difficult" | "expert" = 'moderate'
+  
+  if (difficultyText.includes('easy')) difficulty = 'easy'
+  else if (difficultyText.includes('moderate')) difficulty = 'moderate'
+  else if (difficultyText.includes('difficult')) difficulty = 'difficult'
+  else if (difficultyText.includes('expert')) difficulty = 'expert'
+
+  // Parse urgency
+  const urgencyText = sections.urgency.toLowerCase()
+  let urgency: "low" | "medium" | "high" = 'medium'
+  
+  if (urgencyText.includes('low')) urgency = 'low'
+  else if (urgencyText.includes('high')) urgency = 'high'
+
+  // Parse time estimate from AI or set default
+  let timeEstimate = sections.timeEstimate || "1-2 hours"
+  if (recommendedService === 'diy' && !timeEstimate.includes('minutes')) {
+    timeEstimate = "30-60 minutes"
+  }
+
+  // Parse cost estimate with £149 cap
+  let estimatedCost = sections.costEstimate || "£109-£149"
+  if (recommendedService === 'diy') {
+    estimatedCost = extractDIYCost(estimatedCost) || "£0-£50"
+  } else {
+    estimatedCost = capProfessionalCost(estimatedCost)
+  }
+
+  // Parse skills from AI response
+  const skillsText = sections.skillsNeeded
+  let skillsRequired: string[] = []
+  
+  if (skillsText) {
+    skillsRequired = skillsText.split(',').map(s => s.trim()).filter(s => s.length > 0)
+  }
+  
+  if (skillsRequired.length === 0) {
+    skillsRequired = recommendedService === 'diy' 
+      ? ["Basic tools", "Manual reading", "Safety awareness"]
+      : ["Specialised diagnostic equipment", "Professional training", "Technical expertise"]
+  }
+
+  // Parse safety warnings from AI response
+  const safetyWarnings = sections.safetyWarnings.length > 0 ? sections.safetyWarnings : [
+    "Always disconnect power before attempting any inspection",
+    "If unsure about any step, contact professional service immediately"
+  ]
+
+  // Use AI service reason or create appropriate default
+  let serviceReason = sections.serviceReason
+  if (!serviceReason || serviceReason.length < 20) {
+    serviceReason = recommendedService === 'diy'
+      ? `Basic troubleshooting steps can be safely attempted for this ${brand} ${appliance} issue before requiring professional service.`
+      : `This ${brand} ${appliance} issue requires professional diagnosis with specialised equipment for safe and accurate repair.`
+  }
+
+  const result: DiagnosisResult = {
+    errorCodeMeaning,
+    possibleCauses: possibleCauses.slice(0, 5),
+    recommendations: {
+      diy: diyRecommendations.slice(0, 6),
+      professional: professionalRecommendations.slice(0, 6)
+    },
+    urgency,
+    estimatedCost,
+    difficulty,
+    recommendedService,
+    serviceReason,
+    skillsRequired: skillsRequired.slice(0, 4),
+    timeEstimate,
+    safetyWarnings: safetyWarnings.slice(0, 4)
+  }
+  
+  console.log('Parsed diagnosis result:', JSON.stringify(result, null, 2))
+  return result
+}
+
+// Helper function to extract bulleted/numbered sections
+function extractSection(text: string, sectionNames: string[]): string[] {
+  for (const sectionName of sectionNames) {
+    const regex = new RegExp(`\\*\\*${sectionName}[:\\*]*\\*\\*([\\s\\S]*?)(?=\\*\\*[A-Z]|$)`, 'i')
+    const match = text.match(regex)
+    
+    if (match) {
+      const sectionText = match[1].trim()
+      const items: string[] = []
+      
+      // Split by bullet points, numbers, or line breaks
+      const lines = sectionText.split(/\n/)
+      
+      for (const line of lines) {
+        const cleanLine = line.replace(/^[•\-\*]\s*/, '').replace(/^\d+\.\s*/, '').trim()
+        if (cleanLine.length > 10 && cleanLine.length < 200) {
+          items.push(cleanLine)
+        }
+      }
+      
+      if (items.length > 0) {
+        return items
+      }
+    }
+  }
+  
+  return []
+}
+
+// Helper function to extract simple field values
+function extractSimpleField(text: string, fieldNames: string[]): string {
+  for (const fieldName of fieldNames) {
+    const regex = new RegExp(`\\*\\*${fieldName}[:\\*]*\\*\\*\\s*([^\\n\\*]+(?:\\n(?!\\*\\*)[^\\n]*)*?)(?=\\n\\*\\*|$)`, 'i')
+    const match = text.match(regex)
+    
+    if (match) {
+      return match[1].trim()
+    }
+  }
+  
+  return ''
+}
+
+// Helper function to extract DIY cost from mixed cost info
+function extractDIYCost(costText: string): string | null {
+  if (costText.includes('DIY') || costText.includes('£0')) {
+    const diyMatch = costText.match(/DIY[^:]*:?\s*(£[\d\-£\s]+)/i)
+    if (diyMatch) return diyMatch[1].trim()
+    
+    const freeMatch = costText.match(/(£0[^£]*£\d+)/i)
+    if (freeMatch) return freeMatch[1].trim()
+  }
+  
+  return null
+}
+
+// Helper function to cap professional costs at £149
+function capProfessionalCost(costText: string): string {
+  if (!costText.includes('£')) {
+    return '£109-£149'
+  }
+  
+  // Extract cost ranges and cap them
+  const costMatch = costText.match(/£(\d+)\s*[-–]\s*£(\d+)/)
+  if (costMatch) {
+    const minCost = Math.max(parseInt(costMatch[1]), 80)
+    const maxCost = Math.min(parseInt(costMatch[2]), 149)
+    return `£${minCost}-£${maxCost}`
+  }
+  
+  // Single cost value
+  const singleMatch = costText.match(/£(\d+)/)
+  if (singleMatch) {
+    const cost = Math.min(parseInt(singleMatch[1]), 149)
+    return cost < 100 ? `£${cost}-£149` : `£109-£${cost}`
+  }
+  
+  return '£109-£149'
+}
+
+// Minimal emergency fallback - only used when API is completely unavailable
+function getEmergencyFallback(appliance: string, brand: string, problem: string): DiagnosisResult {
+  const isSafetyIssue = problem.toLowerCase().includes('smoke') || 
+                       problem.toLowerCase().includes('sparking') || 
+                       problem.toLowerCase().includes('burning')
+
   return {
     possibleCauses: [
-      `${brand} ${appliance} error code ${errorCode} indicates a specific system fault`,
-      "Component malfunction requiring professional diagnostic equipment",
-      "Electronic control system communication error",
-      "Sensor or component failure specific to this error code"
+      `${brand} ${appliance} - ${problem}`,
+      "Diagnostic system temporarily unavailable",
+      "Professional inspection recommended for accurate assessment"
     ],
     recommendations: {
       diy: [
-        "Power cycle the appliance (unplug for 2 minutes, then restart)",
-        "Check all connections are secure and properly seated",
-        "Verify appliance settings are correct for current operation",
-        "Consult user manual for error code specific troubleshooting"
+        "Disconnect power immediately for safety",
+        "Check that all connections are secure",
+        "Verify appliance settings are appropriate",
+        "Do not attempt operation until professionally inspected"
       ],
       professional: [
-        `Professional diagnosis of ${brand} ${appliance} error code ${errorCode}`,
-        "Check for faulty components and replace if needed",
-        "Inspect internal wiring or control system issues",
-        "Test all systems and calibrate after repair"
+        `Emergency diagnostic service for ${brand} ${appliance}`,
+        "Complete safety inspection and testing", 
+        "Professional repair with warranty coverage",
+        "Certified engineer assessment"
       ]
     },
-    urgency: "medium",
-    estimatedCost: "£109 - £149",
+    urgency: isSafetyIssue ? "high" : "medium",
+    estimatedCost: "£109-£149",
     difficulty: "expert",
     recommendedService: "professional",
-    serviceReason: `Error code ${errorCode} on ${brand} ${appliance} requires professional diagnosis with specialized equipment to identify the exact component failure and ensure safe, accurate repair.`,
-    skillsRequired: ["Specialized diagnostic tools", "Brand-specific technical knowledge", "Electronic component testing"],
-    timeEstimate: "1 - 2 hours",
-    safetyWarnings: [
-      "Always disconnect power before attempting any inspection",
-      "Error codes often indicate electrical or safety-critical component faults",
-      "Professional diagnosis strongly recommended for accurate identification and safe repair"
+    serviceReason: "Diagnostic system unavailable - professional inspection required for safety and accurate diagnosis.",
+    skillsRequired: ["Professional certification", "Specialised equipment"],
+    timeEstimate: "1-2 hours",
+    safetyWarnings: isSafetyIssue ? [
+      "IMMEDIATE SAFETY RISK - Disconnect power now",
+      "Do not operate appliance until professionally inspected",
+      "Contact emergency repair service immediately"
+    ] : [
+      "Disconnect power before any inspection",
+      "Professional diagnosis required for warranty protection"
     ]
   }
 }
 
-// Database save function
+// Database save function (unchanged)
 async function saveDiagnosticToDatabase(
   appliance: string,
   brand: string, 
@@ -572,68 +660,5 @@ async function saveDiagnosticToDatabase(
     }
   } catch (error) {
     console.error('Failed to save diagnostic to database:', error)
-  }
-}
-
-// Standard fallback for non-error-code problems
-function getFallbackDiagnosis(appliance: string, brand: string, problem: string): DiagnosisResult {
-  const problemLower = problem.toLowerCase()
-  
-  const isElectrical = appliance.toLowerCase().includes('oven') || 
-                      appliance.toLowerCase().includes('cooker') ||
-                      appliance.toLowerCase().includes('microwave') ||
-                      problemLower.includes('electrical')
-  
-  const isWaterRelated = appliance.toLowerCase().includes('washing') ||
-                        appliance.toLowerCase().includes('dishwasher') ||
-                        appliance.toLowerCase().includes('dryer')
-
-  const isSafetyIssue = problemLower.includes('smoke') || 
-                       problemLower.includes('sparking') || 
-                       problemLower.includes('burning')
-
-  const brandText = brand ? ` ${brand}` : ""
-  const urgency = isSafetyIssue ? "high" : "medium"
-  const recommendedService = isSafetyIssue || isElectrical ? "professional" : "professional"
-
-  return {
-    possibleCauses: [
-      `${brandText} ${appliance} component wear or malfunction`,
-      isElectrical ? "Electrical system or component issue" : 
-      isWaterRelated ? "Water system blockage or pump malfunction" : "Mechanical component failure",
-      "Internal sensor or control system issue",
-      "Regular maintenance required or component replacement needed"
-    ],
-    recommendations: {
-      diy: [
-        "Power cycle the appliance (unplug for 2 minutes, then restart)",
-        isWaterRelated ? "Check and clean filters, inspect for blockages" : "Inspect for visible debris or loose connections",
-        "Verify all settings are correct for intended operation",
-        "Consult user manual for basic troubleshooting steps"
-      ],
-      professional: [
-        `Professional diagnostic inspection of${brandText} ${appliance}`,
-        "Specialized equipment testing and component analysis", 
-        "Genuine parts replacement with warranty coverage",
-        "Complete safety inspection and performance optimization"
-      ]
-    },
-    urgency,
-    estimatedCost: isElectrical ? "£109 - £149" : "£50 - £149",
-    difficulty: isElectrical || isSafetyIssue ? "expert" : "difficult",
-    recommendedService,
-    serviceReason: isSafetyIssue 
-      ? "Safety issues require immediate professional assessment to prevent potential hazards."
-      : "Professional service ensures accurate diagnosis, quality repair, and safety compliance.",
-    skillsRequired: ["Specialized diagnostic equipment", "Brand-specific technical knowledge"],
-    timeEstimate: "1 - 2 hours",
-    safetyWarnings: isSafetyIssue ? [
-      "SAFETY CRITICAL: Disconnect power immediately",
-      "Do not operate appliance until professionally inspected", 
-      "Potential fire or electrical hazard - professional service required"
-    ] : [
-      "Always disconnect power before any inspection or repair attempts",
-      "Professional service recommended for warranty protection and safety"
-    ]
   }
 }
