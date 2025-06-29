@@ -55,11 +55,11 @@ async function diagnoseWithAI(
     
     const prompt = `You are a professional appliance repair technician. A customer has a ${brand} ${appliance}${errorCodeText} with this problem: "${problem}"
 
-${errorCode ? `First, explain what error code ${errorCode} specifically means on ${brand} ${appliance} models.` : ''}
+${errorCode ? `CRITICAL: You must explain what error code ${errorCode} specifically means on ${brand} ${appliance} models. Do NOT confuse this with other brands or error codes. If you don't know the exact meaning for ${brand} error code ${errorCode}, state that clearly.` : ''}
 
 Please provide a comprehensive diagnosis using this EXACT format:
 
-**ERROR CODE MEANING:** ${errorCode ? `[Explain what ${errorCode} indicates on ${brand} ${appliance}]` : 'N/A - No error code present'}
+**ERROR CODE MEANING:** ${errorCode ? `[Explain what error code ${errorCode} specifically indicates on ${brand} ${appliance} models - be precise about the brand and code]` : 'N/A - No error code present'}
 
 **POSSIBLE CAUSES:**
 1. [Most likely cause with brief explanation]
@@ -166,7 +166,18 @@ function parseAIResponse(
   // Extract error code meaning if present
   let errorCodeMeaning = undefined
   if (sections.errorCodeMeaning && !sections.errorCodeMeaning.includes('N/A')) {
-    errorCodeMeaning = sections.errorCodeMeaning
+    // Validate that the error code meaning matches the input
+    const meaningText = sections.errorCodeMeaning.toLowerCase()
+    const expectedBrand = brand.toLowerCase()
+    const expectedCode = errorCode?.toLowerCase()
+    
+    // Only use if it mentions the correct brand and error code, or if no error code was detected
+    if (!errorCode || 
+        (meaningText.includes(expectedBrand) && meaningText.includes(expectedCode))) {
+      errorCodeMeaning = sections.errorCodeMeaning
+    } else {
+      console.log(`Error code meaning validation failed - expected ${brand} ${errorCode}, got: ${sections.errorCodeMeaning}`)
+    }
   }
 
   // Parse possible causes from AI response
