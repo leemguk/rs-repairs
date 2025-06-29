@@ -760,6 +760,48 @@ async function saveDiagnosticToDatabase(
   wasCached: boolean = false  // ADD THIS PARAMETER
 ): Promise<void> {
   try {
+    // Validation: Don't save error code content for non-error problems
+    let validatedDiagnosis = { ...diagnosis }
+    
+    if (!errorCode) {
+      // Remove any error code references from non-error diagnoses
+      validatedDiagnosis.errorCodeMeaning = undefined
+      
+      // Filter out any error code mentions from arrays
+      validatedDiagnosis.possibleCauses = diagnosis.possibleCauses.filter(
+        cause => !cause.toLowerCase().includes('error code') && !cause.match(/\b[ef]\d{1,3}\b/i)
+      )
+      
+      validatedDiagnosis.recommendations.diy = diagnosis.recommendations.diy.filter(
+        step => !step.toLowerCase().includes('error code')
+      )
+      
+      validatedDiagnosis.recommendations.professional = diagnosis.recommendations.professional.filter(
+        service => !service.toLowerCase().includes('error code')
+      )
+    }
+    
+    // Ensure arrays are not empty after filtering
+    if (validatedDiagnosis.possibleCauses.length === 0) {
+      validatedDiagnosis.possibleCauses = [`${brand} ${appliance} - ${problem}`]
+    }
+    
+    if (validatedDiagnosis.recommendations.diy.length === 0) {
+      validatedDiagnosis.recommendations.diy = [
+        "Check power connection and basic settings",
+        "Consult user manual for troubleshooting",
+        "Contact professional if issue persists"
+      ]
+    }
+    
+    if (validatedDiagnosis.recommendations.professional.length === 0) {
+      validatedDiagnosis.recommendations.professional = [
+        `Professional diagnosis of ${appliance}`,
+        "Complete system inspection and testing",
+        "Repair or replacement of faulty components"
+      ]
+    }
+
     const { error } = await supabase
       .from('diagnostics')
       .insert({
@@ -768,16 +810,16 @@ async function saveDiagnosticToDatabase(
         appliance_brand: brand || null,
         problem_description: problem,
         error_code: errorCode || null,
-        error_code_meaning: diagnosis.errorCodeMeaning || null,
-        estimated_time: diagnosis.timeEstimate,
-        estimated_cost: diagnosis.estimatedCost,
-        difficulty_level: diagnosis.difficulty,
-        priority_level: diagnosis.urgency,
-        possible_causes: diagnosis.possibleCauses,
-        diy_solutions: diagnosis.recommendations.diy,
-        professional_services: diagnosis.recommendations.professional,
-        recommended_action: diagnosis.recommendedService,
-        source_urls: diagnosis.sourceUrls || null,
+        error_code_meaning: validatedDiagnosis.errorCodeMeaning || null,
+        estimated_time: validatedDiagnosis.timeEstimate,
+        estimated_cost: validatedDiagnosis.estimatedCost,
+        difficulty_level: validatedDiagnosis.difficulty,
+        priority_level: validatedDiagnosis.urgency,
+        possible_causes: validatedDiagnosis.possibleCauses,
+        diy_solutions: validatedDiagnosis.recommendations.diy,
+        professional_services: validatedDiagnosis.recommendations.professional,
+        recommended_action: validatedDiagnosis.recommendedService,
+        source_urls: validatedDiagnosis.sourceUrls || null,
         was_cached: wasCached,  // ADD THIS LINE
         diagnosis_confidence: wasCached ? 0.9 : 1.0,
         converted_to_booking: false,
@@ -787,7 +829,7 @@ async function saveDiagnosticToDatabase(
     if (error) {
       console.error('Database save error:', error)
     } else {
-      console.log(`Diagnostic saved to database ${wasCached ? '(from cache)' : '(from AI)'}`)
+      console.log(`Diagnostic saved to database ${wasCached ? '(from cache)' : '(from AI)'} - validated: ${!errorCode ? 'cleaned' : 'with error code'}`)
     }
   } catch (error) {
     console.error('Failed to save diagnostic to database:', error)
