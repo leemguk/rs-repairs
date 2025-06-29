@@ -25,11 +25,13 @@ import {
   ChevronUp,
   Eye,
   X,
+  Info,
 } from "lucide-react"
 import { diagnoseProblem } from "../actions/diagnose"
 import { Checkbox } from "@/components/ui/checkbox"
 
 interface DiagnosisResult {
+  errorCodeMeaning?: string
   possibleCauses: string[]
   recommendations: {
     diy: string[]
@@ -50,6 +52,7 @@ interface DiagnosticFormProps {
 }
 
 const exampleDiagnosis: DiagnosisResult = {
+  errorCodeMeaning: "E4 on Samsung washing machines indicates an unbalanced load error. The machine has detected that the clothes inside are not distributed evenly, preventing the spin cycle from completing safely.",
   possibleCauses: [
     "Loose or damaged drum bearings",
     "Foreign object (coin, pin, etc.) stuck in drum",
@@ -70,7 +73,9 @@ const exampleDiagnosis: DiagnosisResult = {
       "Bearing replacement service",
       "Full mechanical inspection",
       "Drive belt replacement",
-      "Shock absorber replacement"
+      "Shock absorber replacement",
+      "Control system diagnostic testing",
+      "Complete appliance safety check"
     ]
   },
   urgency: "medium",
@@ -306,6 +311,24 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                   <p className="text-xs text-green-600">Report sent to: {email}</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error Code Explanation - NEW SECTION */}
+        {diagnosisData.errorCodeMeaning && (
+          <Card className="border-l-4 border-l-purple-600 bg-purple-50">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <Info className="h-6 w-6 text-purple-600" />
+                <div>
+                  <CardTitle className="text-lg text-purple-800">Error Code Explanation</CardTitle>
+                  <CardDescription className="text-purple-600">What this error means for your appliance</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-purple-800 font-medium">{diagnosisData.errorCodeMeaning}</p>
             </CardContent>
           </Card>
         )}
