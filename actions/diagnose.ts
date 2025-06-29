@@ -796,7 +796,6 @@ async function saveDiagnosticToDatabase(
   email: string, 
   diagnosis: DiagnosisResult,
   errorCode?: string | null,
-  wasCached: boolean = false
   was_cached: wasCached,  // ADD THIS LINE
 ): Promise<void> {
   try {
