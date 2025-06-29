@@ -137,10 +137,28 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     setIsVerifying(true)
     setError("")
 
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/send-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setIsVerifying(false)
+        setIsEmailSent(true)
+      } else {
+        setIsVerifying(false)
+        setError(data.error || 'Failed to send verification code. Please try again.')
+      }
+    } catch (error) {
       setIsVerifying(false)
-      setIsEmailSent(true)
-    }, 1500)
+      setError('Network error. Please check your connection and try again.')
+    }
   }
 
   const handleVerificationSubmit = async (e: React.FormEvent) => {
@@ -150,19 +168,40 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
       return
     }
 
+    if (verificationCode.length !== 6) {
+      setError("Please enter a valid 6-digit verification code")
+      return
+    }
+
     setIsVerifying(true)
     setError("")
 
-    setTimeout(() => {
-      if (verificationCode.length === 6) {
+    try {
+      const response = await fetch('/api/verify-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email: email.trim(), 
+          code: verificationCode.trim() 
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
         setIsVerifying(false)
         setIsEmailVerified(true)
         handleDiagnosticSubmit()
       } else {
         setIsVerifying(false)
-        setError("Please enter a valid 6-digit verification code")
+        setError(data.error || 'Invalid verification code. Please try again.')
       }
-    }, 1000)
+    } catch (error) {
+      setIsVerifying(false)
+      setError('Network error. Please check your connection and try again.')
+    }
   }
 
   const handleDiagnosticSubmit = async () => {
@@ -181,12 +220,31 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     }
   }
 
-  const resendVerificationCode = () => {
+  const resendVerificationCode = async () => {
     setIsVerifying(true)
-    setTimeout(() => {
+    setError("")
+    
+    try {
+      const response = await fetch('/api/send-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setIsVerifying(false)
+      } else {
+        setIsVerifying(false)
+        setError(data.error || 'Failed to resend verification code. Please try again.')
+      }
+    } catch (error) {
       setIsVerifying(false)
-      setIsEmailSent(true)
-    }, 1000)
+      setError('Network error. Please check your connection and try again.')
+    }
   }
 
   const scrollToServices = () => {
@@ -696,7 +754,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                         maxLength={6}
                       />
                       <p className="text-xs text-gray-500 text-center">
-                        For demo: enter any 6-digit code (e.g., 123456)
+                        Check your email for the 6-digit verification code
                       </p>
                       {error && (
                         <div className="flex items-center gap-2 text-red-600 text-sm">
