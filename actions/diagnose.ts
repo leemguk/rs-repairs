@@ -56,15 +56,32 @@ function validateErrorCodeResponse(response: string, expectedBrand: string, expe
   // Must mention the correct error code
   const hasCode = responseLower.includes(codeLower)
   
-  // Must not mention other brands (common confusion)
+  // Check for mentions of other brands - but be more specific
   const otherBrands = ['samsung', 'lg', 'whirlpool', 'hotpoint', 'indesit', 'zanussi', 'aeg', 'electrolux', 'miele', 'siemens', 'neff', 'gaggenau', 'fisher', 'paykel', 'ge', 'kenmore', 'maytag', 'frigidaire', 'haier', 'hisense', 'beko', 'candy', 'hoover', 'smeg', 'bauknecht', 'grundig']
-  const mentionsOtherBrand = otherBrands
-    .filter(brand => brand !== brandLower)
-    .some(brand => responseLower.includes(brand))
   
-  console.log(`Validation: brand=${hasBrand}, code=${hasCode}, otherBrand=${mentionsOtherBrand}`)
+  // Only flag as mentioning other brands if they're mentioned in a way that suggests confusion
+  // Allow mentions like "unlike Samsung" or "similar to LG" but not "Samsung E18 means..."
+  let mentionsOtherBrandIncorrectly = false
   
-  return hasBrand && hasCode && !mentionsOtherBrand
+  for (const brand of otherBrands) {
+    if (brand === brandLower) continue
+    
+    if (responseLower.includes(brand)) {
+      // Check if it's mentioned as the primary brand (bad) or just in comparison (ok)
+      const brandMentionPattern = new RegExp(`\\b${brand}\\s+(washing\\s+machine|appliance)s?\\s+error\\s+code\\s+${codeLower}`, 'i')
+      const primaryBrandPattern = new RegExp(`error\\s+code\\s+${codeLower}\\s+on\\s+${brand}`, 'i')
+      
+      if (brandMentionPattern.test(responseLower) || primaryBrandPattern.test(responseLower)) {
+        mentionsOtherBrandIncorrectly = true
+        console.log(`Validation failed: mentions ${brand} as primary brand for ${codeLower}`)
+        break
+      }
+    }
+  }
+  
+  console.log(`Validation: brand=${hasBrand}, code=${hasCode}, incorrectBrandMention=${mentionsOtherBrandIncorrectly}`)
+  
+  return hasBrand && hasCode && !mentionsOtherBrandIncorrectly
 }
 
 // Improved AI prompt for more structured responses
