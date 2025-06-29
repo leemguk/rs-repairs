@@ -31,17 +31,31 @@ function detectErrorCode(problem: string): string | null {
   const problemLower = problem.toLowerCase()
   
   const errorCodePatterns = [
-    /\berror\s+code\s*[:\-]?\s*([a-z]?\d{1,3}[a-z]?)\b/gi,
-    /\bcode\s*[:\-]?\s*([a-z]?\d{1,3}[a-z]?)\b/gi,
-    /\b[ef][-]?(\d{1,3}[a-z]?)\b/gi,
-    /\b(\d{1,2}[ef])\b/gi,
-    /\b([a-z]{1,2}\d{1,2})\b/gi,
+    /\b[ef][-\s]?(\d{1,3}[a-z]?)\b/gi,              // E13, F-13, E 13
+    /\berror\s+code\s*[:\-]?\s*([a-z]?\d{1,3}[a-z]?)\b/gi,  // error code E13
+    /\bcode\s*[:\-]?\s*([a-z]?\d{1,3}[a-z]?)\b/gi,          // code E13
+    /\b(\d{1,2}[ef])\b/gi,                          // 13E format
+    /\b([a-z]{1,2}\d{1,3})\b/gi,                    // LE1, HE5 format
+    /\berror\s+([a-z]?\d{1,3}[a-z]?)\b/gi,         // error E13
+    /\b([ef]\d{1,3})\b/gi                           // Simple E13, F05
   ]
   
   for (const pattern of errorCodePatterns) {
-    const matches = problemLower.match(pattern)
+    const matches = problem.match(pattern)
     if (matches) {
-      const code = matches[0].replace(/^(error\s+code|code)\s*[:\-]?\s*/i, '').toUpperCase()
+      // Extract just the code part, removing "error code" prefix
+      let code = matches[0]
+        .replace(/^(error\s+code|code|error)\s*[:\-]?\s*/i, '')
+        .replace(/[-\s]/g, '') // Remove hyphens and spaces
+        .toUpperCase()
+      
+      // Ensure it starts with a letter if it's a standard error code
+      if (/^\d/.test(code) && /[ef]$/i.test(code)) {
+        // Convert 13E to E13
+        code = code.slice(-1) + code.slice(0, -1)
+      }
+      
+      console.log(`Detected error code: ${code} from "${problem}"`)
       return code
     }
   }
@@ -72,7 +86,7 @@ async function checkCachedDiagnosis(
         p_brand: brand || '',
         p_problem: problem || '',
         p_error_code: errorCode || null,
-        p_threshold: 0.2  // Lowered threshold for easier matching
+        p_threshold: 0.5  // Increased threshold to require better matches
       })
 
     if (error) {
@@ -110,7 +124,7 @@ async function checkCachedDiagnosis(
     }
     
     // Only use cached result if similarity is very high or exact error code match
-    if (bestMatch.similarity_score < 0.6 && bestMatch.error_code !== errorCode) {
+    if (bestMatch.similarity_score < 0.7 && (!errorCode || bestMatch.error_code !== errorCode)) {
       console.log(`Similarity score too low: ${bestMatch.similarity_score}`)
       return null
     }
