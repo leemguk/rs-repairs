@@ -28,8 +28,9 @@ export async function getSparePartsCategories(): Promise<string[]> {
       return uniqueCategories;
     }
 
-    // The RPC returns an array of strings directly, not objects
-    return data || [];
+    // The RPC returns objects like {"get_spare_parts_categories": "Vacuum Cleaners"}
+    // Extract the category value from each object
+    return data?.map(item => item.get_spare_parts_categories || item.category).filter(Boolean) || [];
   } catch (error) {
     console.error('Unexpected error:', error);
     return [];
@@ -61,8 +62,9 @@ export async function getSparePartsBrands(): Promise<string[]> {
       return uniqueBrands;
     }
 
-    // The RPC returns an array of strings directly, not objects
-    return data || [];
+    // The RPC returns objects like {"get_spare_parts_brands": "AEG"}
+    // Extract the brand value from each object
+    return data?.map(item => item.get_spare_parts_brands || item.brand).filter(Boolean) || [];
   } catch (error) {
     console.error('Unexpected error:', error);
     return [];
