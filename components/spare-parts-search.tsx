@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -11,6 +11,7 @@ import { getSparePartsCategories, getSparePartsBrands, getSparePartsModels } fro
 export function SparePartsSearch() {
   // Add a ref for the model input
   const modelInputRef = useRef<HTMLInputElement>(null);
+  const modelLoadTimeoutRef = useRef<NodeJS.Timeout>();
   const [applianceType, setApplianceType] = useState('');
   const [brand, setBrand] = useState('');
   const [modelNumber, setModelNumber] = useState('');
@@ -97,10 +98,6 @@ export function SparePartsSearch() {
       setModels([]);
     } finally {
       setIsLoadingModels(false);
-      // Keep focus on the input after loading
-      if (modelInputRef.current) {
-        modelInputRef.current.focus();
-      }
     }
   };
 
@@ -269,13 +266,24 @@ export function SparePartsSearch() {
             placeholder={applianceType && brand ? "Type model number (e.g., WAW28750GB)" : "Select appliance type and brand first"}
             value={modelSearch}
             onChange={(e) => {
-              setModelSearch(e.target.value);
+              const value = e.target.value;
+              setModelSearch(value);
               setModelNumber('');
-              if (e.target.value.length > 0 && applianceType && brand) {
+              
+              // Clear existing timeout
+              if (modelLoadTimeoutRef.current) {
+                clearTimeout(modelLoadTimeoutRef.current);
+              }
+              
+              if (value.length > 0 && applianceType && brand) {
                 setModelOpen(true);
-                loadModels(e.target.value); // Load models based on search
+                // Debounce the API call
+                modelLoadTimeoutRef.current = setTimeout(() => {
+                  loadModels(value);
+                }, 300); // Wait 300ms after user stops typing
               } else {
                 setModels([]);
+                setModelOpen(false);
               }
             }}
             onFocus={() => modelSearch.length > 0 && applianceType && brand && setModelOpen(true)}
