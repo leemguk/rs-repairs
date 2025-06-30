@@ -139,50 +139,50 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
   }
 
   // Save booking to Supabase
-  const saveBookingToDatabase = async (): Promise<string | null> => {
-    if (!selectedPricing) return null
+const saveBookingToDatabase = async (): Promise<string | null> => {
+  if (!selectedPricing) return null
 
-    try {
-      // Prepare booking data for database
-      const bookingRecord: Omit<Booking, 'id' | 'created_at'> = {
-        full_name: bookingData.firstName,
-        email: bookingData.email,
-        mobile: bookingData.mobile,
-        address: bookingData.fullAddress,
-        appliance_type: bookingData.applianceType,
-        manufacturer: bookingData.manufacturer,
-        model: bookingData.applianceModel || null,
-        fault_description: bookingData.applianceFault,
-        service_type: selectedPricing.type === 'same-day' ? 'same_day' : 
-                     selectedPricing.type === 'next-day' ? 'next_day' : 'standard',
-        service_price: selectedPricing.price * 100, // Convert to pence
-        appointment_date: selectedPricing.type === 'same-day' ? new Date().toISOString().split('T')[0] :
-                         selectedPricing.type === 'next-day' ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] :
-                         bookingData.selectedDate || null,
-        appointment_time: selectedPricing.type === 'same-day' ? 'Before 6pm' : bookingData.selectedTimeSlot || null,
-        payment_status: 'pending',
-        booking_status: 'confirmed'
-      }
-
-      // Insert booking into Supabase
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert([bookingRecord])
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error saving booking:', error)
-        throw new Error('Failed to save booking')
-      }
-
-      console.log('Booking saved successfully:', data)
-      return data.id
-    } catch (error) {
-      console.error('Database error:', error)
-      throw error
+  try {
+    // Prepare booking data for database
+    const bookingRecord: Omit<Booking, 'id' | 'created_at'> = {
+      full_name: bookingData.firstName,
+      email: bookingData.email,
+      mobile: bookingData.mobile,
+      address: bookingData.fullAddress,
+      appliance_type: bookingData.applianceType,
+      manufacturer: bookingData.manufacturer,
+      model: bookingData.applianceModel || null,
+      fault_description: bookingData.applianceFault,
+      service_type: selectedPricing.type === 'same-day' ? 'same_day' : 
+                   selectedPricing.type === 'next-day' ? 'next_day' : 'standard',
+      service_price: selectedPricing.price * 100, // Convert to pence
+      appointment_date: selectedPricing.type === 'same-day' ? new Date().toISOString().split('T')[0] :
+                       selectedPricing.type === 'next-day' ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] :
+                       bookingData.selectedDate || null,
+      appointment_time: selectedPricing.type === 'same-day' ? 'Before 6pm' : bookingData.selectedTimeSlot || null,
+      payment_status: 'pending',
+      booking_status: 'pending_payment' // Changed from 'confirmed' to 'pending_payment'
     }
+
+    // Insert booking into Supabase
+    const { data, error } = await supabase
+      .from('bookings')
+      .insert([bookingRecord])
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error saving booking:', error)
+      throw new Error('Failed to save booking')
+    }
+
+    console.log('Booking saved successfully:', data)
+    return data.id
+  } catch (error) {
+    console.error('Database error:', error)
+    throw error
   }
+}
 
   // Send email notification (placeholder for SendGrid integration)
   const sendEmailNotification = async (bookingId: string) => {
@@ -969,13 +969,14 @@ const handleStripePayment = async () => {
       </div>
 
       <div className="flex flex-col gap-3 mt-6">
-        <Button
-          onClick={nextStep}
-          className="bg-green-600 hover:bg-green-700"
-          disabled={!bookingData.firstName || !bookingData.email || !bookingData.fullAddress || isSubmitting}
-        >
-          Continue & Review
-        </Button>
+        // Find the button that continues to step 4 and make sure it includes email validation
+<Button
+  onClick={nextStep}
+  className="bg-green-600 hover:bg-green-700"
+  disabled={!bookingData.firstName || !bookingData.email || !bookingData.mobile || !bookingData.fullAddress || isSubmitting}
+>
+  Continue & Review
+</Button>
 
         <Button 
           variant="outline" 
