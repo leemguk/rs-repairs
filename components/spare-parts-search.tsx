@@ -1,7 +1,7 @@
 // components/spare-parts-search.tsx
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,37 +11,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ExternalLink, Loader2, Search, AlertCircle, CheckCircle, ChevronsUpDown, Check } from 'lucide-react';
 import { searchSpareParts, type SparePartResult } from '@/actions/search-spare-parts';
+import { getSparePartsCategories, getSparePartsBrands } from '@/actions/get-spare-parts-options';
 import { cn } from "@/lib/utils";
-
-const APPLIANCE_TYPES = [
-  'Washing Machines',
-  'Dishwashers',
-  'Tumble Dryers',
-  'Fridges',
-  'Freezers',
-  'Ovens',
-  'Hobs',
-  'Cooker Hoods',
-  'Microwaves',
-  'Coffee Machines',
-  'Vacuum Cleaners',
-  'Small Appliances'
-];
-
-const BRANDS = [
-  'AEG', 'Amica', 'Ariston', 'Balay', 'Bauknecht', 'Baumatic', 'Beko', 'Belling', 
-  'Blomberg', 'Bosch', 'Brandt', 'Candy', 'Cannon', 'Caple', 'CDA', 'Creda', 
-  'Crosslee', 'Daewoo', 'De Dietrich', 'Delonghi', 'Diplomat', 'Dyson', 
-  'Electrolux', 'Elica', 'Fagor', 'Fisher & Paykel', 'Flavel', 'Fridgemaster', 
-  'Frigidaire', 'Gorenje', 'Grundig', 'Haier', 'Hisense', 'Hitachi', 'Hoover', 
-  'Hotpoint', 'Husky', 'Hygena', 'Ignis', 'Indesit', 'John Lewis', 'Kenwood', 
-  'Lamona', 'LEC', 'LG', 'Liebherr', 'Logik', 'Luxair', 'Maytag', 'Miele', 
-  'Montpellier', 'Neff', 'New World', 'Nordmende', 'Panasonic', 'Philco', 
-  'Philips', 'Prima', 'Proline', 'Rangemaster', 'Russell Hobbs', 'Samsung', 
-  'Scholtes', 'Servis', 'Sharp', 'Siemens', 'Smeg', 'Stoves', 'Swan', 'Tecnik', 
-  'Teka', 'Tricity Bendix', 'Vestel', 'Westinghouse', 'Whirlpool', 'White Knight', 
-  'Zanussi'
-];
 
 export function SparePartsSearch() {
   const [applianceType, setApplianceType] = useState('');
@@ -53,13 +24,39 @@ export function SparePartsSearch() {
   const [hasSearched, setHasSearched] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
   const [brandSearch, setBrandSearch] = useState('');
+  
+  // Dynamic data from database
+  const [categories, setCategories] = useState<string[]>([]);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+
+  // Load categories and brands on mount
+  useEffect(() => {
+    const loadOptions = async () => {
+      setIsLoadingOptions(true);
+      try {
+        const [categoriesData, brandsData] = await Promise.all([
+          getSparePartsCategories(),
+          getSparePartsBrands()
+        ]);
+        setCategories(categoriesData);
+        setBrands(brandsData);
+      } catch (error) {
+        console.error('Error loading options:', error);
+      } finally {
+        setIsLoadingOptions(false);
+      }
+    };
+
+    loadOptions();
+  }, []);
 
   // Filter brands based on search
   const filteredBrands = useMemo(() => {
-    if (!brandSearch) return BRANDS;
+    if (!brandSearch) return brands;
     const searchLower = brandSearch.toLowerCase();
-    return BRANDS.filter(b => b.toLowerCase().includes(searchLower));
-  }, [brandSearch]);
+    return brands.filter(b => b.toLowerCase().includes(searchLower));
+  }, [brandSearch, brands]);
 
   const handleSearch = async () => {
     if (!applianceType || !brand || !modelNumber) {
@@ -95,6 +92,15 @@ export function SparePartsSearch() {
   const exactMatch = results.find(r => r.match_type === 'exact');
   const fuzzyMatches = results.filter(r => r.match_type === 'fuzzy');
 
+  if (isLoadingOptions) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        <span className="ml-2 text-sm text-gray-500">Loading options...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       <div>
@@ -106,7 +112,7 @@ export function SparePartsSearch() {
             <SelectValue placeholder="Select appliance" />
           </SelectTrigger>
           <SelectContent>
-            {APPLIANCE_TYPES.map(type => (
+            {categories.map(type => (
               <SelectItem key={type} value={type}>
                 {type}
               </SelectItem>
