@@ -29,15 +29,15 @@ export async function POST(request: NextRequest) {
 
     // Update booking status to paid
     const { data: booking, error: updateError } = await supabase
-  .from('bookings')
-  .update({ 
-    payment_status: 'paid',
-    booking_status: 'confirmed' // Only set to confirmed after payment
-  })
-  .eq('id', bookingId)
-  .eq('stripe_payment_id', sessionId)
-  .select()
-  .single()
+      .from('bookings')
+      .update({ 
+        payment_status: 'paid',
+        booking_status: 'confirmed'
+      })
+      .eq('id', bookingId)
+      .eq('stripe_payment_id', sessionId)
+      .select()
+      .single()
 
     if (updateError) {
       console.error('Failed to update booking status:', updateError)
@@ -47,8 +47,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TODO: Send confirmation email here (using SendGrid)
-    // You can use the same email system you built for verification
+    // Send booking confirmation email
+    try {
+      const emailResponse = await fetch(`${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/api/send-booking-confirmation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerEmail: booking.email,
+          customerName: booking.full_name,
+          bookingId: booking.id,
+          serviceType: booking.service_type,
+          servicePrice: booking.service_price,
+          appliance: `${booking.manufacturer} ${booking.appliance_type}`,
+          appointmentDate: booking.appointment_date,
+          appointmentTime: booking.appointment_time,
+          address: booking.address,
+        }),
+      })
+
+      if (!emailResponse.ok) {
+        console.error('Failed to send confirmation email')
+        // Don't fail the whole request if email fails
+      }
+    } catch (emailError) {
+      console.error('Email sending error:', emailError)
+      // Don't fail the whole request if email fails
+    }
 
     return NextResponse.json({
       success: true,
