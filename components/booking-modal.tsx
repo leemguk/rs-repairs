@@ -406,7 +406,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     }
   }
 
-  // Replace the handleStripePayment function in your booking-modal.tsx
+  // Replace your handleStripePayment function with this:
 const handleStripePayment = async () => {
   if (!selectedPricing || isSubmitting) return
 
@@ -420,11 +420,8 @@ const handleStripePayment = async () => {
       throw new Error('Failed to create booking')
     }
 
-    const stripe = await stripePromise
-    if (!stripe) throw new Error("Stripe failed to load")
-
-    // Create payment intent
-    const response = await fetch("/api/create-payment-intent", {
+    // Create Stripe Checkout session instead of payment intent
+    const response = await fetch("/api/create-checkout-session", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -448,58 +445,26 @@ const handleStripePayment = async () => {
       throw new Error(errorData.error || "Payment setup failed")
     }
 
-    const { clientSecret, paymentIntentId } = await response.json()
+    const { sessionId } = await response.json()
 
-    // Confirm payment with Stripe
-    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: {
-          // This will prompt for card details
-        },
-        billing_details: {
-          name: bookingData.firstName,
-          email: bookingData.email,
-        },
-      }
+    // Redirect to Stripe Checkout
+    const stripe = await stripePromise
+    if (!stripe) throw new Error("Stripe failed to load")
+
+    const { error } = await stripe.redirectToCheckout({
+      sessionId: sessionId,
     })
 
     if (error) {
-      console.error("Stripe payment error:", error)
-      throw new Error(error.message || "Payment failed")
+      console.error("Stripe checkout error:", error)
+      throw new Error(error.message || "Payment redirect failed")
     }
 
-    if (paymentIntent.status === 'succeeded') {
-      // Confirm payment success with our backend
-      const successResponse = await fetch("/api/payment-success", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          paymentIntentId: paymentIntent.id,
-        }),
-      })
-
-      const successData = await successResponse.json()
-
-      if (successResponse.ok && successData.success) {
-        // Send confirmation email
-        await sendEmailNotification(bookingId)
-        
-        alert(`🎉 Payment of £${selectedPricing.price} successful!\n\nBooking confirmed with ID: ${bookingId}\n\nYou will receive a confirmation email shortly.`)
-        onClose()
-        resetForm()
-      } else {
-        throw new Error(successData.error || "Failed to confirm booking")
-      }
-    } else {
-      throw new Error("Payment was not completed successfully")
-    }
+    // User will be redirected to Stripe, then back to success/cancel pages
 
   } catch (error) {
     console.error("Payment error:", error)
     alert(`Payment failed: ${error.message}\n\nPlease try again or contact support.`)
-  } finally {
     setIsSubmitting(false)
   }
 }
