@@ -36,7 +36,6 @@ export function SparePartsSearch() {
       setIsLoadingOptions(true);
       try {
         const categoriesData = await getSparePartsCategories();
-        console.log('Loaded categories:', categoriesData.length, 'items');
         setCategories(categoriesData);
       } catch (error) {
         console.error('Error loading categories:', error);
@@ -120,64 +119,28 @@ export function SparePartsSearch() {
 
   return (
     <div className="space-y-3">
-      {/* Temporary debug info */}
-      <div className="text-xs bg-gray-100 p-2 rounded">
-        <div>Categories loaded: {categories.length}</div>
-        <select className="mt-1 text-xs w-full">
-          <option>-- Debug: All Categories --</option>
-          {categories.map(cat => (
-            <option key={cat}>{cat}</option>
-          ))}
-        </select>
-      </div>
-
       <div>
         <label className="block text-xs font-medium text-gray-700 mb-1">
           Appliance Type <span className="text-red-500">*</span>
         </label>
+        {/* Temporarily use a simple select to test */}
+        <select 
+          value={applianceType}
+          onChange={(e) => setApplianceType(e.target.value)}
+          className="w-full h-8 sm:h-9 text-xs sm:text-sm border rounded px-2"
+        >
+          <option value="">Select appliance type...</option>
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
+        {/* Original Popover/Command commented out for testing
         <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={categoryOpen}
-              className="w-full justify-between h-8 sm:h-9 text-xs sm:text-sm font-normal"
-            >
-              {applianceType || "Select appliance type..."}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-full p-0" align="start">
-            <Command>
-              <CommandInput 
-                placeholder="Search appliance types..." 
-                className="text-xs sm:text-sm"
-              />
-              <CommandEmpty>No appliance type found.</CommandEmpty>
-              <CommandGroup className="max-h-[200px] overflow-auto">
-                {categories.map((category) => (
-                  <CommandItem
-                    key={category}
-                    value={category.toLowerCase()}
-                    onSelect={() => {
-                      setApplianceType(category);
-                      setCategoryOpen(false);
-                    }}
-                    className="text-xs sm:text-sm"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        applianceType === category ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {category}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </Command>
-          </PopoverContent>
+          ... rest of the Popover code ...
         </Popover>
+        */}
       </div>
 
       <div>
