@@ -25,22 +25,11 @@ import Link from "next/link"
 import { DiagnosticForm } from "./components/diagnostic-form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BookingModal } from "./components/booking-modal"
+import { SparePartsSearch } from "@/components/spare-parts-search"
 
 export default function Component() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-
-  const [partsSearchData, setPartsSearchData] = useState({
-    applianceType: "",
-    brand: "",
-    modelNumber: "",
-  })
-  const [isSearchingParts, setIsSearchingParts] = useState(false)
-  const [partsSearchResult, setPartsSearchResult] = useState<{
-    found: boolean
-    modelName?: string
-    partsUrl?: string
-  } | null>(null)
 
   const getDynamicAvailability = () => {
     const now = new Date()
@@ -63,40 +52,7 @@ export default function Component() {
     }
   }
 
-  const handlePartsSearch = async () => {
-    if (!partsSearchData.applianceType || !partsSearchData.brand || !partsSearchData.modelNumber.trim()) {
-      return
-    }
-
-    setIsSearchingParts(true)
-    setPartsSearchResult(null)
-
-    // Simulate API call to search for parts
-    setTimeout(() => {
-      // Mock logic - in real implementation, this would call your parts database API
-      const modelFound = Math.random() > 0.3 // 70% chance of finding the model for demo
-
-      if (modelFound) {
-        setPartsSearchResult({
-          found: true,
-          modelName: `${partsSearchData.brand} ${partsSearchData.applianceType} ${partsSearchData.modelNumber}`,
-          partsUrl: `https://parts.rsrepairs.com/${partsSearchData.brand.toLowerCase()}/${partsSearchData.applianceType.toLowerCase().replace(/\s+/g, "-")}/${partsSearchData.modelNumber.toLowerCase()}`,
-        })
-      } else {
-        setPartsSearchResult({
-          found: false,
-        })
-      }
-
-      setIsSearchingParts(false)
-    }, 1500)
-  }
-
-  const updatePartsSearchData = (field: keyof typeof partsSearchData, value: string) => {
-    setPartsSearchData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const scrollToSection = (sectionId: string) => {
+    const scrollToSection = (sectionId: string) => {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" })
     setIsMobileMenuOpen(false)
   }
@@ -327,186 +283,49 @@ export default function Component() {
                 </CardContent>
               </Card>
 
-              {/* DIY Parts Option */}
               <Card className="relative overflow-hidden border-2 hover:border-blue-300 transition-all duration-300 hover:shadow-lg group flex flex-col">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors">
-                    <Search className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-                  </div>
-                  <CardTitle className="text-lg sm:text-xl mb-2">Find Spare Parts</CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">
-                    Search our extensive inventory of genuine parts for all major appliance brands
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col flex-1 p-4 sm:p-6">
-                  <div className="space-y-3 flex-1">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Appliance Type <span className="text-red-500">*</span>
-                      </label>
-                      <Select
-                        value={partsSearchData.applianceType}
-                        onValueChange={(value) => updatePartsSearchData("applianceType", value)}
-                      >
-                        <SelectTrigger className="w-full h-8 sm:h-9 text-xs sm:text-sm">
-                          <SelectValue placeholder="Select appliance" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Washing Machine">Washing Machine</SelectItem>
-                          <SelectItem value="Dishwasher">Dishwasher</SelectItem>
-                          <SelectItem value="Refrigerator">Refrigerator</SelectItem>
-                          <SelectItem value="Oven">Oven</SelectItem>
-                          <SelectItem value="Tumble Dryer">Tumble Dryer</SelectItem>
-                          <SelectItem value="Cooker">Cooker</SelectItem>
-                          <SelectItem value="Microwave">Microwave</SelectItem>
-                          <SelectItem value="Freezer">Freezer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+  <CardHeader className="text-center pb-4">
+    <div className="mx-auto mb-4 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors">
+      <Search className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+    </div>
+    <CardTitle className="text-lg sm:text-xl mb-2">Find Spare Parts</CardTitle>
+    <CardDescription className="text-xs sm:text-sm">
+      Search our extensive inventory of genuine parts for all major appliance brands
+    </CardDescription>
+  </CardHeader>
+  <CardContent className="flex flex-col flex-1 p-4 sm:p-6">
+    <div className="flex-1">
+      {/* Use the real spare parts search component */}
+      <SparePartsSearch />
+    </div>
 
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Brand <span className="text-red-500">*</span>
-                      </label>
-                      <Select
-                        value={partsSearchData.brand}
-                        onValueChange={(value) => updatePartsSearchData("brand", value)}
-                      >
-                        <SelectTrigger className="w-full h-8 sm:h-9 text-xs sm:text-sm">
-                          <SelectValue placeholder="Select brand" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Bosch">Bosch</SelectItem>
-                          <SelectItem value="Samsung">Samsung</SelectItem>
-                          <SelectItem value="LG">LG</SelectItem>
-                          <SelectItem value="Whirlpool">Whirlpool</SelectItem>
-                          <SelectItem value="Hotpoint">Hotpoint</SelectItem>
-                          <SelectItem value="Beko">Beko</SelectItem>
-                          <SelectItem value="AEG">AEG</SelectItem>
-                          <SelectItem value="Siemens">Siemens</SelectItem>
-                          <SelectItem value="Indesit">Indesit</SelectItem>
-                          <SelectItem value="Zanussi">Zanussi</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Model Number</label>
-                      <Input
-                        placeholder="e.g., WAW28750GB"
-                        className="w-full h-8 sm:h-9 text-xs sm:text-sm"
-                        value={partsSearchData.modelNumber}
-                        onChange={(e) => updatePartsSearchData("modelNumber", e.target.value)}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Found on door sticker or back panel</p>
-                    </div>
-
-                    <Button
-                      className="w-full bg-blue-600 hover:bg-blue-700 h-8 sm:h-9 text-xs sm:text-sm font-medium"
-                      onClick={handlePartsSearch}
-                      disabled={
-                        isSearchingParts ||
-                        !partsSearchData.applianceType ||
-                        !partsSearchData.brand ||
-                        !partsSearchData.modelNumber.trim()
-                      }
-                    >
-                      {isSearchingParts ? (
-                        <>
-                          <div className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                          Searching...
-                        </>
-                      ) : (
-                        <>
-                          <Search className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                          Search Parts
-                        </>
-                      )}
-                    </Button>
-
-                    {/* Search Results */}
-                    {partsSearchResult && (
-                      <div className="border-t pt-3">
-                        {partsSearchResult.found ? (
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-                              <span className="text-xs sm:text-sm font-medium text-green-800">Model Found!</span>
-                            </div>
-                            <p className="text-xs text-green-700">{partsSearchResult.modelName}</p>
-                            <Button
-                              className="w-full bg-green-600 hover:bg-green-700 h-7 sm:h-8 text-xs font-medium"
-                              onClick={() => window.open(partsSearchResult.partsUrl, "_blank")}
-                            >
-                              View all parts for your model
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Search className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
-                              <span className="text-xs sm:text-sm font-medium text-orange-800">Model not found</span>
-                            </div>
-                            <p className="text-xs text-orange-700">
-                              We couldn't find parts for this specific model. Try browsing by brand or contact us for
-                              assistance.
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <Button
-                                variant="outline"
-                                className="flex-1 border-orange-300 text-orange-700 hover:bg-orange-100 h-7 sm:h-8 text-xs"
-                                onClick={() =>
-                                  window.open(
-                                    `https://parts.rsrepairs.com/${partsSearchData.brand.toLowerCase()}`,
-                                    "_blank",
-                                  )
-                                }
-                              >
-                                Browse {partsSearchData.brand}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                className="flex-1 border-orange-300 text-orange-700 hover:bg-orange-100 h-7 sm:h-8 text-xs"
-                                onClick={() => scrollToSection("contact")}
-                              >
-                                Contact Us
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Bottom section - Perfect for section */}
-                  <div className="mt-auto border-t pt-3">
-                    {!partsSearchResult && (
-                      <div className="grid grid-cols-2 gap-1 sm:gap-2 text-xs text-gray-600 mb-3">
-                        <div className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                          <span>Genuine OEM</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                          <span>Fast shipping</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                          <span>Install guides</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                          <span>90-day warranty</span>
-                        </div>
-                      </div>
-                    )}
-                    <div className="p-2 bg-blue-50 rounded text-xs text-blue-700 text-center">
-                      Perfect for DIY enthusiasts
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+    {/* Bottom section - Perfect for section */}
+    <div className="mt-auto border-t pt-3">
+      <div className="grid grid-cols-2 gap-1 sm:gap-2 text-xs text-gray-600 mb-3">
+        <div className="flex items-center gap-1">
+          <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+          <span>Genuine OEM</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+          <span>Fast shipping</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+          <span>Install guides</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+          <span>90-day warranty</span>
+        </div>
+      </div>
+      <div className="p-2 bg-blue-50 rounded text-xs text-blue-700 text-center">
+        Perfect for DIY enthusiasts
+      </div>
+    </div>
+  </CardContent>
+</Card>
 
               {/* Warranty Option */}
               <Card className="relative overflow-hidden border-2 hover:border-green-300 transition-all duration-300 hover:shadow-lg group flex flex-col md:col-span-2 lg:col-span-1">
