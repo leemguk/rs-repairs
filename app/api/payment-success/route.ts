@@ -8,31 +8,21 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(request: NextRequest) {
   try {
-    const { paymentIntentId } = await request.json()
+    const { sessionId, bookingId } = await request.json()
 
-    if (!paymentIntentId) {
+    if (!sessionId || !bookingId) {
       return NextResponse.json(
-        { error: 'Payment Intent ID is required' },
+        { error: 'Session ID and Booking ID are required' },
         { status: 400 }
       )
     }
 
-    // Retrieve payment intent from Stripe to verify status
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+    // Retrieve checkout session from Stripe to verify status
+    const session = await stripe.checkout.sessions.retrieve(sessionId)
 
-    if (paymentIntent.status !== 'succeeded') {
+    if (session.payment_status !== 'paid') {
       return NextResponse.json(
         { error: 'Payment not completed successfully' },
-        { status: 400 }
-      )
-    }
-
-    // Extract booking ID from metadata
-    const bookingId = paymentIntent.metadata.bookingId
-
-    if (!bookingId) {
-      return NextResponse.json(
-        { error: 'No booking ID found in payment' },
         { status: 400 }
       )
     }
@@ -45,7 +35,7 @@ export async function POST(request: NextRequest) {
         booking_status: 'confirmed'
       })
       .eq('id', bookingId)
-      .eq('stripe_payment_id', paymentIntentId)
+      .eq('stripe_payment_id', sessionId)
       .select()
       .single()
 
