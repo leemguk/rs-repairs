@@ -149,51 +149,52 @@ export function SparePartsSearch() {
         </label>
         <Popover open={brandOpen} onOpenChange={setBrandOpen}>
           <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={brandOpen}
-              disabled={!applianceType || isLoadingBrands}
-              className="w-full justify-between h-8 sm:h-9 text-xs sm:text-sm font-normal"
-            >
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder={applianceType ? "Type to search brands..." : "Select appliance type first"}
+                value={brand}
+                onChange={(e) => {
+                  setBrand(e.target.value);
+                  setBrandOpen(true);
+                }}
+                onFocus={() => applianceType && setBrandOpen(true)}
+                disabled={!applianceType || isLoadingBrands}
+                className="w-full h-8 sm:h-9 text-xs sm:text-sm pr-8"
+              />
               {isLoadingBrands ? (
-                <>
-                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  Loading brands...
-                </>
+                <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />
               ) : (
-                brand || (applianceType ? "Select brand..." : "Select appliance type first")
+                <ChevronsUpDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50" />
               )}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
+            </div>
           </PopoverTrigger>
           <PopoverContent className="w-full p-0" align="start">
             <Command>
-              <CommandInput 
-                placeholder="Search brands..." 
-                className="text-xs sm:text-sm"
-              />
-              <CommandEmpty>No brand found.</CommandEmpty>
               <CommandGroup className="max-h-[200px] overflow-auto">
-                {brands.map((b) => (
-                  <CommandItem
-                    key={b}
-                    value={b.toLowerCase()}
-                    onSelect={() => {
-                      setBrand(b);
-                      setBrandOpen(false);
-                    }}
-                    className="text-xs sm:text-sm"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        brand === b ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {b}
-                  </CommandItem>
-                ))}
+                {brands
+                  .filter(b => b.toLowerCase().includes(brand.toLowerCase()))
+                  .map((b) => (
+                    <CommandItem
+                      key={b}
+                      onSelect={() => {
+                        setBrand(b);
+                        setBrandOpen(false);
+                      }}
+                      className="text-xs sm:text-sm cursor-pointer"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          brand === b ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {b}
+                    </CommandItem>
+                  ))}
+                {brands.filter(b => b.toLowerCase().includes(brand.toLowerCase())).length === 0 && (
+                  <p className="text-xs text-gray-500 p-2">No matching brands</p>
+                )}
               </CommandGroup>
             </Command>
           </PopoverContent>
