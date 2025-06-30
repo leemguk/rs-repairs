@@ -12,10 +12,24 @@ export async function getSparePartsCategories(): Promise<string[]> {
 
     if (error) {
       console.error('Error fetching categories:', error);
-      return [];
+      // Fallback to direct query
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('spare_parts')
+        .select('category')
+        .order('category');
+      
+      if (fallbackError) {
+        console.error('Fallback error:', fallbackError);
+        return [];
+      }
+      
+      // Get unique categories
+      const uniqueCategories = [...new Set(fallbackData?.map(item => item.category).filter(Boolean) || [])];
+      return uniqueCategories;
     }
 
-    return data?.map(item => item.category) || [];
+    // The RPC returns objects with a 'category' property
+    return data?.map(item => item.category).filter(Boolean) || [];
   } catch (error) {
     console.error('Unexpected error:', error);
     return [];
@@ -31,10 +45,24 @@ export async function getSparePartsBrands(): Promise<string[]> {
 
     if (error) {
       console.error('Error fetching brands:', error);
-      return [];
+      // Fallback to direct query
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('spare_parts')
+        .select('brand')
+        .order('brand');
+      
+      if (fallbackError) {
+        console.error('Fallback error:', fallbackError);
+        return [];
+      }
+      
+      // Get unique brands
+      const uniqueBrands = [...new Set(fallbackData?.map(item => item.brand).filter(Boolean) || [])];
+      return uniqueBrands;
     }
 
-    return data?.map(item => item.brand) || [];
+    // The RPC returns objects with a 'brand' property
+    return data?.map(item => item.brand).filter(Boolean) || [];
   } catch (error) {
     console.error('Unexpected error:', error);
     return [];
