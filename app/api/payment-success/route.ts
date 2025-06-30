@@ -29,15 +29,15 @@ export async function POST(request: NextRequest) {
 
     // Update booking status to paid
     const { data: booking, error: updateError } = await supabase
-      .from('bookings')
-      .update({ 
-        payment_status: 'paid',
-        booking_status: 'confirmed'
-      })
-      .eq('id', bookingId)
-      .eq('stripe_payment_id', sessionId)
-      .select()
-      .single()
+  .from('bookings')
+  .update({ 
+    payment_status: 'paid',
+    booking_status: 'confirmed' // Only set to confirmed after payment
+  })
+  .eq('id', bookingId)
+  .eq('stripe_payment_id', sessionId)
+  .select()
+  .single()
 
     if (updateError) {
       console.error('Failed to update booking status:', updateError)
