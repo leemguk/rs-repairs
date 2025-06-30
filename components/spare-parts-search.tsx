@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExternalLink, Loader2, Search, AlertCircle, CheckCircle } from 'lucide-react';
 import { searchSpareParts, type SparePartResult } from '@/actions/search-spare-parts';
-import { getSparePartsCategories, getSparePartsBrands } from '@/actions/get-spare-parts-options';
+import { getSparePartsCategories, getSparePartsBrands, getSparePartsModels } from '@/actions/get-spare-parts-options';
 
 export function SparePartsSearch() {
   const [applianceType, setApplianceType] = useState('');
@@ -20,14 +20,18 @@ export function SparePartsSearch() {
   // Popover states
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
+  const [modelOpen, setModelOpen] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
   const [brandSearch, setBrandSearch] = useState('');
+  const [modelSearch, setModelSearch] = useState('');
   
   // Dynamic data from database
   const [categories, setCategories] = useState<string[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
+  const [models, setModels] = useState<string[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [isLoadingBrands, setIsLoadingBrands] = useState(false);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
 
   // Load categories on mount
   useEffect(() => {
@@ -73,7 +77,34 @@ export function SparePartsSearch() {
     };
 
     loadBrands();
-  }, [applianceType]);
+  // Load models when category and brand are selected
+  useEffect(() => {
+    const loadModels = async () => {
+      if (!applianceType || !brand) {
+        setModels([]);
+        setModelNumber('');
+        setModelSearch('');
+        return;
+      }
+
+      setIsLoadingModels(true);
+      try {
+        const modelsData = await getSparePartsModels(applianceType, brand);
+        setModels(modelsData);
+        // Reset model selection if current model is not in new list
+        if (modelNumber && !modelsData.includes(modelNumber)) {
+          setModelNumber('');
+          setModelSearch('');
+        }
+      } catch (error) {
+        console.error('Error loading models:', error);
+      } finally {
+        setIsLoadingModels(false);
+      }
+    };
+
+    loadModels();
+  }, [applianceType, brand]);
 
   const handleSearch = async () => {
     if (!applianceType || !brand || !modelNumber) {
@@ -231,14 +262,62 @@ export function SparePartsSearch() {
 
       <div>
         <label className="block text-xs font-medium text-gray-700 mb-1">Model Number</label>
-        <Input
-          type="text"
-          placeholder="e.g., WAW28750GB"
-          value={modelNumber}
-          onChange={(e) => setModelNumber(e.target.value)}
-          className="w-full h-8 sm:h-9 text-xs sm:text-sm"
-        />
-        <p className="text-xs text-gray-500 mt-1">Found on door sticker or back panel</p>
+        <div className="relative">
+          <Input
+            type="text"
+            placeholder={applianceType && brand ? "Type model number (e.g., WAW28750GB)" : "Select appliance type and brand first"}
+            value={modelSearch}
+            onChange={(e) => {
+              setModelSearch(e.target.value);
+              setModelNumber('');
+              if (e.target.value.length > 0 && applianceType && brand) {
+                setModelOpen(true);
+              }
+            }}
+            onFocus={() => modelSearch.length > 0 && applianceType && brand && setModelOpen(true)}
+            onBlur={() => setTimeout(() => setModelOpen(false), 200)}
+            disabled={!applianceType || !brand || isLoadingModels}
+            className="w-full h-8 sm:h-9 text-xs sm:text-sm"
+          />
+          
+          {/* Loading indicator */}
+          {isLoadingModels && (
+            <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />
+          )}
+          
+          {/* Autocomplete dropdown */}
+          {modelOpen && modelSearch.length > 0 && !isLoadingModels && (
+            <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-auto">
+              {models
+                .filter(m => m.toLowerCase().includes(modelSearch.toLowerCase()))
+                .map((m) => (
+                  <div
+                    key={m}
+                    className="px-3 py-2 text-xs sm:text-sm hover:bg-gray-100 cursor-pointer"
+                    onClick={() => {
+                      setModelNumber(m);
+                      setModelSearch(m);
+                      setModelOpen(false);
+                    }}
+                  >
+                    {m}
+                  </div>
+                ))}
+              {models.filter(m => m.toLowerCase().includes(modelSearch.toLowerCase())).length === 0 && (
+                <div className="px-3 py-2 text-xs text-gray-500">No matching models</div>
+              )}
+            </div>
+          )}
+        </div>
+        {modelNumber && (
+          <p className="text-xs text-green-600 mt-1">✓ Selected: {modelNumber}</p>
+        )}
+        {!modelNumber && (
+          <p className="text-xs text-gray-500 mt-1">Found on door sticker or back panel</p>
+        )}
+        {applianceType && brand && models.length > 0 && !modelNumber && (
+          <p className="text-xs text-gray-500 mt-1">{models.length} models available</p>
+        )}
       </div>
 
       <Button 
