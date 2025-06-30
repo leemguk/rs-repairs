@@ -1,34 +1,26 @@
 // actions/get-spare-parts-options.ts
 'use server';
 
-import { createClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export async function getSparePartsCategories(): Promise<string[]> {
   try {
-    const supabase = createClient();
-    
+    // Direct query to get all unique categories
     const { data, error } = await supabase
-      .rpc('get_spare_parts_categories');
+      .from('spare_parts')
+      .select('category')
+      .not('category', 'is', null)
+      .limit(1000);
 
     if (error) {
       console.error('Error fetching categories:', error);
       return [];
     }
 
-    // The RPC returns objects like {"get_spare_parts_categories": "Vacuum Cleaners"}
-    // Extract the category value from each object
-    if (data && Array.isArray(data)) {
-      return data.map(item => {
-        // Handle the specific format returned by your SQL function
-        if (typeof item === 'object' && item.get_spare_parts_categories) {
-          return item.get_spare_parts_categories;
-        }
-        // Fallback if the format is different
-        return item.category || item;
-      }).filter(Boolean);
-    }
-
-    return [];
+    // Extract unique categories
+    const uniqueCategories = [...new Set(data?.map(item => item.category).filter(Boolean) || [])];
+    return uniqueCategories.sort();
+    
   } catch (error) {
     console.error('Unexpected error in getSparePartsCategories:', error);
     return [];
@@ -37,30 +29,22 @@ export async function getSparePartsCategories(): Promise<string[]> {
 
 export async function getSparePartsBrands(): Promise<string[]> {
   try {
-    const supabase = createClient();
-    
+    // Direct query to get all unique brands
     const { data, error } = await supabase
-      .rpc('get_spare_parts_brands');
+      .from('spare_parts')
+      .select('brand')
+      .not('brand', 'is', null)
+      .limit(1000);
 
     if (error) {
       console.error('Error fetching brands:', error);
       return [];
     }
 
-    // The RPC returns objects like {"get_spare_parts_brands": "AEG"}
-    // Extract the brand value from each object
-    if (data && Array.isArray(data)) {
-      return data.map(item => {
-        // Handle the specific format returned by your SQL function
-        if (typeof item === 'object' && item.get_spare_parts_brands) {
-          return item.get_spare_parts_brands;
-        }
-        // Fallback if the format is different
-        return item.brand || item;
-      }).filter(Boolean);
-    }
-
-    return [];
+    // Extract unique brands
+    const uniqueBrands = [...new Set(data?.map(item => item.brand).filter(Boolean) || [])];
+    return uniqueBrands.sort();
+    
   } catch (error) {
     console.error('Unexpected error in getSparePartsBrands:', error);
     return [];
