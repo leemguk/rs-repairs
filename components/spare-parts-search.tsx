@@ -124,24 +124,50 @@ export function SparePartsSearch() {
         <label className="block text-xs font-medium text-gray-700 mb-1">
           Appliance Type <span className="text-red-500">*</span>
         </label>
-        {/* Temporarily use a simple select to test */}
-        <select 
-          value={applianceType}
-          onChange={(e) => setApplianceType(e.target.value)}
-          className="w-full h-8 sm:h-9 text-xs sm:text-sm border rounded px-2"
-        >
-          <option value="">Select appliance type...</option>
-          {categories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-        {/* Original Popover/Command commented out for testing
-        <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-          ... rest of the Popover code ...
-        </Popover>
-        */}
+        <div className="relative">
+          <Input
+            type="text"
+            placeholder="Type appliance type (e.g., Washing Machines)"
+            value={categorySearch}
+            onChange={(e) => {
+              setCategorySearch(e.target.value);
+              setApplianceType('');
+              if (e.target.value.length > 0) {
+                setCategoryOpen(true);
+              }
+            }}
+            onFocus={() => categorySearch.length > 0 && setCategoryOpen(true)}
+            onBlur={() => setTimeout(() => setCategoryOpen(false), 200)}
+            className="w-full h-8 sm:h-9 text-xs sm:text-sm"
+          />
+          
+          {/* Autocomplete dropdown */}
+          {categoryOpen && categorySearch.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-auto">
+              {categories
+                .filter(cat => cat.toLowerCase().includes(categorySearch.toLowerCase()))
+                .map((category) => (
+                  <div
+                    key={category}
+                    className="px-3 py-2 text-xs sm:text-sm hover:bg-gray-100 cursor-pointer"
+                    onClick={() => {
+                      setApplianceType(category);
+                      setCategorySearch(category);
+                      setCategoryOpen(false);
+                    }}
+                  >
+                    {category}
+                  </div>
+                ))}
+              {categories.filter(cat => cat.toLowerCase().includes(categorySearch.toLowerCase())).length === 0 && (
+                <div className="px-3 py-2 text-xs text-gray-500">No matching appliance types</div>
+              )}
+            </div>
+          )}
+        </div>
+        {applianceType && (
+          <p className="text-xs text-green-600 mt-1">✓ Selected: {applianceType}</p>
+        )}
       </div>
 
       <div>
