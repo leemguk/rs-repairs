@@ -406,85 +406,103 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     }
   }
 
-  const handleStripePayment = async () => {
-    if (!selectedPricing || isSubmitting) return
+  // Replace the handleStripePayment function in your booking-modal.tsx
+const handleStripePayment = async () => {
+  if (!selectedPricing || isSubmitting) return
 
-    setIsSubmitting(true)
+  setIsSubmitting(true)
 
-    try {
-      // First save the booking to get an ID
-      const bookingId = await saveBookingToDatabase()
-      
-      if (!bookingId) {
-        throw new Error('Failed to create booking')
+  try {
+    // First save the booking to get an ID
+    const bookingId = await saveBookingToDatabase()
+    
+    if (!bookingId) {
+      throw new Error('Failed to create booking')
+    }
+
+    const stripe = await stripePromise
+    if (!stripe) throw new Error("Stripe failed to load")
+
+    // Create payment intent
+    const response = await fetch("/api/create-payment-intent", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: selectedPricing.price * 100, // Convert to pence
+        currency: "gbp",
+        bookingId: bookingId,
+        bookingData: {
+          firstName: bookingData.firstName,
+          email: bookingData.email,
+          serviceType: selectedPricing.type,
+          manufacturer: bookingData.manufacturer,
+          applianceType: bookingData.applianceType,
+        },
+      }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || "Payment setup failed")
+    }
+
+    const { clientSecret, paymentIntentId } = await response.json()
+
+    // Confirm payment with Stripe
+    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: {
+        card: {
+          // This will prompt for card details
+        },
+        billing_details: {
+          name: bookingData.firstName,
+          email: bookingData.email,
+        },
       }
+    })
 
-      const stripe = await stripePromise
-      if (!stripe) throw new Error("Stripe failed to load")
+    if (error) {
+      console.error("Stripe payment error:", error)
+      throw new Error(error.message || "Payment failed")
+    }
 
-      // In production, this would call your backend to create a payment intent
-      const response = await fetch("/api/create-payment-intent", {
+    if (paymentIntent.status === 'succeeded') {
+      // Confirm payment success with our backend
+      const successResponse = await fetch("/api/payment-success", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: selectedPricing.price * 100, // Convert to pence
-          currency: "gbp",
-          bookingId: bookingId,
-          bookingData: {
-            ...bookingData,
-            serviceType: selectedPricing.type,
-            price: selectedPricing.price,
-          },
+          paymentIntentId: paymentIntent.id,
         }),
       })
 
-      if (!response.ok) {
-        throw new Error("Payment setup failed")
+      const successData = await successResponse.json()
+
+      if (successResponse.ok && successData.success) {
+        // Send confirmation email
+        await sendEmailNotification(bookingId)
+        
+        alert(`🎉 Payment of £${selectedPricing.price} successful!\n\nBooking confirmed with ID: ${bookingId}\n\nYou will receive a confirmation email shortly.`)
+        onClose()
+        resetForm()
+      } else {
+        throw new Error(successData.error || "Failed to confirm booking")
       }
-
-      const { clientSecret } = await response.json()
-
-      const { error } = await stripe.redirectToCheckout({
-        sessionId: clientSecret,
-      })
-
-      if (error) {
-        console.error("Stripe error:", error)
-        alert("Payment failed. Please try again.")
-        return
-      }
-    } catch (error) {
-      console.error("Payment error:", error)
-      
-      // For demo purposes, simulate successful payment and complete the booking
-      try {
-        // Update booking status to paid
-        if (selectedPricing) {
-          const bookingId = await saveBookingToDatabase()
-          if (bookingId) {
-            // Update payment status
-            await supabase
-              .from('bookings')
-              .update({ payment_status: 'paid' })
-              .eq('id', bookingId)
-
-            await sendEmailNotification(bookingId)
-            
-            alert(`Payment of £${selectedPricing.price} processed successfully!\n\nBooking confirmed with ID: ${bookingId}\n\nYou will receive a confirmation email shortly.`)
-            onClose()
-            resetForm()
-          }
-        }
-      } catch (dbError) {
-        console.error('Database update error:', dbError)
-        alert('Payment processed but there was an issue updating the booking. Please contact support.')
-      }
-    } finally {
-      setIsSubmitting(false)
+    } else {
+      throw new Error("Payment was not completed successfully")
     }
+
+  } catch (error) {
+    console.error("Payment error:", error)
+    alert(`Payment failed: ${error.message}\n\nPlease try again or contact support.`)
+  } finally {
+    setIsSubmitting(false)
   }
+}
 
   const renderProgressBar = () => {
     const goToStep = (step: number) => {
