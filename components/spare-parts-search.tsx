@@ -77,6 +77,7 @@ export function SparePartsSearch() {
     };
 
     loadBrands();
+  }, [applianceType]);
   // Load models when category and brand are selected
   useEffect(() => {
     const loadModels = async () => {
