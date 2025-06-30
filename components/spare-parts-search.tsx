@@ -1,15 +1,17 @@
 // components/spare-parts-search.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ExternalLink, Loader2, Search, AlertCircle, CheckCircle } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ExternalLink, Loader2, Search, AlertCircle, CheckCircle, ChevronsUpDown, Check } from 'lucide-react';
 import { searchSpareParts, type SparePartResult } from '@/actions/search-spare-parts';
+import { cn } from "@/lib/utils";
 
 const APPLIANCE_TYPES = [
   'Washing Machines',
@@ -21,86 +23,23 @@ const APPLIANCE_TYPES = [
   'Hobs',
   'Cooker Hoods',
   'Microwaves',
-  'Coffee Machines'
+  'Coffee Machines',
+  'Vacuum Cleaners',
+  'Small Appliances'
 ];
 
 const BRANDS = [
-  'AEG',
-  'Amica',
-  'Ariston',
-  'Balay',
-  'Bauknecht',
-  'Baumatic',
-  'Beko',
-  'Belling',
-  'Blomberg',
-  'Bosch',
-  'Brandt',
-  'Candy',
-  'Cannon',
-  'Caple',
-  'CDA',
-  'Creda',
-  'Crosslee',
-  'Daewoo',
-  'De Dietrich',
-  'Delonghi',
-  'Diplomat',
-  'Dyson',
-  'Electrolux',
-  'Elica',
-  'Fagor',
-  'Fisher & Paykel',
-  'Flavel',
-  'Fridgemaster',
-  'Frigidaire',
-  'Gorenje',
-  'Grundig',
-  'Haier',
-  'Hisense',
-  'Hitachi',
-  'Hoover',
-  'Hotpoint',
-  'Husky',
-  'Hygena',
-  'Ignis',
-  'Indesit',
-  'John Lewis',
-  'Kenwood',
-  'Lamona',
-  'LEC',
-  'LG',
-  'Liebherr',
-  'Logik',
-  'Luxair',
-  'Maytag',
-  'Miele',
-  'Montpellier',
-  'Neff',
-  'New World',
-  'Nordmende',
-  'Panasonic',
-  'Philco',
-  'Philips',
-  'Prima',
-  'Proline',
-  'Rangemaster',
-  'Russell Hobbs',
-  'Samsung',
-  'Scholtes',
-  'Servis',
-  'Sharp',
-  'Siemens',
-  'Smeg',
-  'Stoves',
-  'Swan',
-  'Tecnik',
-  'Teka',
-  'Tricity Bendix',
-  'Vestel',
-  'Westinghouse',
-  'Whirlpool',
-  'White Knight',
+  'AEG', 'Amica', 'Ariston', 'Balay', 'Bauknecht', 'Baumatic', 'Beko', 'Belling', 
+  'Blomberg', 'Bosch', 'Brandt', 'Candy', 'Cannon', 'Caple', 'CDA', 'Creda', 
+  'Crosslee', 'Daewoo', 'De Dietrich', 'Delonghi', 'Diplomat', 'Dyson', 
+  'Electrolux', 'Elica', 'Fagor', 'Fisher & Paykel', 'Flavel', 'Fridgemaster', 
+  'Frigidaire', 'Gorenje', 'Grundig', 'Haier', 'Hisense', 'Hitachi', 'Hoover', 
+  'Hotpoint', 'Husky', 'Hygena', 'Ignis', 'Indesit', 'John Lewis', 'Kenwood', 
+  'Lamona', 'LEC', 'LG', 'Liebherr', 'Logik', 'Luxair', 'Maytag', 'Miele', 
+  'Montpellier', 'Neff', 'New World', 'Nordmende', 'Panasonic', 'Philco', 
+  'Philips', 'Prima', 'Proline', 'Rangemaster', 'Russell Hobbs', 'Samsung', 
+  'Scholtes', 'Servis', 'Sharp', 'Siemens', 'Smeg', 'Stoves', 'Swan', 'Tecnik', 
+  'Teka', 'Tricity Bendix', 'Vestel', 'Westinghouse', 'Whirlpool', 'White Knight', 
   'Zanussi'
 ];
 
@@ -112,6 +51,15 @@ export function SparePartsSearch() {
   const [results, setResults] = useState<SparePartResult[]>([]);
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+  const [brandOpen, setBrandOpen] = useState(false);
+  const [brandSearch, setBrandSearch] = useState('');
+
+  // Filter brands based on search
+  const filteredBrands = useMemo(() => {
+    if (!brandSearch) return BRANDS;
+    const searchLower = brandSearch.toLowerCase();
+    return BRANDS.filter(b => b.toLowerCase().includes(searchLower));
+  }, [brandSearch]);
 
   const handleSearch = async () => {
     if (!applianceType || !brand || !modelNumber) {
@@ -171,18 +119,52 @@ export function SparePartsSearch() {
         <label className="block text-xs font-medium text-gray-700 mb-1">
           Brand <span className="text-red-500">*</span>
         </label>
-        <Select value={brand} onValueChange={setBrand}>
-          <SelectTrigger className="w-full h-8 sm:h-9 text-xs sm:text-sm">
-            <SelectValue placeholder="Select brand" />
-          </SelectTrigger>
-          <SelectContent>
-            {BRANDS.map(b => (
-              <SelectItem key={b} value={b}>
-                {b}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={brandOpen} onOpenChange={setBrandOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={brandOpen}
+              className="w-full justify-between h-8 sm:h-9 text-xs sm:text-sm font-normal"
+            >
+              {brand || "Select brand..."}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command>
+              <CommandInput 
+                placeholder="Search brands..." 
+                value={brandSearch}
+                onValueChange={setBrandSearch}
+                className="text-xs sm:text-sm"
+              />
+              <CommandEmpty>No brand found.</CommandEmpty>
+              <CommandGroup className="max-h-[200px] overflow-auto">
+                {filteredBrands.map((b) => (
+                  <CommandItem
+                    key={b}
+                    value={b}
+                    onSelect={(currentValue) => {
+                      setBrand(currentValue === brand ? "" : b);
+                      setBrandOpen(false);
+                      setBrandSearch('');
+                    }}
+                    className="text-xs sm:text-sm"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        brand === b ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {b}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <div>
