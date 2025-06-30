@@ -420,14 +420,15 @@ const handleStripePayment = async () => {
       throw new Error('Failed to create booking')
     }
 
-    // Create payment link instead of checkout session
-    const response = await fetch("/api/create-payment-link", {
+    // Create Stripe Checkout session instead of payment intent
+    const response = await fetch("/api/create-checkout-session", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         amount: selectedPricing.price * 100, // Convert to pence
+        currency: "gbp",
         bookingId: bookingId,
         bookingData: {
           firstName: bookingData.firstName,
@@ -444,10 +445,22 @@ const handleStripePayment = async () => {
       throw new Error(errorData.error || "Payment setup failed")
     }
 
-    const { paymentUrl } = await response.json()
+    const { sessionId } = await response.json()
 
-    // Redirect to Stripe payment page
-    window.location.href = paymentUrl
+    // Redirect to Stripe Checkout
+    const stripe = await stripePromise
+    if (!stripe) throw new Error("Stripe failed to load")
+
+    const { error } = await stripe.redirectToCheckout({
+      sessionId: sessionId,
+    })
+
+    if (error) {
+      console.error("Stripe checkout error:", error)
+      throw new Error(error.message || "Payment redirect failed")
+    }
+
+    // User will be redirected to Stripe, then back to success/cancel pages
 
   } catch (error) {
     console.error("Payment error:", error)
