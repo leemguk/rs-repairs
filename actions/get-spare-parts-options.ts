@@ -12,27 +12,25 @@ export async function getSparePartsCategories(): Promise<string[]> {
 
     if (error) {
       console.error('Error fetching categories:', error);
-      // Fallback to direct query
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('spare_parts')
-        .select('category')
-        .order('category');
-      
-      if (fallbackError) {
-        console.error('Fallback error:', fallbackError);
-        return [];
-      }
-      
-      // Get unique categories
-      const uniqueCategories = [...new Set(fallbackData?.map(item => item.category).filter(Boolean) || [])];
-      return uniqueCategories;
+      return [];
     }
 
     // The RPC returns objects like {"get_spare_parts_categories": "Vacuum Cleaners"}
     // Extract the category value from each object
-    return data?.map(item => item.get_spare_parts_categories || item.category).filter(Boolean) || [];
+    if (data && Array.isArray(data)) {
+      return data.map(item => {
+        // Handle the specific format returned by your SQL function
+        if (typeof item === 'object' && item.get_spare_parts_categories) {
+          return item.get_spare_parts_categories;
+        }
+        // Fallback if the format is different
+        return item.category || item;
+      }).filter(Boolean);
+    }
+
+    return [];
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.error('Unexpected error in getSparePartsCategories:', error);
     return [];
   }
 }
@@ -46,27 +44,25 @@ export async function getSparePartsBrands(): Promise<string[]> {
 
     if (error) {
       console.error('Error fetching brands:', error);
-      // Fallback to direct query
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('spare_parts')
-        .select('brand')
-        .order('brand');
-      
-      if (fallbackError) {
-        console.error('Fallback error:', fallbackError);
-        return [];
-      }
-      
-      // Get unique brands
-      const uniqueBrands = [...new Set(fallbackData?.map(item => item.brand).filter(Boolean) || [])];
-      return uniqueBrands;
+      return [];
     }
 
     // The RPC returns objects like {"get_spare_parts_brands": "AEG"}
     // Extract the brand value from each object
-    return data?.map(item => item.get_spare_parts_brands || item.brand).filter(Boolean) || [];
+    if (data && Array.isArray(data)) {
+      return data.map(item => {
+        // Handle the specific format returned by your SQL function
+        if (typeof item === 'object' && item.get_spare_parts_brands) {
+          return item.get_spare_parts_brands;
+        }
+        // Fallback if the format is different
+        return item.brand || item;
+      }).filter(Boolean);
+    }
+
+    return [];
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.error('Unexpected error in getSparePartsBrands:', error);
     return [];
   }
 }
