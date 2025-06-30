@@ -78,34 +78,24 @@ export function SparePartsSearch() {
 
     loadBrands();
   }, [applianceType]);
-  // Load models when category and brand are selected
-  useEffect(() => {
-    const loadModels = async () => {
-      if (!applianceType || !brand) {
-        setModels([]);
-        setModelNumber('');
-        setModelSearch('');
-        return;
-      }
+  // Load models when user types (removed the automatic loading useEffect)
+  const loadModels = async (searchTerm: string) => {
+    if (!applianceType || !brand || searchTerm.length < 1) {
+      setModels([]);
+      return;
+    }
 
-      setIsLoadingModels(true);
-      try {
-        const modelsData = await getSparePartsModels(applianceType, brand);
-        setModels(modelsData);
-        // Reset model selection if current model is not in new list
-        if (modelNumber && !modelsData.includes(modelNumber)) {
-          setModelNumber('');
-          setModelSearch('');
-        }
-      } catch (error) {
-        console.error('Error loading models:', error);
-      } finally {
-        setIsLoadingModels(false);
-      }
-    };
-
-    loadModels();
-  }, [applianceType, brand]);
+    setIsLoadingModels(true);
+    try {
+      const modelsData = await getSparePartsModels(applianceType, brand, searchTerm);
+      setModels(modelsData);
+    } catch (error) {
+      console.error('Error loading models:', error);
+      setModels([]);
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
 
   const handleSearch = async () => {
     if (!applianceType || !brand || !modelNumber) {
@@ -273,6 +263,9 @@ export function SparePartsSearch() {
               setModelNumber('');
               if (e.target.value.length > 0 && applianceType && brand) {
                 setModelOpen(true);
+                loadModels(e.target.value); // Load models based on search
+              } else {
+                setModels([]);
               }
             }}
             onFocus={() => modelSearch.length > 0 && applianceType && brand && setModelOpen(true)}
@@ -315,13 +308,6 @@ export function SparePartsSearch() {
         )}
         {!modelNumber && (
           <p className="text-xs text-gray-500 mt-1">Found on door sticker or back panel</p>
-        )}
-        {applianceType && brand && models.length > 0 && !modelNumber && (
-          <p className="text-xs text-gray-500 mt-1">{models.length} models available</p>
-        )}
-        {/* Debug: Show if results are being truncated */}
-        {models.length === 1000 && (
-          <p className="text-xs text-red-500 mt-1">⚠️ Results may be truncated</p>
         )}
       </div>
 
