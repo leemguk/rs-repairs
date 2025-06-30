@@ -52,23 +52,26 @@ export async function getSparePartsBrands(category?: string): Promise<string[]> 
       return [];
     }
     
-    // For a specific category, we still need to query the table
-    // But we DON'T use a limit - we get ALL brands for that category
+    // Use RPC function for brands by category
     const { data, error } = await supabase
-      .from('spare_parts')
-      .select('brand')
-      .eq('category', category)
-      .not('brand', 'is', null);
+      .rpc('get_spare_parts_brands_by_category', { p_category: category });
     
     if (error) {
-      console.error('Error fetching brands:', error);
+      console.error('Error fetching brands for category:', error);
       return [];
     }
     
-    // Extract unique brands
-    const uniqueBrands = [...new Set(data?.map(item => item.brand).filter(Boolean) || [])];
-    console.log(`Found ${uniqueBrands.length} brands for category: ${category}`);
-    return uniqueBrands.sort();
+    if (!data) {
+      return [];
+    }
+    
+    // Extract brands from the response
+    const brands = data
+      .map(item => item.brand || item.get_spare_parts_brands_by_category)
+      .filter(Boolean);
+    
+    console.log(`Found ${brands.length} brands for category: ${category}`);
+    return brands;
     
   } catch (error) {
     console.error('Unexpected error:', error);
