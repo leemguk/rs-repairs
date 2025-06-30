@@ -27,16 +27,22 @@ export function SparePartsSearch() {
   useEffect(() => {
     const loadOptions = async () => {
       try {
+        console.log('Loading categories and brands from database...');
         const [categoriesData, brandsData] = await Promise.all([
           getSparePartsCategories(),
           getSparePartsBrands()
         ]);
         
+        console.log('Categories loaded:', categoriesData);
+        console.log('Brands loaded:', brandsData);
+        
         if (categoriesData && categoriesData.length > 0) {
           setCategories(categoriesData);
+          console.log('Set categories from database');
         }
         if (brandsData && brandsData.length > 0) {
           setBrands(brandsData);
+          console.log('Set brands from database');
         }
       } catch (error) {
         console.error('Error loading options:', error);
