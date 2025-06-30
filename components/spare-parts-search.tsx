@@ -8,6 +8,7 @@ import { ExternalLink, Loader2, Search, AlertCircle, CheckCircle } from 'lucide-
 import { searchSpareParts, type SparePartResult } from '@/actions/search-spare-parts';
 import { getSparePartsCategories, getSparePartsBrands, getSparePartsModels } from '@/actions/get-spare-parts-options';
 
+export function SparePartsSearch() {
   // Add a ref for the model input
   const modelInputRef = useRef<HTMLInputElement>(null);
   const [applianceType, setApplianceType] = useState('');
@@ -78,7 +79,8 @@ import { getSparePartsCategories, getSparePartsBrands, getSparePartsModels } fro
     };
 
     loadBrands();
-  }, [applianceType]);
+  }, [applianceType, brand]);
+
   // Load models when user types (removed the automatic loading useEffect)
   const loadModels = async (searchTerm: string) => {
     if (!applianceType || !brand || searchTerm.length < 1) {
@@ -257,7 +259,9 @@ import { getSparePartsCategories, getSparePartsBrands, getSparePartsModels } fro
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Model Number</label>
+        <label className="block text-xs font-medium text-gray-700 mb-1">
+          Model Number <span className="text-red-500">*</span>
+        </label>
         <div className="relative">
           <Input
             ref={modelInputRef}
