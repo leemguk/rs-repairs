@@ -28,8 +28,8 @@ export async function getSparePartsCategories(): Promise<string[]> {
       return uniqueCategories;
     }
 
-    // The RPC returns objects with a 'category' property
-    return data?.map(item => item.category).filter(Boolean) || [];
+    // The RPC returns an array of strings directly, not objects
+    return data || [];
   } catch (error) {
     console.error('Unexpected error:', error);
     return [];
@@ -61,8 +61,8 @@ export async function getSparePartsBrands(): Promise<string[]> {
       return uniqueBrands;
     }
 
-    // The RPC returns objects with a 'brand' property
-    return data?.map(item => item.brand).filter(Boolean) || [];
+    // The RPC returns an array of strings directly, not objects
+    return data || [];
   } catch (error) {
     console.error('Unexpected error:', error);
     return [];
