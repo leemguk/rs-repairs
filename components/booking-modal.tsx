@@ -969,7 +969,6 @@ const handleStripePayment = async () => {
       </div>
 
       <div className="flex flex-col gap-3 mt-6">
-        // Find the button that continues to step 4 and make sure it includes email validation
 <Button
   onClick={nextStep}
   className="bg-green-600 hover:bg-green-700"
