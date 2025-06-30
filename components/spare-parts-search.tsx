@@ -8,9 +8,21 @@ import { ExternalLink, Loader2, Search, AlertCircle, CheckCircle } from 'lucide-
 import { searchSpareParts, type SparePartResult } from '@/actions/search-spare-parts';
 import { getSparePartsCategories, getSparePartsBrands, getSparePartsModels } from '@/actions/get-spare-parts-options';
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const MAX_SEARCHES_PER_WINDOW = 20;
+const MAX_MODEL_LOOKUPS_PER_WINDOW = 50;
+const DEBOUNCE_DELAY = 500; // Wait 500ms after user stops typing
+
 export function SparePartsSearch() {
-  // Add a ref for the model input
+  // Rate limiting state
+  const [searchCount, setSearchCount] = useState(0);
+  const [modelLookupCount, setModelLookupCount] = useState(0);
+  const [rateLimitReset, setRateLimitReset] = useState(Date.now() + RATE_LIMIT_WINDOW);
+  
+  // Existing state
   const modelInputRef = useRef<HTMLInputElement>(null);
+  const modelDebounceRef = useRef<NodeJS.Timeout>();
   const [applianceType, setApplianceType] = useState('');
   const [brand, setBrand] = useState('');
   const [modelNumber, setModelNumber] = useState('');
@@ -33,6 +45,32 @@ export function SparePartsSearch() {
   const [filteredModels, setFilteredModels] = useState<string[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [isLoadingBrands, setIsLoadingBrands] = useState(false);
+
+  // Reset rate limits every window
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (Date.now() > rateLimitReset) {
+        setSearchCount(0);
+        setModelLookupCount(0);
+        setRateLimitReset(Date.now() + RATE_LIMIT_WINDOW);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [rateLimitReset]);
+
+  // Check rate limits
+  const checkRateLimit = (type: 'search' | 'model') => {
+    if (type === 'search' && searchCount >= MAX_SEARCHES_PER_WINDOW) {
+      setError(`Rate limit exceeded. Please wait ${Math.ceil((rateLimitReset - Date.now()) / 1000)} seconds.`);
+      return false;
+    }
+    if (type === 'model' && modelLookupCount >= MAX_MODEL_LOOKUPS_PER_WINDOW) {
+      setError(`Too many model lookups. Please wait ${Math.ceil((rateLimitReset - Date.now()) / 1000)} seconds.`);
+      return false;
+    }
+    return true;
+  };
 
   // Load categories on mount
   useEffect(() => {
@@ -57,7 +95,7 @@ export function SparePartsSearch() {
       if (!applianceType) {
         setBrands([]);
         setBrand('');
-        setBrandSearch(''); // Reset brand search when category changes
+        setBrandSearch('');
         return;
       }
 
@@ -65,7 +103,6 @@ export function SparePartsSearch() {
       try {
         const brandsData = await getSparePartsBrands(applianceType);
         setBrands(brandsData);
-        // Reset brand selection if current brand is not in new list
         if (brand && !brandsData.includes(brand)) {
           setBrand('');
           setBrandSearch('');
@@ -78,23 +115,7 @@ export function SparePartsSearch() {
     };
 
     loadBrands();
-  }, [applianceType, brand]);
-
-  // Load models when user types
-  const loadModels = async (searchTerm: string) => {
-    if (!applianceType || !brand || searchTerm.length < 1) {
-      setFilteredModels([]);
-      return;
-    }
-
-    try {
-      const modelsData = await getSparePartsModels(applianceType, brand, searchTerm);
-      setFilteredModels(modelsData);
-    } catch (error) {
-      console.error('Error loading models:', error);
-      setFilteredModels([]);
-    }
-  };
+  }, [applianceType]);
 
   // Reset models when brand or category changes
   useEffect(() => {
@@ -103,9 +124,57 @@ export function SparePartsSearch() {
     setModelNumber('');
   }, [applianceType, brand]);
 
+  // Debounced model loading
+  const loadModels = useCallback(async (searchTerm: string) => {
+    if (!applianceType || !brand || searchTerm.length < 1) {
+      setFilteredModels([]);
+      return;
+    }
+
+    // Check rate limit
+    if (!checkRateLimit('model')) {
+      return;
+    }
+
+    try {
+      setModelLookupCount(prev => prev + 1);
+      const modelsData = await getSparePartsModels(applianceType, brand, searchTerm);
+      setFilteredModels(modelsData);
+    } catch (error) {
+      console.error('Error loading models:', error);
+      setFilteredModels([]);
+    }
+  }, [applianceType, brand, modelLookupCount, checkRateLimit]);
+
+  const handleModelInputChange = (value: string) => {
+    setModelSearch(value);
+    setModelNumber('');
+    
+    // Clear existing timeout
+    if (modelDebounceRef.current) {
+      clearTimeout(modelDebounceRef.current);
+    }
+    
+    if (value.length > 0 && applianceType && brand) {
+      setModelOpen(true);
+      // Debounce the API call
+      modelDebounceRef.current = setTimeout(() => {
+        loadModels(value);
+      }, DEBOUNCE_DELAY);
+    } else {
+      setModelOpen(false);
+      setFilteredModels([]);
+    }
+  };
+
   const handleSearch = async () => {
     if (!applianceType || !brand || !modelNumber) {
       setError('Please fill in all fields');
+      return;
+    }
+
+    // Check rate limit
+    if (!checkRateLimit('search')) {
       return;
     }
 
@@ -113,6 +182,7 @@ export function SparePartsSearch() {
     setError('');
     setResults([]);
     setHasSearched(false);
+    setSearchCount(prev => prev + 1);
 
     try {
       const { results: searchResults, error: searchError } = await searchSpareParts(
@@ -148,6 +218,16 @@ export function SparePartsSearch() {
 
   return (
     <div className="space-y-3">
+      {/* Rate limit warning */}
+      {(searchCount > MAX_SEARCHES_PER_WINDOW * 0.8 || modelLookupCount > MAX_MODEL_LOOKUPS_PER_WINDOW * 0.8) && (
+        <Alert className="mb-3">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            You're approaching the rate limit. Searches remaining: {MAX_SEARCHES_PER_WINDOW - searchCount}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div>
         <label className="block text-xs font-medium text-gray-700 mb-1">
           Appliance Type <span className="text-red-500">*</span>
@@ -179,7 +259,7 @@ export function SparePartsSearch() {
                     key={category}
                     className="px-3 py-2 text-xs sm:text-sm hover:bg-gray-100 cursor-pointer"
                     onMouseDown={(e) => {
-                      e.preventDefault(); // Prevent blur
+                      e.preventDefault();
                       setApplianceType(category);
                       setCategorySearch(category);
                       setCategoryOpen(false);
@@ -236,7 +316,7 @@ export function SparePartsSearch() {
                     key={b}
                     className="px-3 py-2 text-xs sm:text-sm hover:bg-gray-100 cursor-pointer"
                     onMouseDown={(e) => {
-                      e.preventDefault(); // Prevent blur
+                      e.preventDefault();
                       setBrand(b);
                       setBrandSearch(b);
                       setBrandOpen(false);
@@ -269,19 +349,7 @@ export function SparePartsSearch() {
             type="text"
             placeholder={applianceType && brand ? "Type model number (e.g., WAW28750GB)" : "Select appliance type and brand first"}
             value={modelSearch}
-            onChange={(e) => {
-              const value = e.target.value;
-              setModelSearch(value);
-              setModelNumber('');
-              
-              if (value.length > 0 && applianceType && brand) {
-                setModelOpen(true);
-                loadModels(value);
-              } else {
-                setModelOpen(false);
-                setFilteredModels([]);
-              }
-            }}
+            onChange={(e) => handleModelInputChange(e.target.value)}
             onFocus={() => modelSearch.length > 0 && applianceType && brand && setModelOpen(true)}
             onBlur={() => setTimeout(() => setModelOpen(false), 200)}
             disabled={!applianceType || !brand}
@@ -304,7 +372,7 @@ export function SparePartsSearch() {
                   key={m}
                   className="px-3 py-2 text-xs sm:text-sm hover:bg-gray-100 cursor-pointer"
                   onMouseDown={(e) => {
-                    e.preventDefault(); // Prevent blur
+                    e.preventDefault();
                     setModelNumber(m);
                     setModelSearch(m);
                     setModelOpen(false);
@@ -354,7 +422,7 @@ export function SparePartsSearch() {
         </Alert>
       )}
 
-      {/* Exact Match Result */}
+      {/* Results sections remain the same */}
       {exactMatch && (
         <div className="border-t pt-3">
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
@@ -381,7 +449,6 @@ export function SparePartsSearch() {
         </div>
       )}
 
-      {/* Fuzzy Match Results */}
       {!exactMatch && fuzzyMatches.length > 0 && (
         <div className="border-t pt-3">
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 space-y-2">
@@ -420,7 +487,6 @@ export function SparePartsSearch() {
         </div>
       )}
 
-      {/* No Results */}
       {hasSearched && results.length === 0 && (
         <div className="border-t pt-3">
           <Alert>
