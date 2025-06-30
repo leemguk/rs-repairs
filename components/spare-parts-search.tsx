@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -8,7 +8,8 @@ import { ExternalLink, Loader2, Search, AlertCircle, CheckCircle } from 'lucide-
 import { searchSpareParts, type SparePartResult } from '@/actions/search-spare-parts';
 import { getSparePartsCategories, getSparePartsBrands, getSparePartsModels } from '@/actions/get-spare-parts-options';
 
-export function SparePartsSearch() {
+  // Add a ref for the model input
+  const modelInputRef = useRef<HTMLInputElement>(null);
   const [applianceType, setApplianceType] = useState('');
   const [brand, setBrand] = useState('');
   const [modelNumber, setModelNumber] = useState('');
@@ -94,6 +95,10 @@ export function SparePartsSearch() {
       setModels([]);
     } finally {
       setIsLoadingModels(false);
+      // Keep focus on the input after loading
+      if (modelInputRef.current) {
+        modelInputRef.current.focus();
+      }
     }
   };
 
@@ -255,6 +260,7 @@ export function SparePartsSearch() {
         <label className="block text-xs font-medium text-gray-700 mb-1">Model Number</label>
         <div className="relative">
           <Input
+            ref={modelInputRef}
             type="text"
             placeholder={applianceType && brand ? "Type model number (e.g., WAW28750GB)" : "Select appliance type and brand first"}
             value={modelSearch}
