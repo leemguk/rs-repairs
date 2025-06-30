@@ -1,15 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ExternalLink, Loader2, Search, AlertCircle, CheckCircle, ChevronsUpDown, Check } from 'lucide-react';
+import { ExternalLink, Loader2, Search, AlertCircle, CheckCircle } from 'lucide-react';
 import { searchSpareParts, type SparePartResult } from '@/actions/search-spare-parts';
 import { getSparePartsCategories, getSparePartsBrands } from '@/actions/get-spare-parts-options';
-import { cn } from "@/lib/utils";
 
 export function SparePartsSearch() {
   const [applianceType, setApplianceType] = useState('');
