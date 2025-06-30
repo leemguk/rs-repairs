@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExternalLink, Loader2, Search, AlertCircle, CheckCircle } from 'lucide-react';
 import { searchSpareParts, type SparePartResult } from '@/actions/search-spare-parts';
 import { getSparePartsCategories, getSparePartsBrands } from '@/actions/get-spare-parts-options';
+import { testDirectQuery } from '@/actions/test-spare-parts-direct';
 
 export function SparePartsSearch() {
   const [applianceType, setApplianceType] = useState('');
@@ -22,30 +23,45 @@ export function SparePartsSearch() {
   const [categories, setCategories] = useState<string[]>(['Washing Machines', 'Dishwashers', 'Vacuum Cleaners', 'Refrigerators', 'Ovens']);
   const [brands, setBrands] = useState<string[]>(['AEG', 'Bosch', 'Samsung', 'LG', 'Whirlpool', 'Miele', 'Siemens']);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>('Waiting to load...');
 
   // Try to load from database on mount
   useEffect(() => {
     const loadOptions = async () => {
       try {
+        setDebugInfo('Loading from database...');
         console.log('Loading categories and brands from database...');
-        const [categoriesData, brandsData] = await Promise.all([
-          getSparePartsCategories(),
-          getSparePartsBrands()
-        ]);
         
-        console.log('Categories loaded:', categoriesData);
-        console.log('Brands loaded:', brandsData);
+        const categoriesData = await getSparePartsCategories();
+        console.log('Raw categories data:', categoriesData);
+        console.log('Categories type:', typeof categoriesData);
+        console.log('Is array:', Array.isArray(categoriesData));
+        console.log('Length:', categoriesData?.length);
+        
+        const brandsData = await getSparePartsBrands();
+        console.log('Raw brands data:', brandsData);
+        console.log('Brands type:', typeof brandsData);
+        console.log('Is array:', Array.isArray(brandsData));
+        console.log('Length:', brandsData?.length);
         
         if (categoriesData && categoriesData.length > 0) {
           setCategories(categoriesData);
-          console.log('Set categories from database');
+          console.log('✓ Set categories from database');
+          setDebugInfo(`Loaded ${categoriesData.length} categories and ${brandsData?.length || 0} brands from DB`);
+        } else {
+          console.log('✗ No categories data or empty array');
+          setDebugInfo('No categories from DB, using defaults');
         }
+        
         if (brandsData && brandsData.length > 0) {
           setBrands(brandsData);
-          console.log('Set brands from database');
+          console.log('✓ Set brands from database');
+        } else {
+          console.log('✗ No brands data or empty array');
         }
       } catch (error) {
         console.error('Error loading options:', error);
+        setDebugInfo(`Error: ${error}`);
         // Keep using the hardcoded values
       }
     };
@@ -89,6 +105,21 @@ export function SparePartsSearch() {
 
   return (
     <div className="space-y-3">
+      {/* Debug info */}
+      <div className="text-xs bg-gray-100 p-2 rounded space-y-2">
+        <div>Status: {debugInfo}</div>
+        <button 
+          onClick={async () => {
+            const result = await testDirectQuery();
+            console.log('Test result:', result);
+            alert(JSON.stringify(result, null, 2));
+          }}
+          className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
+        >
+          Test Database Connection
+        </button>
+      </div>
+      
       <div>
         <label className="block text-xs font-medium text-gray-700 mb-1">
           Appliance Type <span className="text-red-500">*</span>
