@@ -36,6 +36,7 @@ export function SparePartsSearch() {
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [isLoadingBrands, setIsLoadingBrands] = useState(false);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [hasLoadedModels, setHasLoadedModels] = useState(false);
 
   // Load categories on mount
   useEffect(() => {
@@ -85,9 +86,7 @@ export function SparePartsSearch() {
 
   // Load models when user types (removed the automatic loading useEffect)
   const loadModels = async (searchTerm: string) => {
-    if (!applianceType || !brand || searchTerm.length < 1) {
-      setModels([]);
-      setFilteredModels([]);
+    if (!applianceType || !brand) {
       return;
     }
 
@@ -95,6 +94,7 @@ export function SparePartsSearch() {
     try {
       const modelsData = await getSparePartsModels(applianceType, brand, searchTerm);
       setModels(modelsData);
+      setHasLoadedModels(true);
       // Filter models based on current search term
       const filtered = modelsData.filter(m => 
         m.toLowerCase().includes(searchTerm.toLowerCase())
@@ -109,15 +109,14 @@ export function SparePartsSearch() {
     }
   };
 
-  // Update filtered models when search changes
+  // Reset models when brand or category changes
   useEffect(() => {
-    if (modelSearch && models.length > 0) {
-      const filtered = models.filter(m => 
-        m.toLowerCase().includes(modelSearch.toLowerCase())
-      );
-      setFilteredModels(filtered);
-    }
-  }, [modelSearch, models]);
+    setModels([]);
+    setFilteredModels([]);
+    setHasLoadedModels(false);
+    setModelSearch('');
+    setModelNumber('');
+  }, [applianceType, brand]);
 
   const handleSearch = async () => {
     if (!applianceType || !brand || !modelNumber) {
@@ -290,19 +289,20 @@ export function SparePartsSearch() {
               setModelSearch(value);
               setModelNumber('');
               
-              // Clear existing timeout
-              if (modelLoadTimeoutRef.current) {
-                clearTimeout(modelLoadTimeoutRef.current);
-              }
-              
               if (value.length > 0 && applianceType && brand) {
                 setModelOpen(true);
-                // Debounce the API call
-                modelLoadTimeoutRef.current = setTimeout(() => {
+                
+                // If we haven't loaded models yet, load them
+                if (!hasLoadedModels && !isLoadingModels) {
                   loadModels(value);
-                }, 300); // Wait 300ms after user stops typing
+                } else if (models.length > 0) {
+                  // Otherwise just filter existing models client-side
+                  const filtered = models.filter(m => 
+                    m.toLowerCase().includes(value.toLowerCase())
+                  );
+                  setFilteredModels(filtered);
+                }
               } else {
-                setModels([]);
                 setModelOpen(false);
               }
             }}
