@@ -1,4 +1,3 @@
-// components/spare-parts-search.tsx
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -218,7 +217,14 @@ export function SparePartsSearch() {
               <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
               <span className="text-xs sm:text-sm font-medium text-green-800">Model Found!</span>
             </div>
-            <p className="text-xs text-green-700">{exactMatch.brand} {exactMatch.model_number}</p>
+            <div className="space-y-1">
+              <p className="text-xs text-green-700">
+                <span className="font-medium">Appliance:</span> {exactMatch.category}
+              </p>
+              <p className="text-xs text-green-700">
+                <span className="font-medium">Model:</span> {exactMatch.brand} {exactMatch.model_number}
+              </p>
+            </div>
             <Button
               className="w-full bg-green-600 hover:bg-green-700 h-7 sm:h-8 text-xs font-medium"
               onClick={() => window.open(exactMatch.url, '_blank')}
@@ -246,6 +252,9 @@ export function SparePartsSearch() {
                 <div key={match.id} className="flex items-center justify-between p-2 bg-white rounded border">
                   <div>
                     <p className="text-xs font-medium">{match.model_number}</p>
+                    <p className="text-xs text-gray-500">
+                      {match.category} • {match.brand}
+                    </p>
                     <p className="text-xs text-gray-500">
                       {Math.round(match.similarity_score * 100)}% match
                     </p>
