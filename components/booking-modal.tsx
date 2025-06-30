@@ -139,50 +139,50 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
   }
 
   // Save booking to Supabase
-  const saveBookingToDatabase = async (): Promise<string | null> => {
-    if (!selectedPricing) return null
+const saveBookingToDatabase = async (): Promise<string | null> => {
+  if (!selectedPricing) return null
 
-    try {
-      // Prepare booking data for database
-      const bookingRecord: Omit<Booking, 'id' | 'created_at'> = {
-        full_name: bookingData.firstName,
-        email: bookingData.email,
-        mobile: bookingData.mobile,
-        address: bookingData.fullAddress,
-        appliance_type: bookingData.applianceType,
-        manufacturer: bookingData.manufacturer,
-        model: bookingData.applianceModel || null,
-        fault_description: bookingData.applianceFault,
-        service_type: selectedPricing.type === 'same-day' ? 'same_day' : 
-                     selectedPricing.type === 'next-day' ? 'next_day' : 'standard',
-        service_price: selectedPricing.price * 100, // Convert to pence
-        appointment_date: selectedPricing.type === 'same-day' ? new Date().toISOString().split('T')[0] :
-                         selectedPricing.type === 'next-day' ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] :
-                         bookingData.selectedDate || null,
-        appointment_time: selectedPricing.type === 'same-day' ? 'Before 6pm' : bookingData.selectedTimeSlot || null,
-        payment_status: 'pending',
-        booking_status: 'confirmed'
-      }
-
-      // Insert booking into Supabase
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert([bookingRecord])
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error saving booking:', error)
-        throw new Error('Failed to save booking')
-      }
-
-      console.log('Booking saved successfully:', data)
-      return data.id
-    } catch (error) {
-      console.error('Database error:', error)
-      throw error
+  try {
+    // Prepare booking data for database
+    const bookingRecord: Omit<Booking, 'id' | 'created_at'> = {
+      full_name: bookingData.firstName,
+      email: bookingData.email,
+      mobile: bookingData.mobile,
+      address: bookingData.fullAddress,
+      appliance_type: bookingData.applianceType,
+      manufacturer: bookingData.manufacturer,
+      model: bookingData.applianceModel || null,
+      fault_description: bookingData.applianceFault,
+      service_type: selectedPricing.type === 'same-day' ? 'same_day' : 
+                   selectedPricing.type === 'next-day' ? 'next_day' : 'standard',
+      service_price: selectedPricing.price * 100, // Convert to pence
+      appointment_date: selectedPricing.type === 'same-day' ? new Date().toISOString().split('T')[0] :
+                       selectedPricing.type === 'next-day' ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] :
+                       bookingData.selectedDate || null,
+      appointment_time: selectedPricing.type === 'same-day' ? 'Before 6pm' : bookingData.selectedTimeSlot || null,
+      payment_status: 'pending',
+      booking_status: 'pending_payment' // Changed from 'confirmed' to 'pending_payment'
     }
+
+    // Insert booking into Supabase
+    const { data, error } = await supabase
+      .from('bookings')
+      .insert([bookingRecord])
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error saving booking:', error)
+      throw new Error('Failed to save booking')
+    }
+
+    console.log('Booking saved successfully:', data)
+    return data.id
+  } catch (error) {
+    console.error('Database error:', error)
+    throw error
   }
+}
 
   // Send email notification (placeholder for SendGrid integration)
   const sendEmailNotification = async (bookingId: string) => {
@@ -406,85 +406,68 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     }
   }
 
-  const handleStripePayment = async () => {
-    if (!selectedPricing || isSubmitting) return
+  // Replace your handleStripePayment function with this:
+const handleStripePayment = async () => {
+  if (!selectedPricing || isSubmitting) return
 
-    setIsSubmitting(true)
+  setIsSubmitting(true)
 
-    try {
-      // First save the booking to get an ID
-      const bookingId = await saveBookingToDatabase()
-      
-      if (!bookingId) {
-        throw new Error('Failed to create booking')
-      }
-
-      const stripe = await stripePromise
-      if (!stripe) throw new Error("Stripe failed to load")
-
-      // In production, this would call your backend to create a payment intent
-      const response = await fetch("/api/create-payment-intent", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          amount: selectedPricing.price * 100, // Convert to pence
-          currency: "gbp",
-          bookingId: bookingId,
-          bookingData: {
-            ...bookingData,
-            serviceType: selectedPricing.type,
-            price: selectedPricing.price,
-          },
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Payment setup failed")
-      }
-
-      const { clientSecret } = await response.json()
-
-      const { error } = await stripe.redirectToCheckout({
-        sessionId: clientSecret,
-      })
-
-      if (error) {
-        console.error("Stripe error:", error)
-        alert("Payment failed. Please try again.")
-        return
-      }
-    } catch (error) {
-      console.error("Payment error:", error)
-      
-      // For demo purposes, simulate successful payment and complete the booking
-      try {
-        // Update booking status to paid
-        if (selectedPricing) {
-          const bookingId = await saveBookingToDatabase()
-          if (bookingId) {
-            // Update payment status
-            await supabase
-              .from('bookings')
-              .update({ payment_status: 'paid' })
-              .eq('id', bookingId)
-
-            await sendEmailNotification(bookingId)
-            
-            alert(`Payment of £${selectedPricing.price} processed successfully!\n\nBooking confirmed with ID: ${bookingId}\n\nYou will receive a confirmation email shortly.`)
-            onClose()
-            resetForm()
-          }
-        }
-      } catch (dbError) {
-        console.error('Database update error:', dbError)
-        alert('Payment processed but there was an issue updating the booking. Please contact support.')
-      }
-    } finally {
-      setIsSubmitting(false)
+  try {
+    // First save the booking to get an ID
+    const bookingId = await saveBookingToDatabase()
+    
+    if (!bookingId) {
+      throw new Error('Failed to create booking')
     }
+
+    // Create Stripe Checkout session instead of payment intent
+    const response = await fetch("/api/create-checkout-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: selectedPricing.price * 100, // Convert to pence
+        currency: "gbp",
+        bookingId: bookingId,
+        bookingData: {
+          firstName: bookingData.firstName,
+          email: bookingData.email,
+          serviceType: selectedPricing.type,
+          manufacturer: bookingData.manufacturer,
+          applianceType: bookingData.applianceType,
+        },
+      }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || "Payment setup failed")
+    }
+
+    const { sessionId } = await response.json()
+
+    // Redirect to Stripe Checkout
+    const stripe = await stripePromise
+    if (!stripe) throw new Error("Stripe failed to load")
+
+    const { error } = await stripe.redirectToCheckout({
+      sessionId: sessionId,
+    })
+
+    if (error) {
+      console.error("Stripe checkout error:", error)
+      throw new Error(error.message || "Payment redirect failed")
+    }
+
+    // User will be redirected to Stripe, then back to success/cancel pages
+
+  } catch (error) {
+    console.error("Payment error:", error)
+    alert(`Payment failed: ${error.message}\n\nPlease try again or contact support.`)
+    setIsSubmitting(false)
   }
+}
 
   const renderProgressBar = () => {
     const goToStep = (step: number) => {
@@ -986,13 +969,13 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       </div>
 
       <div className="flex flex-col gap-3 mt-6">
-        <Button
-          onClick={nextStep}
-          className="bg-green-600 hover:bg-green-700"
-          disabled={!bookingData.firstName || !bookingData.email || !bookingData.fullAddress || isSubmitting}
-        >
-          Continue & Review
-        </Button>
+<Button
+  onClick={nextStep}
+  className="bg-green-600 hover:bg-green-700"
+  disabled={!bookingData.firstName || !bookingData.email || !bookingData.mobile || !bookingData.fullAddress || isSubmitting}
+>
+  Continue & Review
+</Button>
 
         <Button 
           variant="outline" 
