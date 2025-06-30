@@ -176,7 +176,8 @@ export function SparePartsSearch() {
                   <div
                     key={category}
                     className="px-3 py-2 text-xs sm:text-sm hover:bg-gray-100 cursor-pointer"
-                    onClick={() => {
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // Prevent blur
                       setApplianceType(category);
                       setCategorySearch(category);
                       setCategoryOpen(false);
@@ -232,7 +233,8 @@ export function SparePartsSearch() {
                   <div
                     key={b}
                     className="px-3 py-2 text-xs sm:text-sm hover:bg-gray-100 cursor-pointer"
-                    onClick={() => {
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // Prevent blur
                       setBrand(b);
                       setBrandSearch(b);
                       setBrandOpen(false);
@@ -298,7 +300,7 @@ export function SparePartsSearch() {
           )}
           
           {/* Autocomplete dropdown */}
-          {modelOpen && modelSearch.length > 0 && !isLoadingModels && (
+          {modelOpen && !isLoadingModels && (
             <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-auto">
               {models
                 .filter(m => m.toLowerCase().includes(modelSearch.toLowerCase()))
@@ -306,7 +308,8 @@ export function SparePartsSearch() {
                   <div
                     key={m}
                     className="px-3 py-2 text-xs sm:text-sm hover:bg-gray-100 cursor-pointer"
-                    onClick={() => {
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // Prevent blur
                       setModelNumber(m);
                       setModelSearch(m);
                       setModelOpen(false);
@@ -315,7 +318,7 @@ export function SparePartsSearch() {
                     {m}
                   </div>
                 ))}
-              {models.filter(m => m.toLowerCase().includes(modelSearch.toLowerCase())).length === 0 && (
+              {modelSearch.length > 0 && models.filter(m => m.toLowerCase().includes(modelSearch.toLowerCase())).length === 0 && (
                 <div className="px-3 py-2 text-xs text-gray-500">No matching models</div>
               )}
             </div>
