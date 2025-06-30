@@ -319,6 +319,10 @@ export function SparePartsSearch() {
         {applianceType && brand && models.length > 0 && !modelNumber && (
           <p className="text-xs text-gray-500 mt-1">{models.length} models available</p>
         )}
+        {/* Debug: Show if results are being truncated */}
+        {models.length === 1000 && (
+          <p className="text-xs text-red-500 mt-1">⚠️ Results may be truncated</p>
+        )}
       </div>
 
       <Button 
