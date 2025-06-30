@@ -31,12 +31,9 @@ export function SparePartsSearch() {
   // Dynamic data from database
   const [categories, setCategories] = useState<string[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
-  const [models, setModels] = useState<string[]>([]);
   const [filteredModels, setFilteredModels] = useState<string[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [isLoadingBrands, setIsLoadingBrands] = useState(false);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
-  const [hasLoadedModels, setHasLoadedModels] = useState(false);
 
   // Load categories on mount
   useEffect(() => {
@@ -84,36 +81,25 @@ export function SparePartsSearch() {
     loadBrands();
   }, [applianceType, brand]);
 
-  // Load models when user types (removed the automatic loading useEffect)
+  // Load models when user types
   const loadModels = async (searchTerm: string) => {
-    if (!applianceType || !brand) {
+    if (!applianceType || !brand || searchTerm.length < 1) {
+      setFilteredModels([]);
       return;
     }
 
-    setIsLoadingModels(true);
     try {
       const modelsData = await getSparePartsModels(applianceType, brand, searchTerm);
-      setModels(modelsData);
-      setHasLoadedModels(true);
-      // Filter models based on current search term
-      const filtered = modelsData.filter(m => 
-        m.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredModels(filtered);
+      setFilteredModels(modelsData);
     } catch (error) {
       console.error('Error loading models:', error);
-      setModels([]);
       setFilteredModels([]);
-    } finally {
-      setIsLoadingModels(false);
     }
   };
 
   // Reset models when brand or category changes
   useEffect(() => {
-    setModels([]);
     setFilteredModels([]);
-    setHasLoadedModels(false);
     setModelSearch('');
     setModelNumber('');
   }, [applianceType, brand]);
@@ -291,19 +277,10 @@ export function SparePartsSearch() {
               
               if (value.length > 0 && applianceType && brand) {
                 setModelOpen(true);
-                
-                // If we haven't loaded models yet, load them
-                if (!hasLoadedModels && !isLoadingModels) {
-                  loadModels(value);
-                } else if (models.length > 0) {
-                  // Otherwise just filter existing models client-side
-                  const filtered = models.filter(m => 
-                    m.toLowerCase().includes(value.toLowerCase())
-                  );
-                  setFilteredModels(filtered);
-                }
+                loadModels(value);
               } else {
                 setModelOpen(false);
+                setFilteredModels([]);
               }
             }}
             onFocus={() => modelSearch.length > 0 && applianceType && brand && setModelOpen(true)}
@@ -313,34 +290,37 @@ export function SparePartsSearch() {
           />
           
           {/* Loading indicator */}
-          {isLoadingModels && (
+          {modelSearch.length > 0 && filteredModels.length === 0 && applianceType && brand && (
             <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />
           )}
           
-          {/* Autocomplete dropdown - Always rendered but conditionally visible */}
-          <div 
-            className={`absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-auto ${
-              modelOpen && !isLoadingModels ? 'block' : 'hidden'
-            }`}
-          >
-            {filteredModels.map((m) => (
-              <div
-                key={m}
-                className="px-3 py-2 text-xs sm:text-sm hover:bg-gray-100 cursor-pointer"
-                onMouseDown={(e) => {
-                  e.preventDefault(); // Prevent blur
-                  setModelNumber(m);
-                  setModelSearch(m);
-                  setModelOpen(false);
-                }}
-              >
-                {m}
-              </div>
-            ))}
-            {modelSearch.length > 0 && filteredModels.length === 0 && (
-              <div className="px-3 py-2 text-xs text-gray-500">No matching models</div>
-            )}
-          </div>
+          {/* Autocomplete dropdown */}
+          {modelOpen && filteredModels.length > 0 && (
+            <div 
+              key="model-dropdown"
+              className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-auto"
+            >
+              {filteredModels.map((m) => (
+                <div
+                  key={m}
+                  className="px-3 py-2 text-xs sm:text-sm hover:bg-gray-100 cursor-pointer"
+                  onMouseDown={(e) => {
+                    e.preventDefault(); // Prevent blur
+                    setModelNumber(m);
+                    setModelSearch(m);
+                    setModelOpen(false);
+                  }}
+                >
+                  {m}
+                </div>
+              ))}
+            </div>
+          )}
+          {modelOpen && modelSearch.length > 0 && filteredModels.length === 0 && applianceType && brand && (
+            <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg px-3 py-2 text-xs text-gray-500">
+              No matching models
+            </div>
+          )}
         </div>
         {modelNumber && (
           <p className="text-xs text-green-600 mt-1">✓ Selected: {modelNumber}</p>
