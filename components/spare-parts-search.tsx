@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ExternalLink, Loader2, Search, AlertCircle, CheckCircle } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ExternalLink, Loader2, Search, AlertCircle, CheckCircle, ChevronsUpDown, Check } from 'lucide-react';
 import { searchSpareParts, type SparePartResult } from '@/actions/search-spare-parts';
-import { getSparePartsCategories, getSparePartsBrands } from '@/actions/get-spare-parts-options';
-import { testDirectQuery } from '@/actions/test-spare-parts-direct';
+import { getSparePartsCategories, getSparePartsBrandsForCategory } from '@/actions/get-spare-parts-options';
+import { cn } from "@/lib/utils";
 
 export function SparePartsSearch() {
   const [applianceType, setApplianceType] = useState('');
@@ -19,55 +20,59 @@ export function SparePartsSearch() {
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   
-  // Dynamic data from database - with hardcoded fallbacks
-  const [categories, setCategories] = useState<string[]>(['Washing Machines', 'Dishwashers', 'Vacuum Cleaners', 'Refrigerators', 'Ovens']);
-  const [brands, setBrands] = useState<string[]>(['AEG', 'Bosch', 'Samsung', 'LG', 'Whirlpool', 'Miele', 'Siemens']);
-  const [isLoadingOptions, setIsLoadingOptions] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string>('Waiting to load...');
+  // Popover states
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [brandOpen, setBrandOpen] = useState(false);
+  
+  // Dynamic data from database
+  const [categories, setCategories] = useState<string[]>([]);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+  const [isLoadingBrands, setIsLoadingBrands] = useState(false);
 
-  // Try to load from database on mount
+  // Load categories on mount
   useEffect(() => {
-    const loadOptions = async () => {
+    const loadCategories = async () => {
+      setIsLoadingOptions(true);
       try {
-        setDebugInfo('Loading from database...');
-        console.log('Loading categories and brands from database...');
-        
         const categoriesData = await getSparePartsCategories();
-        console.log('Raw categories data:', categoriesData);
-        console.log('Categories type:', typeof categoriesData);
-        console.log('Is array:', Array.isArray(categoriesData));
-        console.log('Length:', categoriesData?.length);
-        
-        const brandsData = await getSparePartsBrands();
-        console.log('Raw brands data:', brandsData);
-        console.log('Brands type:', typeof brandsData);
-        console.log('Is array:', Array.isArray(brandsData));
-        console.log('Length:', brandsData?.length);
-        
-        if (categoriesData && categoriesData.length > 0) {
-          setCategories(categoriesData);
-          console.log('✓ Set categories from database');
-          setDebugInfo(`Loaded ${categoriesData.length} categories and ${brandsData?.length || 0} brands from DB`);
-        } else {
-          console.log('✗ No categories data or empty array');
-          setDebugInfo('No categories from DB, using defaults');
-        }
-        
-        if (brandsData && brandsData.length > 0) {
-          setBrands(brandsData);
-          console.log('✓ Set brands from database');
-        } else {
-          console.log('✗ No brands data or empty array');
-        }
+        setCategories(categoriesData);
       } catch (error) {
-        console.error('Error loading options:', error);
-        setDebugInfo(`Error: ${error}`);
-        // Keep using the hardcoded values
+        console.error('Error loading categories:', error);
+      } finally {
+        setIsLoadingOptions(false);
       }
     };
 
-    loadOptions();
+    loadCategories();
   }, []);
+
+  // Load brands when category changes
+  useEffect(() => {
+    const loadBrands = async () => {
+      if (!applianceType) {
+        setBrands([]);
+        setBrand(''); // Reset brand when category changes
+        return;
+      }
+
+      setIsLoadingBrands(true);
+      try {
+        const brandsData = await getSparePartsBrandsForCategory(applianceType);
+        setBrands(brandsData);
+        // Reset brand selection if current brand is not in new list
+        if (brand && !brandsData.includes(brand)) {
+          setBrand('');
+        }
+      } catch (error) {
+        console.error('Error loading brands:', error);
+      } finally {
+        setIsLoadingBrands(false);
+      }
+    };
+
+    loadBrands();
+  }, [applianceType]);
 
   const handleSearch = async () => {
     if (!applianceType || !brand || !modelNumber) {
@@ -103,57 +108,124 @@ export function SparePartsSearch() {
   const exactMatch = results.find(r => r.match_type === 'exact');
   const fuzzyMatches = results.filter(r => r.match_type === 'fuzzy');
 
+  if (isLoadingOptions) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        <span className="ml-2 text-sm text-gray-500">Loading options...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      {/* Debug info */}
-      <div className="text-xs bg-gray-100 p-2 rounded space-y-2">
-        <div>Status: {debugInfo}</div>
-        <button 
-          onClick={async () => {
-            const result = await testDirectQuery();
-            console.log('Test result:', result);
-            alert(JSON.stringify(result, null, 2));
-          }}
-          className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
-        >
-          Test Database Connection
-        </button>
-      </div>
-      
       <div>
         <label className="block text-xs font-medium text-gray-700 mb-1">
           Appliance Type <span className="text-red-500">*</span>
         </label>
-        <Select value={applianceType} onValueChange={setApplianceType}>
-          <SelectTrigger className="w-full h-8 sm:h-9 text-xs sm:text-sm">
-            <SelectValue placeholder="Select appliance" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map(type => (
-              <SelectItem key={type} value={type}>
-                {type}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={categoryOpen}
+              className="w-full justify-between h-8 sm:h-9 text-xs sm:text-sm font-normal"
+            >
+              {applianceType || "Select appliance type..."}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command>
+              <CommandInput 
+                placeholder="Search appliance types..." 
+                className="text-xs sm:text-sm"
+              />
+              <CommandEmpty>No appliance type found.</CommandEmpty>
+              <CommandGroup className="max-h-[200px] overflow-auto">
+                {categories.map((category) => (
+                  <CommandItem
+                    key={category}
+                    value={category}
+                    onSelect={(currentValue) => {
+                      setApplianceType(currentValue === applianceType ? "" : category);
+                      setCategoryOpen(false);
+                    }}
+                    className="text-xs sm:text-sm"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        applianceType === category ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {category}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <div>
         <label className="block text-xs font-medium text-gray-700 mb-1">
           Brand <span className="text-red-500">*</span>
         </label>
-        <Select value={brand} onValueChange={setBrand}>
-          <SelectTrigger className="w-full h-8 sm:h-9 text-xs sm:text-sm">
-            <SelectValue placeholder="Select brand" />
-          </SelectTrigger>
-          <SelectContent>
-            {brands.map(b => (
-              <SelectItem key={b} value={b}>
-                {b}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={brandOpen} onOpenChange={setBrandOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={brandOpen}
+              disabled={!applianceType || isLoadingBrands}
+              className="w-full justify-between h-8 sm:h-9 text-xs sm:text-sm font-normal"
+            >
+              {isLoadingBrands ? (
+                <>
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  Loading brands...
+                </>
+              ) : (
+                brand || (applianceType ? "Select brand..." : "Select appliance type first")
+              )}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command>
+              <CommandInput 
+                placeholder="Search brands..." 
+                className="text-xs sm:text-sm"
+              />
+              <CommandEmpty>No brand found.</CommandEmpty>
+              <CommandGroup className="max-h-[200px] overflow-auto">
+                {brands.map((b) => (
+                  <CommandItem
+                    key={b}
+                    value={b}
+                    onSelect={(currentValue) => {
+                      setBrand(currentValue === brand ? "" : b);
+                      setBrandOpen(false);
+                    }}
+                    className="text-xs sm:text-sm"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        brand === b ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {b}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        {applianceType && brands.length > 0 && (
+          <p className="text-xs text-gray-500 mt-1">{brands.length} brands available for {applianceType}</p>
+        )}
       </div>
 
       <div>
