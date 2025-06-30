@@ -79,15 +79,16 @@ export async function getSparePartsBrands(category?: string): Promise<string[]> 
   }
 }
 
-export async function getSparePartsModels(category: string, brand: string): Promise<string[]> {
+export async function getSparePartsModels(category: string, brand: string, search: string = ''): Promise<string[]> {
   try {
     const supabase = createClient();
     
-    // Use RPC function for models by category and brand
+    // Use RPC function with search parameter
     const { data, error } = await supabase
-      .rpc('get_spare_parts_models', { 
+      .rpc('search_spare_parts_models', { 
         p_category: category,
-        p_brand: brand 
+        p_brand: brand,
+        p_search: search
       });
     
     if (error) {
@@ -101,10 +102,10 @@ export async function getSparePartsModels(category: string, brand: string): Prom
     
     // Extract models from the response
     const models = data
-      .map(item => item.model_number || item.get_spare_parts_models)
+      .map(item => item.model_number || item.search_spare_parts_models)
       .filter(Boolean);
     
-    console.log(`Found ${models.length} models for ${brand} ${category}`);
+    console.log(`Found ${models.length} models matching "${search}" for ${brand} ${category}`);
     return models;
     
   } catch (error) {
