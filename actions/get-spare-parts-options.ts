@@ -1,39 +1,7 @@
 // actions/get-spare-parts-options.ts
 'use server';
 
-import { createClient export async function getSparePartsModels(category: string, brand: string): Promise<string[]> {
-  try {
-    const supabase = createClient();
-    
-    // Use RPC function for models by category and brand
-    const { data, error } = await supabase
-      .rpc('get_spare_parts_models', { 
-        p_category: category,
-        p_brand: brand 
-      });
-    
-    if (error) {
-      console.error('Error fetching models:', error);
-      return [];
-    }
-    
-    if (!data) {
-      return [];
-    }
-    
-    // Extract models from the response
-    const models = data
-      .map(item => item.model_number || item.get_spare_parts_models)
-      .filter(Boolean);
-    
-    console.log(`Found ${models.length} models for ${brand} ${category}`);
-    return models;
-    
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return [];
-  }
-} from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 
 export async function getSparePartsCategories(): Promise<string[]> {
   try {
@@ -104,6 +72,40 @@ export async function getSparePartsBrands(category?: string): Promise<string[]> 
     
     console.log(`Found ${brands.length} brands for category: ${category}`);
     return brands;
+    
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return [];
+  }
+}
+
+export async function getSparePartsModels(category: string, brand: string): Promise<string[]> {
+  try {
+    const supabase = createClient();
+    
+    // Use RPC function for models by category and brand
+    const { data, error } = await supabase
+      .rpc('get_spare_parts_models', { 
+        p_category: category,
+        p_brand: brand 
+      });
+    
+    if (error) {
+      console.error('Error fetching models:', error);
+      return [];
+    }
+    
+    if (!data) {
+      return [];
+    }
+    
+    // Extract models from the response
+    const models = data
+      .map(item => item.model_number || item.get_spare_parts_models)
+      .filter(Boolean);
+    
+    console.log(`Found ${models.length} models for ${brand} ${category}`);
+    return models;
     
   } catch (error) {
     console.error('Unexpected error:', error);
