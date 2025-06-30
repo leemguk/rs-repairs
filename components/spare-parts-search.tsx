@@ -8,7 +8,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ExternalLink, Loader2, Search, AlertCircle, CheckCircle, ChevronsUpDown, Check } from 'lucide-react';
 import { searchSpareParts, type SparePartResult } from '@/actions/search-spare-parts';
-import { getSparePartsCategories, getSparePartsBrandsForCategory } from '@/actions/get-spare-parts-options';
+import { getSparePartsCategories, getSparePartsBrands } from '@/actions/get-spare-parts-options';
 import { cn } from "@/lib/utils";
 
 export function SparePartsSearch() {
@@ -36,6 +36,7 @@ export function SparePartsSearch() {
       setIsLoadingOptions(true);
       try {
         const categoriesData = await getSparePartsCategories();
+        console.log('Loaded categories:', categoriesData.length, 'items');
         setCategories(categoriesData);
       } catch (error) {
         console.error('Error loading categories:', error);
@@ -58,7 +59,7 @@ export function SparePartsSearch() {
 
       setIsLoadingBrands(true);
       try {
-        const brandsData = await getSparePartsBrandsForCategory(applianceType);
+        const brandsData = await getSparePartsBrands(applianceType);
         setBrands(brandsData);
         // Reset brand selection if current brand is not in new list
         if (brand && !brandsData.includes(brand)) {
@@ -119,6 +120,17 @@ export function SparePartsSearch() {
 
   return (
     <div className="space-y-3">
+      {/* Temporary debug info */}
+      <div className="text-xs bg-gray-100 p-2 rounded">
+        <div>Categories loaded: {categories.length}</div>
+        <select className="mt-1 text-xs w-full">
+          <option>-- Debug: All Categories --</option>
+          {categories.map(cat => (
+            <option key={cat}>{cat}</option>
+          ))}
+        </select>
+      </div>
+
       <div>
         <label className="block text-xs font-medium text-gray-700 mb-1">
           Appliance Type <span className="text-red-500">*</span>
@@ -146,9 +158,9 @@ export function SparePartsSearch() {
                 {categories.map((category) => (
                   <CommandItem
                     key={category}
-                    value={category}
-                    onSelect={(currentValue) => {
-                      setApplianceType(currentValue === applianceType ? "" : category);
+                    value={category.toLowerCase()}
+                    onSelect={() => {
+                      setApplianceType(category);
                       setCategoryOpen(false);
                     }}
                     className="text-xs sm:text-sm"
@@ -203,9 +215,9 @@ export function SparePartsSearch() {
                 {brands.map((b) => (
                   <CommandItem
                     key={b}
-                    value={b}
-                    onSelect={(currentValue) => {
-                      setBrand(currentValue === brand ? "" : b);
+                    value={b.toLowerCase()}
+                    onSelect={() => {
+                      setBrand(b);
                       setBrandOpen(false);
                     }}
                     className="text-xs sm:text-sm"
