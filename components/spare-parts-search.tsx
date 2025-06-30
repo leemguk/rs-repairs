@@ -23,6 +23,8 @@ export function SparePartsSearch() {
   // Popover states
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [brandSearch, setBrandSearch] = useState('');
   
   // Dynamic data from database
   const [categories, setCategories] = useState<string[]>([]);
@@ -52,7 +54,8 @@ export function SparePartsSearch() {
     const loadBrands = async () => {
       if (!applianceType) {
         setBrands([]);
-        setBrand(''); // Reset brand when category changes
+        setBrand('');
+        setBrandSearch(''); // Reset brand search when category changes
         return;
       }
 
@@ -63,6 +66,7 @@ export function SparePartsSearch() {
         // Reset brand selection if current brand is not in new list
         if (brand && !brandsData.includes(brand)) {
           setBrand('');
+          setBrandSearch('');
         }
       } catch (error) {
         console.error('Error loading brands:', error);
@@ -147,60 +151,58 @@ export function SparePartsSearch() {
         <label className="block text-xs font-medium text-gray-700 mb-1">
           Brand <span className="text-red-500">*</span>
         </label>
-        <Popover open={brandOpen} onOpenChange={setBrandOpen}>
-          <PopoverTrigger asChild>
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder={applianceType ? "Type to search brands..." : "Select appliance type first"}
-                value={brand}
-                onChange={(e) => {
-                  setBrand(e.target.value);
-                  setBrandOpen(true);
-                }}
-                onFocus={() => applianceType && setBrandOpen(true)}
-                disabled={!applianceType || isLoadingBrands}
-                className="w-full h-8 sm:h-9 text-xs sm:text-sm pr-8"
-              />
-              {isLoadingBrands ? (
-                <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />
-              ) : (
-                <ChevronsUpDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50" />
+        <div className="relative">
+          <Input
+            type="text"
+            placeholder={applianceType ? "Type brand name (e.g., Bosch)" : "Select appliance type first"}
+            value={brandSearch}
+            onChange={(e) => {
+              setBrandSearch(e.target.value);
+              setBrand('');
+              if (e.target.value.length > 0 && applianceType) {
+                setBrandOpen(true);
+              }
+            }}
+            onFocus={() => brandSearch.length > 0 && applianceType && setBrandOpen(true)}
+            onBlur={() => setTimeout(() => setBrandOpen(false), 200)}
+            disabled={!applianceType || isLoadingBrands}
+            className="w-full h-8 sm:h-9 text-xs sm:text-sm"
+          />
+          
+          {/* Loading indicator */}
+          {isLoadingBrands && (
+            <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />
+          )}
+          
+          {/* Autocomplete dropdown */}
+          {brandOpen && brandSearch.length > 0 && !isLoadingBrands && (
+            <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-auto">
+              {brands
+                .filter(b => b.toLowerCase().includes(brandSearch.toLowerCase()))
+                .map((b) => (
+                  <div
+                    key={b}
+                    className="px-3 py-2 text-xs sm:text-sm hover:bg-gray-100 cursor-pointer"
+                    onClick={() => {
+                      setBrand(b);
+                      setBrandSearch(b);
+                      setBrandOpen(false);
+                    }}
+                  >
+                    {b}
+                  </div>
+                ))}
+              {brands.filter(b => b.toLowerCase().includes(brandSearch.toLowerCase())).length === 0 && (
+                <div className="px-3 py-2 text-xs text-gray-500">No matching brands</div>
               )}
             </div>
-          </PopoverTrigger>
-          <PopoverContent className="w-full p-0" align="start">
-            <Command>
-              <CommandGroup className="max-h-[200px] overflow-auto">
-                {brands
-                  .filter(b => b.toLowerCase().includes(brand.toLowerCase()))
-                  .map((b) => (
-                    <CommandItem
-                      key={b}
-                      onSelect={() => {
-                        setBrand(b);
-                        setBrandOpen(false);
-                      }}
-                      className="text-xs sm:text-sm cursor-pointer"
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          brand === b ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      {b}
-                    </CommandItem>
-                  ))}
-                {brands.filter(b => b.toLowerCase().includes(brand.toLowerCase())).length === 0 && (
-                  <p className="text-xs text-gray-500 p-2">No matching brands</p>
-                )}
-              </CommandGroup>
-            </Command>
-          </PopoverContent>
-        </Popover>
-        {applianceType && brands.length > 0 && (
-          <p className="text-xs text-gray-500 mt-1">{brands.length} brands available for {applianceType}</p>
+          )}
+        </div>
+        {brand && (
+          <p className="text-xs text-green-600 mt-1">✓ Selected: {brand}</p>
+        )}
+        {applianceType && brands.length > 0 && !brand && (
+          <p className="text-xs text-gray-500 mt-1">{brands.length} brands available</p>
         )}
       </div>
 
