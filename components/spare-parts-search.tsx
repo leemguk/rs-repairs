@@ -11,7 +11,6 @@ import { getSparePartsCategories, getSparePartsBrands, getSparePartsModels } fro
 export function SparePartsSearch() {
   // Add a ref for the model input
   const modelInputRef = useRef<HTMLInputElement>(null);
-  const modelLoadTimeoutRef = useRef<NodeJS.Timeout>();
   const [applianceType, setApplianceType] = useState('');
   const [brand, setBrand] = useState('');
   const [modelNumber, setModelNumber] = useState('');
@@ -285,7 +284,7 @@ export function SparePartsSearch() {
             }}
             onFocus={() => modelSearch.length > 0 && applianceType && brand && setModelOpen(true)}
             onBlur={() => setTimeout(() => setModelOpen(false), 200)}
-            disabled={!applianceType || !brand || isLoadingModels}
+            disabled={!applianceType || !brand}
             className="w-full h-8 sm:h-9 text-xs sm:text-sm"
           />
           
