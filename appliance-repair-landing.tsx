@@ -67,7 +67,7 @@ export default function Component() {
       <header className="px-4 lg:px-6 h-16 flex items-center border-b bg-white sticky top-0 z-50">
         <Link href="/" className="flex items-center justify-center">
           <Wrench className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
-          <span className="ml-2 text-lg sm:text-xl font-bold text-gray-900">RS Repairs</span>
+          <span className="ml-2 text-lg sm:text-xl font-bold text-gray-900">Repair Help</span>
         </Link>
 
         {/* Desktop Navigation */}
