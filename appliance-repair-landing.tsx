@@ -605,9 +605,9 @@ export default function Component() {
               <h3 className="text-lg font-semibold">Hours</h3>
               <div className="space-y-2 text-sm text-gray-600">
                 <div>Mon - Fri: 8:00 AM - 6:00 PM</div>
-                <div>Saturday: 9:00 AM - 4:00 PM</div>
-                <div>Sunday: Closed</div>
-                <div className="text-orange-600 font-medium">Next Day Service Available</div>
+                <div>Saturday: 9:00 AM - 6:00 PM</div>
+                <div>Sunday: 10:00 AM - 6:00 PM</div>
+                <div className="text-orange-600 font-medium">Same Service Available</div>
               </div>
             </div>
           </div>
