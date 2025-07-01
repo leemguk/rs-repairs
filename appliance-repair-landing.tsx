@@ -410,9 +410,6 @@ export default function Component() {
                 <h2 className="text-2xl font-bold tracking-tighter sm:text-3xl md:text-4xl lg:text-5xl text-gray-900">
                   DiagnoSys - Help You Make The Right Repair Choice?
                 </h2>
-                <p className="max-w-[900px] text-gray-600 text-sm sm:text-base md:text-lg lg:text-xl/relaxed">
-                  Describe your appliance problem and DiagnoSys will help determine the fault and suggest next steps
-                </p>
               </div>
             </div>
             <div className="mx-auto max-w-3xl py-8 sm:py-12">
