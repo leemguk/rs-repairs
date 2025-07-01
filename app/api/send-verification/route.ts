@@ -60,16 +60,14 @@ export async function POST(request: NextRequest) {
                             <tr>
                                 <td style="background-color: #2563eb; padding: 30px; text-align: center;">
                                     <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">RS Spares</h1>
-                                    <p style="color: #bfdbfe; margin: 5px 0 0 0; font-size: 14px;">Home Appliance Solutions</p>
+                                    <p style="color: #bfdbfe; margin: 5px 0 0 0; font-size: 14px;">Home Appliance Repair Solutions</p>
                                 </td>
                             </tr>
                             
                             <!-- Main Content -->
                             <tr>
                                 <td style="padding: 40px 30px;">
-                                    <h2 style="color: #1f2937; margin: 0 0 10px 0; font-size: 24px; text-align: center;">Verify Your Diagnostic Tool Access</h2>
-                                    <p style="color: #6b7280; margin: 0 0 30px 0; font-size: 16px; text-align: center;">Complete your setup to start diagnosing appliance issues</p>
-                                    
+                                    <h2 style="color: #1f2937; margin: 0 0 10px 0; font-size: 24px; text-align: center;">Verify Your Diagnostic Tool Access</h2>                                    
                                     <!-- Verification Code -->
                                     <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
                                         <tr>
@@ -100,7 +98,7 @@ export async function POST(request: NextRequest) {
                                 <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
                                     <p style="color: #6b7280; margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">RS Spares</p>
                                     <p style="color: #9ca3af; margin: 0 0 15px 0; font-size: 12px;">Your trusted partner for appliance diagnostics</p>
-                                    <p style="color: #9ca3af; margin: 0 0 15px 0; font-size: 11px;">123 Industrial Way, Tech City, TC 12345 | Phone: (555) 123-4567</p>
+                                    <p style="color: #9ca3af; margin: 0 0 15px 0; font-size: 11px;">Part of the Ransom Spares Group, Unit 3 Flushing Meadow, Yeovil, BA21 5DL</p>
                                     <p style="color: #9ca3af; margin: 0; font-size: 11px;">
                                         <a href="#" style="color: #6b7280; text-decoration: none;">Privacy Policy</a> | 
                                         <a href="#" style="color: #6b7280; text-decoration: none;">Terms of Service</a> | 
