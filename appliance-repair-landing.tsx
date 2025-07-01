@@ -549,7 +549,7 @@ export default function Component() {
       >
         <div className="container px-4 md:px-6 max-w-6xl mx-auto">
           <div className="grid gap-8 lg:grid-cols-4 md:grid-cols-2">
-            <div className="space-y-4">
+            <div className="space-y-4 lg:pr-4">
               <div className="flex items-center space-x-2">
                 <Wrench className="h-6 w-6 text-orange-700" />
                 <span className="text-lg font-bold">Repair Help</span>
@@ -568,7 +568,7 @@ export default function Component() {
                 </div>
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4 lg:pl-6">
               <h3 className="text-lg font-semibold">Services</h3>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li>
