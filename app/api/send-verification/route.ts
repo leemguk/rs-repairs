@@ -91,30 +91,7 @@ export async function POST(request: NextRequest) {
                                         <li style="margin-bottom: 8px;">Start diagnosing your appliance issues</li>
                                     </ol>
                                     
-                                    <!-- Security Notice -->
-                                    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0; background-color: #fef3c7; border-radius: 6px;">
-                                        <tr>
-                                            <td style="padding: 15px;">
-                                                <p style="color: #92400e; margin: 0; font-size: 14px; font-weight: bold;">Security Notice</p>
-                                                <p style="color: #b45309; margin: 5px 0 0 0; font-size: 13px;">Never share this code with anyone. RS Spares will never ask for your verification code via phone or email.</p>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                    
-                                    <!-- Help Section -->
-                                    <div style="text-align: center; margin-top: 30px;">
-                                        <p style="color: #6b7280; margin: 0 0 20px 0; font-size: 14px;">Need help? Our support team is here for you.</p>
-                                        <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
-                                            <tr>
-                                                <td style="padding-right: 10px;">
-                                                    <a href="mailto:support@rsspares.com" style="background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; display: inline-block;">Contact Support</a>
-                                                </td>
-                                                <td>
-                                                    <a href="https://rsspares.com/help" style="background-color: #ffffff; color: #374151; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; display: inline-block; border: 1px solid #d1d5db;">Help Center</a>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </div>
+
                                 </td>
                             </tr>
                             
