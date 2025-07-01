@@ -1,3 +1,4 @@
+//forced deploy
 "use client"
 
 import { useState } from "react"
@@ -433,7 +434,7 @@ export default function Component() {
             </div>
             <div className="mx-auto grid max-w-5xl items-center gap-6 py-8 sm:py-12 lg:grid-cols-2 lg:gap-12">
               <Image
-                src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/Why-Us-RCesj66BQoUpwG9lR2TdNfO6gH1q4S.jpeg"
+                src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/Why-Us-csc5Uv18ytP51ivOZR4VEybacGhRKK.png"
                 width="600"
                 height="400"
                 alt="Professional repair workshop"
@@ -554,17 +555,17 @@ export default function Component() {
       {/* Footer */}
       <footer className="bg-gradient-to-br from-orange-50 to-orange-100 border-t border-orange-200">
         <div className="container px-4 md:px-6 max-w-6xl mx-auto py-8 md:py-12">
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-3 lg:grid-cols-3 justify-items-center md:justify-items-start">
             {/* Company Info */}
-            <div className="space-y-4">
-              <div className="flex items-center">
+            <div className="space-y-4 text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start">
                 <Wrench className="h-6 w-6 text-orange-600" />
                 <span className="ml-2 text-lg font-bold text-gray-900">Repair Help</span>
               </div>
               <p className="text-sm text-gray-600">
                 Part of the Ransom Spares Group - Your trusted partner for appliance repair solutions.
               </p>
-              <div className="flex items-center gap-4 text-xs text-gray-600">
+              <div className="flex items-center gap-4 text-xs text-gray-600 justify-center md:justify-start">
                 <div className="flex items-center gap-1">
                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                   <span className="font-medium">4.9/5</span>
@@ -577,7 +578,7 @@ export default function Component() {
             </div>
 
             {/* Quick Links */}
-            <div className="space-y-4">
+            <div className="space-y-4 text-center md:text-left">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Quick Links</h3>
               <div className="space-y-2">
                 <button
@@ -620,7 +621,7 @@ export default function Component() {
             </div>
 
             {/* Contact Info */}
-            <div className="space-y-4">
+            <div className="space-y-4 text-center md:text-left">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Contact</h3>
               <div className="space-y-2">
                 <div className="text-sm text-gray-600">
