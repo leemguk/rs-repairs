@@ -20,6 +20,8 @@ import {
   Home,
   Menu,
   X,
+  Phone,
+  MapPin,
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -541,19 +543,21 @@ export default function Component() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gradient-to-br from-orange-50 to-orange-100 border-t border-orange-200">
-        <div className="container px-4 md:px-6 max-w-6xl mx-auto py-8 md:py-12">
-          <div className="grid gap-8 grid-cols-1 md:grid-cols-3">
-            {/* Company Info */}
-            <div className="space-y-4 text-left">
-              <div className="flex items-center justify-start">
-                <Wrench className="h-6 w-6 text-orange-600" />
-                <span className="ml-2 text-lg font-bold text-gray-900">Repair Help</span>
+      <footer
+        id="contact"
+        className="w-full py-8 md:py-12 bg-gradient-to-br from-orange-50 to-orange-100 text-gray-900"
+      >
+        <div className="container px-4 md:px-6 max-w-6xl mx-auto">
+          <div className="grid gap-8 lg:grid-cols-4 md:grid-cols-2">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Wrench className="h-6 w-6 text-orange-700" />
+                <span className="text-lg font-bold">Repair Help</span>
               </div>
               <p className="text-sm text-gray-600">
                 Part of the Ransom Spares Group - Your trusted partner for appliance repair solutions.
               </p>
-              <div className="flex items-center gap-4 text-xs text-gray-600 justify-start">
+              <div className="flex items-center gap-4 text-xs text-gray-600">
                 <div className="flex items-center gap-1">
                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                   <span className="font-medium">4.9/5</span>
@@ -564,63 +568,55 @@ export default function Component() {
                 </div>
               </div>
             </div>
-
-            {/* Quick Links */}
-            <div className="space-y-4 text-center">
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Quick Links</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={() => scrollToSection("services")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
-                >
-                  Solutions
-                </button>
-                <button
-                  onClick={() => scrollToSection("services")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
-                >
-                  Spare Parts
-                </button>
-                <button
-                  onClick={() => scrollToSection("diagnosis")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
-                >
-                  Diagnosis
-                </button>
-                <button
-                  onClick={() => window.open("https://ransom.warrantyonline.co.uk/App_Pages/MonthlyBuildYourOwn.aspx", "_blank")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
-                >
-                  Warranty
-                </button>
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Services</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>
+                  <button onClick={() => scrollToSection("services")} className="hover:text-orange-600 transition-colors cursor-pointer">
+                    Appliance Repair
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection("services")} className="hover:text-orange-600 transition-colors cursor-pointer">
+                    Spare Parts
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => window.open("https://ransom.warrantyonline.co.uk/App_Pages/MonthlyBuildYourOwn.aspx", "_blank")} className="hover:text-orange-600 transition-colors cursor-pointer">
+                    Warranty Plans
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Contact</h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex items-center space-x-2">
+                  <Phone className="h-4 w-4" />
+                  <a href="tel:03030036404" className="hover:text-orange-600 transition-colors">0303 003 6404</a>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <MapPin className="h-4 w-4" />
+                  <span>Full UK Coverage</span>
+                </div>
               </div>
             </div>
-
-            {/* Contact Info */}
-            <div id="contact" className="space-y-4 text-left md:text-right">
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Contact</h3>
-              <div className="space-y-2">
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium">Phone:</span><br />
-                  <a href="tel:03030036404" className="text-orange-600 hover:text-orange-700">
-                    0303 003 6404
-                  </a>
-                </div>
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium">Coverage:</span><br />
-                  Full UK Service
-                </div>
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Hours</h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div>Mon - Fri: 8:00 AM - 6:00 PM</div>
+                <div>Saturday: 9:00 AM - 4:00 PM</div>
+                <div>Sunday: Closed</div>
+                <div className="text-orange-600 font-medium">Next Day Service Available</div>
               </div>
             </div>
           </div>
-
-          {/* Bottom Bar */}
-          <div className="mt-8 pt-6 border-t border-orange-200">
+          <div className="border-t border-orange-200 mt-8 pt-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <div className="text-xs text-gray-600 text-center md:text-left">
+              <div className="text-sm text-gray-600 text-center md:text-left">
                 © 2025 Repair Help - Part of Ransom Spares Group. All rights reserved.
               </div>
-              <div className="flex flex-col md:flex-row items-center gap-4 text-xs text-gray-600">
+              <div className="flex flex-col md:flex-row items-center gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1">
                     <Award className="h-3 w-3" />
@@ -634,13 +630,13 @@ export default function Component() {
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => window.open("#", "_blank")}
-                    className="text-xs text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
+                    className="text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
                   >
                     Terms & Conditions
                   </button>
                   <button
                     onClick={() => window.open("#", "_blank")}
-                    className="text-xs text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
+                    className="text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
                   >
                     Privacy Policy
                   </button>
