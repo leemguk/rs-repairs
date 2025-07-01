@@ -91,12 +91,6 @@ export default function Component() {
           >
             About
           </button>
-          <button
-            onClick={() => scrollToSection("contact")}
-            className="text-sm font-medium hover:text-orange-600 transition-colors cursor-pointer"
-          >
-            Contact
-          </button>
         </nav>
 
         {/* Mobile Menu Button */}
@@ -125,12 +119,6 @@ export default function Component() {
                 className="text-left text-sm font-medium hover:text-orange-600 transition-colors cursor-pointer py-2"
               >
                 About
-              </button>
-              <button
-                onClick={() => scrollToSection("contact")}
-                className="text-left text-sm font-medium hover:text-orange-600 transition-colors cursor-pointer py-2"
-              >
-                Contact
               </button>
             </nav>
           </div>
@@ -557,15 +545,15 @@ export default function Component() {
         <div className="container px-4 md:px-6 max-w-6xl mx-auto py-8 md:py-12">
           <div className="grid gap-8 grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto">
             {/* Company Info */}
-            <div className="space-y-4 text-center">
-              <div className="flex items-center justify-center">
+            <div className="space-y-4 text-left">
+              <div className="flex items-center justify-start">
                 <Wrench className="h-6 w-6 text-orange-600" />
                 <span className="ml-2 text-lg font-bold text-gray-900">Repair Help</span>
               </div>
               <p className="text-sm text-gray-600">
                 Part of the Ransom Spares Group - Your trusted partner for appliance repair solutions.
               </p>
-              <div className="flex items-center gap-4 text-xs text-gray-600 justify-center">
+              <div className="flex items-center gap-4 text-xs text-gray-600 justify-start">
                 <div className="flex items-center gap-1">
                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                   <span className="font-medium">4.9/5</span>
@@ -578,30 +566,30 @@ export default function Component() {
             </div>
 
             {/* Quick Links */}
-            <div className="space-y-4 text-center">
+            <div className="space-y-4 text-left">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Quick Links</h3>
               <div className="space-y-2">
                 <button
                   onClick={() => scrollToSection("services")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer text-left"
                 >
                   Solutions
                 </button>
                 <button
                   onClick={() => scrollToSection("services")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer text-left"
                 >
                   Spare Parts
                 </button>
                 <button
                   onClick={() => scrollToSection("diagnosis")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer text-left"
                 >
                   Diagnosis
                 </button>
                 <button
                   onClick={() => window.open("https://ransom.warrantyonline.co.uk/App_Pages/MonthlyBuildYourOwn.aspx", "_blank")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer text-left"
                 >
                   Warranty
                 </button>
@@ -609,7 +597,7 @@ export default function Component() {
             </div>
 
             {/* Contact Info */}
-            <div className="space-y-4 text-center">
+            <div id="contact" className="space-y-4 text-left">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Contact</h3>
               <div className="space-y-2">
                 <div className="text-sm text-gray-600">
