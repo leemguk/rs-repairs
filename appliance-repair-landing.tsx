@@ -566,30 +566,30 @@ export default function Component() {
             </div>
 
             {/* Quick Links */}
-            <div className="space-y-4 text-center md:text-left">
+            <div className="space-y-4 text-center">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Quick Links</h3>
               <div className="space-y-2">
                 <button
                   onClick={() => scrollToSection("services")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer text-left"
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
                 >
                   Solutions
                 </button>
                 <button
                   onClick={() => scrollToSection("services")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer text-left"
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
                 >
                   Spare Parts
                 </button>
                 <button
                   onClick={() => scrollToSection("diagnosis")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer text-left"
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
                 >
                   Diagnosis
                 </button>
                 <button
                   onClick={() => window.open("https://ransom.warrantyonline.co.uk/App_Pages/MonthlyBuildYourOwn.aspx", "_blank")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer text-left"
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
                 >
                   Warranty
                 </button>
