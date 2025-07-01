@@ -434,7 +434,7 @@ export default function Component() {
             </div>
             <div className="mx-auto grid max-w-5xl items-center gap-6 py-8 sm:py-12 lg:grid-cols-2 lg:gap-12">
               <Image
-                src="/why-choose-us-8FfypMAMdK5o73nKHEaNuUutnmPM1W.png?height=400&width=600"
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/why-choose-us-8FfypMAMdK5o73nKHEaNuUutnmPM1W.png"
                 width="600"
                 height="400"
                 alt="Professional repair workshop"
