@@ -554,7 +554,7 @@ export default function Component() {
       {/* Footer */}
       <footer className="bg-gradient-to-br from-orange-50 to-orange-100 border-t border-orange-200">
         <div className="container px-4 md:px-6 max-w-6xl mx-auto py-8 md:py-12">
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {/* Company Info */}
             <div className="space-y-4">
               <div className="flex items-center">
@@ -604,17 +604,18 @@ export default function Component() {
                 >
                   Warranty
                 </button>
-              </div>
-            </div>
-
-            {/* Services */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Services</h3>
-              <div className="space-y-2">
-                <div className="text-sm text-gray-600">Engineer Booking</div>
-                <div className="text-sm text-gray-600">Spare Parts Supply</div>
-                <div className="text-sm text-gray-600">Warranty Protection</div>
-                <div className="text-sm text-gray-600">AI Diagnostics</div>
+                <button
+                  onClick={() => window.open("#", "_blank")}
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
+                >
+                  Terms & Conditions
+                </button>
+                <button
+                  onClick={() => window.open("#", "_blank")}
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
+                >
+                  Privacy Policy
+                </button>
               </div>
             </div>
 
@@ -631,10 +632,6 @@ export default function Component() {
                 <div className="text-sm text-gray-600">
                   <span className="font-medium">Coverage:</span><br />
                   Full UK Service
-                </div>
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium">Hours:</span><br />
-                  24/7 Emergency Service
                 </div>
               </div>
             </div>
