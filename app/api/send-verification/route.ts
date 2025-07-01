@@ -41,47 +41,97 @@ export async function POST(request: NextRequest) {
     const msg = {
       to: email,
       from: process.env.SENDGRID_FROM_EMAIL!,
-      subject: 'Your RS Repairs Verification Code',
+      subject: 'Verify Your Diagnostic Tool Access - RS Spares',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #16a34a; color: white; padding: 20px; text-align: center;">
-            <h1 style="margin: 0;">RS Repairs</h1>
-            <p style="margin: 5px 0 0 0;">Appliance Repair Service</p>
-          </div>
-          
-          <div style="padding: 30px 20px; background-color: #f9f9f9;">
-            <h2 style="color: #333; margin-top: 0;">Your Verification Code</h2>
-            <p style="color: #666; font-size: 16px;">
-              Thank you for using our kAI appliance diagnostic service. Please enter this verification code to continue:
-            </p>
-            
-            <div style="background-color: white; border: 2px solid #16a34a; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
-              <div style="font-size: 32px; font-weight: bold; color: #16a34a; letter-spacing: 8px;">
-                ${verificationCode}
-              </div>
-            </div>
-            
-            <p style="color: #666; font-size: 14px;">
-              This code will expire in 10 minutes. If you didn't request this code, you can safely ignore this email.
-            </p>
-            
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-              <p style="color: #888; font-size: 12px; margin: 0;">
-                RS Repairs - Professional Appliance Repair Service<br>
-                This is an automated message, please do not reply.
-              </p>
-            </div>
-          </div>
-        </div>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>RS Spares - Verification Code</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4;">
+                <tr>
+                    <td align="center" style="padding: 20px;">
+                        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; max-width: 600px;">
+                            
+                            <!-- Header -->
+                            <tr>
+                                <td style="background-color: #2563eb; padding: 30px; text-align: center;">
+                                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">RS Spares</h1>
+                                    <p style="color: #bfdbfe; margin: 5px 0 0 0; font-size: 14px;">Home Appliance Repair Solutions</p>
+                                </td>
+                            </tr>
+                            
+                            <!-- Main Content -->
+                            <tr>
+                                <td style="padding: 40px 30px;">
+                                    <h2 style="color: #1f2937; margin: 0 0 10px 0; font-size: 24px; text-align: center;">Verify Your Diagnostic Tool Access</h2>                                    
+                                    <!-- Verification Code -->
+                                    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                        <tr>
+                                            <td style="text-align: center; padding: 20px; background-color: #f9fafb; border-radius: 8px;">
+                                                <p style="color: #6b7280; margin: 0 0 10px 0; font-size: 14px;">Your verification code is:</p>
+                                                <div style="background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 10px 0;">
+                                                    <span style="font-size: 36px; font-family: 'Courier New', monospace; font-weight: bold; color: #1f2937; letter-spacing: 8px;">${verificationCode}</span>
+                                                </div>
+                                                <p style="color: #9ca3af; margin: 10px 0 0 0; font-size: 12px;">Expires in 10 minutes</p>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    
+                                    <!-- Instructions -->
+                                    <h3 style="color: #1f2937; margin: 30px 0 15px 0; font-size: 18px;">How to use this code:</h3>
+                                    <ol style="color: #4b5563; margin: 0; padding-left: 20px; line-height: 1.6;">
+                                        <li style="margin-bottom: 8px;">Return to the RS Spares Diagnostic Tool</li>
+                                        <li style="margin-bottom: 8px;">Enter the 6-digit code above</li>
+                                        <li style="margin-bottom: 8px;">Start diagnosing your appliance issues</li>
+                                    </ol>
+                                    
+
+                                </td>
+                            </tr>
+                            
+                            <!-- Footer -->
+                            <tr>
+                                <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                                    <p style="color: #6b7280; margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">RS Spares</p>
+                                    <p style="color: #9ca3af; margin: 0 0 15px 0; font-size: 12px;">Your trusted partner for appliance diagnostics</p>
+                                    <p style="color: #9ca3af; margin: 0 0 15px 0; font-size: 11px;">Part of the Ransom Spares Group, Unit 3 Flushing Meadow, Yeovil, BA21 5DL</p>
+                                    <p style="color: #9ca3af; margin: 0; font-size: 11px;">
+                                        <a href="#" style="color: #6b7280; text-decoration: none;">Privacy Policy</a> | 
+                                        <a href="#" style="color: #6b7280; text-decoration: none;">Terms of Service</a> | 
+                                        <a href="#" style="color: #6b7280; text-decoration: none;">Unsubscribe</a>
+                                    </p>
+                                </td>
+                            </tr>
+                            
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
       `,
       text: `
-Your RS Repairs Verification Code: ${verificationCode}
+RS Spares - Verify Your Diagnostic Tool Access
 
-Thank you for using our kAI appliance diagnostic service. Please enter this verification code to continue.
+Your verification code is: ${verificationCode}
 
-This code will expire in 10 minutes. If you didn't request this code, you can safely ignore this email.
+This code expires in 10 minutes.
 
-RS Repairs - Professional Appliance Repair Service
+How to use this code:
+1. Return to the RS Spares Diagnostic Tool
+2. Enter the 6-digit code above
+3. Start diagnosing your appliance issues
+
+Security Notice: Never share this code with anyone. RS Spares will never ask for your verification code via phone or email.
+
+Need help? Contact us at support@rsspares.com or visit https://rsspares.com/help
+
+RS Spares - Your trusted partner for appliance diagnostics
+123 Industrial Way, Tech City, TC 12345 | Phone: (555) 123-4567
       `
     }
 
