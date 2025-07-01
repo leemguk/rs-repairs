@@ -190,7 +190,7 @@ export default function Component() {
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/u1413117298_home_appliance_repair_engineer_fixing_a_washing_m_8d6cb4f2-d9c0-4104-80fc-e2347e5d6011_0-BJSdS62cYeaxjal14Kq6TBUiXHfdJm.png"
                   width="600"
                   height="400"
-                  alt="Professional appliance repair technician working on washing machine"
+                  alt="Professional appliance repair engineer working on washing machine"
                   className="mx-auto aspect-video overflow-hidden rounded-xl object-cover w-full max-w-md lg:max-w-none"
                 />
               </div>
@@ -225,7 +225,7 @@ export default function Component() {
                   </div>
                   <CardTitle className="text-lg sm:text-xl mb-2">Book an Engineer</CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
-                    Schedule a certified technician to diagnose and repair your appliance
+                    Schedule a certified engineer to diagnose and repair your appliance
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col flex-1 p-4 sm:p-6">
@@ -448,7 +448,7 @@ export default function Component() {
                       <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="text-base sm:text-lg font-bold">Expert Technicians</h3>
+                      <h3 className="text-base sm:text-lg font-bold">Expert Engineers</h3>
                       <p className="text-sm sm:text-base text-gray-600">
                         Certified professionals with 10+ years experience
                       </p>
@@ -507,7 +507,7 @@ export default function Component() {
                     ))}
                   </div>
                   <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">
-                    "Technician arrived on time and fixed my washing machine in 30 minutes. Professional service!"
+                    "Engineer arrived on time and fixed my washing machine in 30 minutes. Professional service!"
                   </p>
                   <div className="flex items-center gap-2">
                     <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-gray-200"></div>
@@ -607,7 +607,7 @@ export default function Component() {
                 <div>Mon - Fri: 8:00 AM - 6:00 PM</div>
                 <div>Saturday: 9:00 AM - 6:00 PM</div>
                 <div>Sunday: 10:00 AM - 6:00 PM</div>
-                <div className="text-orange-600 font-medium">Same Service Available</div>
+                <div className="text-orange-600 font-medium">Same Day Service Available</div>
               </div>
             </div>
           </div>
