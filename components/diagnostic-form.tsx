@@ -611,9 +611,9 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
             <Lightbulb className="h-8 w-8 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl">kAI - Appliance Fault Assistant</CardTitle>
+          <CardTitle className="text-2xl">DiagnoSys - Appliance Fault Assistant</CardTitle>
           <CardDescription>
-            Tell kAI about your appliance and get a detailed fault diagnosis and recommended best solutions
+            Use our DiagnoSys tool to get tailored fault diagnosis and recommended solutions
           </CardDescription>
         </CardHeader>
         <CardContent>
