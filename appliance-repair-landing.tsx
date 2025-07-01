@@ -555,17 +555,17 @@ export default function Component() {
       {/* Footer */}
       <footer className="bg-gradient-to-br from-orange-50 to-orange-100 border-t border-orange-200">
         <div className="container px-4 md:px-6 max-w-6xl mx-auto py-8 md:py-12">
-          <div className="grid gap-8 md:grid-cols-3 lg:grid-cols-3 justify-items-center md:justify-items-start">
+          <div className="grid gap-8 grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto">
             {/* Company Info */}
-            <div className="space-y-4 text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start">
+            <div className="space-y-4 text-center">
+              <div className="flex items-center justify-center">
                 <Wrench className="h-6 w-6 text-orange-600" />
                 <span className="ml-2 text-lg font-bold text-gray-900">Repair Help</span>
               </div>
               <p className="text-sm text-gray-600">
                 Part of the Ransom Spares Group - Your trusted partner for appliance repair solutions.
               </p>
-              <div className="flex items-center gap-4 text-xs text-gray-600 justify-center md:justify-start">
+              <div className="flex items-center gap-4 text-xs text-gray-600 justify-center">
                 <div className="flex items-center gap-1">
                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                   <span className="font-medium">4.9/5</span>
@@ -578,50 +578,38 @@ export default function Component() {
             </div>
 
             {/* Quick Links */}
-            <div className="space-y-4 text-center md:text-left">
+            <div className="space-y-4 text-center">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Quick Links</h3>
               <div className="space-y-2">
                 <button
                   onClick={() => scrollToSection("services")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
                 >
                   Solutions
                 </button>
                 <button
                   onClick={() => scrollToSection("services")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
                 >
                   Spare Parts
                 </button>
                 <button
                   onClick={() => scrollToSection("diagnosis")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
                 >
                   Diagnosis
                 </button>
                 <button
                   onClick={() => window.open("https://ransom.warrantyonline.co.uk/App_Pages/MonthlyBuildYourOwn.aspx", "_blank")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
+                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer w-full"
                 >
                   Warranty
-                </button>
-                <button
-                  onClick={() => window.open("#", "_blank")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
-                >
-                  Terms & Conditions
-                </button>
-                <button
-                  onClick={() => window.open("#", "_blank")}
-                  className="block text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
-                >
-                  Privacy Policy
                 </button>
               </div>
             </div>
 
             {/* Contact Info */}
-            <div className="space-y-4 text-center md:text-left">
+            <div className="space-y-4 text-center">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Contact</h3>
               <div className="space-y-2">
                 <div className="text-sm text-gray-600">
@@ -644,14 +632,30 @@ export default function Component() {
               <div className="text-xs text-gray-600 text-center md:text-left">
                 © 2025 Repair Help - Part of Ransom Spares Group. All rights reserved.
               </div>
-              <div className="flex items-center gap-4 text-xs text-gray-600">
-                <div className="flex items-center gap-1">
-                  <Award className="h-3 w-3" />
-                  <span>Licensed & Insured</span>
+              <div className="flex flex-col md:flex-row items-center gap-4 text-xs text-gray-600">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1">
+                    <Award className="h-3 w-3" />
+                    <span>Licensed & Insured</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Shield className="h-3 w-3" />
+                    <span>Data Protected</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Shield className="h-3 w-3" />
-                  <span>Data Protected</span>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => window.open("#", "_blank")}
+                    className="text-xs text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
+                  >
+                    Terms & Conditions
+                  </button>
+                  <button
+                    onClick={() => window.open("#", "_blank")}
+                    className="text-xs text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
+                  >
+                    Privacy Policy
+                  </button>
                 </div>
               </div>
             </div>
