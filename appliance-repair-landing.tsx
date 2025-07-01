@@ -20,6 +20,8 @@ import {
   Home,
   Menu,
   X,
+  Phone,
+  MapPin,
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -91,12 +93,6 @@ export default function Component() {
           >
             About
           </button>
-          <button
-            onClick={() => scrollToSection("contact")}
-            className="text-sm font-medium hover:text-orange-600 transition-colors cursor-pointer"
-          >
-            Contact
-          </button>
         </nav>
 
         {/* Mobile Menu Button */}
@@ -125,12 +121,6 @@ export default function Component() {
                 className="text-left text-sm font-medium hover:text-orange-600 transition-colors cursor-pointer py-2"
               >
                 About
-              </button>
-              <button
-                onClick={() => scrollToSection("contact")}
-                className="text-left text-sm font-medium hover:text-orange-600 transition-colors cursor-pointer py-2"
-              >
-                Contact
               </button>
             </nav>
           </div>
@@ -434,7 +424,7 @@ export default function Component() {
             </div>
             <div className="mx-auto grid max-w-5xl items-center gap-6 py-8 sm:py-12 lg:grid-cols-2 lg:gap-12">
               <Image
-                src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/Why-Us-RCesj66BQoUpwG9lR2TdNfO6gH1q4S.jpeg"
+                src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/Why-Us-csc5Uv18ytP51ivOZR4VEybacGhRKK.png"
                 width="600"
                 height="400"
                 alt="Professional repair workshop"
@@ -551,6 +541,112 @@ export default function Component() {
           </div>
         </section>
       </main>
+
+      {/* Footer */}
+      <footer
+        id="contact"
+        className="w-full py-8 md:py-12 bg-gradient-to-br from-orange-50 to-orange-100 text-gray-900"
+      >
+        <div className="container px-4 md:px-6 max-w-6xl mx-auto">
+          <div className="grid gap-8 lg:grid-cols-4 md:grid-cols-2">
+            <div className="space-y-4 lg:pr-4">
+              <div className="flex items-center space-x-2">
+                <Wrench className="h-6 w-6 text-orange-700" />
+                <span className="text-lg font-bold">Repair Help</span>
+              </div>
+              <p className="text-sm text-gray-600">
+                Part of the Ransom Spares Group - Your trusted partner for appliance repair solutions.
+              </p>
+              <div className="flex items-center gap-4 text-xs text-gray-600">
+                <div className="flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                  <span className="font-medium">4.9/5</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  <span>50,000+ Customers</span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4 lg:pl-6">
+              <h3 className="text-lg font-semibold">Services</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>
+                  <button onClick={() => scrollToSection("services")} className="hover:text-orange-600 transition-colors cursor-pointer">
+                    Appliance Repair
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection("services")} className="hover:text-orange-600 transition-colors cursor-pointer">
+                    Spare Parts
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => window.open("https://ransom.warrantyonline.co.uk/App_Pages/MonthlyBuildYourOwn.aspx", "_blank")} className="hover:text-orange-600 transition-colors cursor-pointer">
+                    Warranty Plans
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Contact</h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex items-center space-x-2">
+                  <Phone className="h-4 w-4" />
+                  <a href="tel:03030036404" className="hover:text-orange-600 transition-colors">0303 003 6404</a>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <MapPin className="h-4 w-4" />
+                  <span>Full UK Coverage</span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Hours</h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div>Mon - Fri: 8:00 AM - 6:00 PM</div>
+                <div>Saturday: 9:00 AM - 6:00 PM</div>
+                <div>Sunday: 10:00 AM - 6:00 PM</div>
+                <div className="text-orange-600 font-medium">Same Service Available</div>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-orange-200 mt-8 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="text-sm text-gray-600 text-center md:text-left">
+                © 2025 Repair Help - Part of Ransom Spares Group. All rights reserved.
+              </div>
+              <div className="flex flex-col md:flex-row items-center gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1">
+                    <Award className="h-3 w-3" />
+                    <span>Licensed & Insured</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Shield className="h-3 w-3" />
+                    <span>Data Protected</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => window.open("#", "_blank")}
+                    className="text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
+                  >
+                    Terms & Conditions
+                  </button>
+                  <button
+                    onClick={() => window.open("#", "_blank")}
+                    className="text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
+                  >
+                    Privacy Policy
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+
       {/* Booking Modal */}
       <BookingModal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} />
     </div>
