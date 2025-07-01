@@ -363,7 +363,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                   <Eye className="h-5 w-5 text-blue-600" />
                   <div>
                     <p className="font-medium text-blue-800">Example Diagnostic Report</p>
-                    <p className="text-xs text-blue-600">This is what your report from kAI will look like</p>
+                    <p className="text-xs text-blue-600">This is what your DiagnoSys will look like</p>
                   </div>
                 </div>
                 <Button
@@ -594,7 +594,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
 
             <div className="text-center text-sm text-gray-500 border-t pt-4">
               <p>
-                This is a kAI-generated diagnosis. For accurate assessment, we recommend professional inspection for
+                This is a DiagnoSys report. For accurate assessment, we recommend professional inspection for
                 complex or safety-critical repairs.
               </p>
             </div>
@@ -803,7 +803,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
             <div className="flex flex-col items-center gap-4 text-center">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
               <div>
-                <p className="font-medium text-blue-800">kAI Analyzing Your Appliance Problem...</p>
+                <p className="font-medium text-blue-800">DiagnoSys Is Analysing Your Appliance Problem...</p>
                 <p className="text-sm text-blue-600 mt-1">This may take a few seconds</p>
               </div>
             </div>
