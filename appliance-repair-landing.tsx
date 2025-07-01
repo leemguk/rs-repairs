@@ -543,7 +543,7 @@ export default function Component() {
       {/* Footer */}
       <footer className="bg-gradient-to-br from-orange-50 to-orange-100 border-t border-orange-200">
         <div className="container px-4 md:px-6 max-w-6xl mx-auto py-8 md:py-12">
-          <div className="grid gap-8 grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto">
+          <div className="grid gap-8 grid-cols-1 md:grid-cols-3">
             {/* Company Info */}
             <div className="space-y-4 text-left">
               <div className="flex items-center justify-start">
@@ -566,7 +566,7 @@ export default function Component() {
             </div>
 
             {/* Quick Links */}
-            <div className="space-y-4 text-left">
+            <div className="space-y-4 text-center md:text-left">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Quick Links</h3>
               <div className="space-y-2">
                 <button
@@ -597,7 +597,7 @@ export default function Component() {
             </div>
 
             {/* Contact Info */}
-            <div id="contact" className="space-y-4 text-left">
+            <div id="contact" className="space-y-4 text-left md:text-right">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Contact</h3>
               <div className="space-y-2">
                 <div className="text-sm text-gray-600">
