@@ -396,6 +396,11 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       }
     } catch (error) {
       console.error("Error retrieving address:", error)
+      console.log("Setting booking data with:", {
+  address: addressData.Line1,
+  fullAddress: fullAddress,
+  postcode: addressData.PostalCode
+})
       setBookingData((prev) => ({
         ...prev,
         address: suggestion.text,
