@@ -528,7 +528,8 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       await sendEmailNotification(bookingId)
 
       // Show success message
-      alert(`Booking confirmed! Booking ID: ${bookingId}\n\nYou will receive a confirmation email shortly. Our repair company will contact you to confirm the appointment time.`)
+      const shortBookingId = bookingId.split('-')[0]
+      alert(`Booking confirmed! Booking reference: ${shortBookingId}\n\nYou will receive a confirmation email shortly. Our repair company will contact you to confirm the appointment time.`)
       
       // Close modal and reset
       onClose()
