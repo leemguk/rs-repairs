@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { loadStripe } from "@stripe/stripe-js"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,7 @@ import { Clock, CheckCircle, Calendar, ChevronRight, User, MapPin } from "lucide
 import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/lib/supabase"
 import type { Booking } from "@/lib/supabase"
+import { getBookingApplianceTypes, getBookingBrands } from "@/actions/get-booking-options"
 
 interface BookingModalProps {
   isOpen: boolean
@@ -36,8 +37,7 @@ interface BookingData {
   marketingConsent: boolean
 }
 
-const applianceTypes = ["Refrigerator", "Washing Machine", "Dryer", "Microwave"]
-const manufacturers = ["Samsung", "LG", "Whirlpool", "Bosch"]
+
 
 export function BookingModal({ isOpen, onClose }: BookingModalProps) {
   const [currentStep, setCurrentStep] = useState(1)
@@ -61,6 +61,18 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     date?: string
   } | null>(null)
 
+  // Autocomplete states for Appliance Type and Manufacturer
+  const [applianceTypeSearch, setApplianceTypeSearch] = useState("")
+  const [applianceTypeOpen, setApplianceTypeOpen] = useState(false)
+  const [manufacturerSearch, setManufacturerSearch] = useState("")
+  const [manufacturerOpen, setManufacturerOpen] = useState(false)
+  
+  // Dynamic data from database
+  const [applianceTypes, setApplianceTypes] = useState<string[]>([])
+  const [manufacturers, setManufacturers] = useState<string[]>([])
+  const [isLoadingApplianceTypes, setIsLoadingApplianceTypes] = useState(true)
+  const [isLoadingManufacturers, setIsLoadingManufacturers] = useState(false)
+
   const [bookingData, setBookingData] = useState<BookingData>({
     applianceType: "",
     manufacturer: "",
@@ -79,6 +91,52 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
   })
 
   const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_your_key_here")
+
+  // Load appliance types on mount
+  useEffect(() => {
+    const loadApplianceTypes = async () => {
+      setIsLoadingApplianceTypes(true)
+      try {
+        const types = await getBookingApplianceTypes()
+        setApplianceTypes(types)
+      } catch (error) {
+        console.error('Error loading appliance types:', error)
+      } finally {
+        setIsLoadingApplianceTypes(false)
+      }
+    }
+
+    loadApplianceTypes()
+  }, [])
+
+  // Load manufacturers when appliance type changes
+  useEffect(() => {
+    const loadManufacturers = async () => {
+      if (!bookingData.applianceType) {
+        setManufacturers([])
+        setBookingData(prev => ({ ...prev, manufacturer: "" }))
+        setManufacturerSearch("")
+        return
+      }
+
+      setIsLoadingManufacturers(true)
+      try {
+        const brands = await getBookingBrands(bookingData.applianceType)
+        setManufacturers(brands)
+        // Reset manufacturer if it's not in the new list
+        if (bookingData.manufacturer && !brands.includes(bookingData.manufacturer)) {
+          setBookingData(prev => ({ ...prev, manufacturer: "" }))
+          setManufacturerSearch("")
+        }
+      } catch (error) {
+        console.error('Error loading manufacturers:', error)
+      } finally {
+        setIsLoadingManufacturers(false)
+      }
+    }
+
+    loadManufacturers()
+  }, [bookingData.applianceType])
 
   const pricingOptions = [
     {
@@ -139,50 +197,50 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
   }
 
   // Save booking to Supabase
-const saveBookingToDatabase = async (): Promise<string | null> => {
-  if (!selectedPricing) return null
+  const saveBookingToDatabase = async (): Promise<string | null> => {
+    if (!selectedPricing) return null
 
-  try {
-    // Prepare booking data for database
-    const bookingRecord: Omit<Booking, 'id' | 'created_at'> = {
-      full_name: bookingData.firstName,
-      email: bookingData.email,
-      mobile: bookingData.mobile,
-      address: bookingData.fullAddress,
-      appliance_type: bookingData.applianceType,
-      manufacturer: bookingData.manufacturer,
-      model: bookingData.applianceModel || null,
-      fault_description: bookingData.applianceFault,
-      service_type: selectedPricing.type === 'same-day' ? 'same_day' : 
-                   selectedPricing.type === 'next-day' ? 'next_day' : 'standard',
-      service_price: selectedPricing.price * 100, // Convert to pence
-      appointment_date: selectedPricing.type === 'same-day' ? new Date().toISOString().split('T')[0] :
-                       selectedPricing.type === 'next-day' ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] :
-                       bookingData.selectedDate || null,
-      appointment_time: selectedPricing.type === 'same-day' ? 'Before 6pm' : bookingData.selectedTimeSlot || null,
-      payment_status: 'pending',
-      booking_status: 'pending_payment' // Changed from 'confirmed' to 'pending_payment'
+    try {
+      // Prepare booking data for database
+      const bookingRecord: Omit<Booking, 'id' | 'created_at'> = {
+        full_name: bookingData.firstName,
+        email: bookingData.email,
+        mobile: bookingData.mobile,
+        address: bookingData.fullAddress,
+        appliance_type: bookingData.applianceType,
+        manufacturer: bookingData.manufacturer,
+        model: bookingData.applianceModel || null,
+        fault_description: bookingData.applianceFault,
+        service_type: selectedPricing.type === 'same-day' ? 'same_day' : 
+                     selectedPricing.type === 'next-day' ? 'next_day' : 'standard',
+        service_price: selectedPricing.price * 100, // Convert to pence
+        appointment_date: selectedPricing.type === 'same-day' ? new Date().toISOString().split('T')[0] :
+                         selectedPricing.type === 'next-day' ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] :
+                         bookingData.selectedDate || null,
+        appointment_time: selectedPricing.type === 'same-day' ? 'Before 6pm' : bookingData.selectedTimeSlot || null,
+        payment_status: 'pending',
+        booking_status: 'pending_payment' // Changed from 'confirmed' to 'pending_payment'
+      }
+
+      // Insert booking into Supabase
+      const { data, error } = await supabase
+        .from('bookings')
+        .insert([bookingRecord])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error saving booking:', error)
+        throw new Error('Failed to save booking')
+      }
+
+      console.log('Booking saved successfully:', data)
+      return data.id
+    } catch (error) {
+      console.error('Database error:', error)
+      throw error
     }
-
-    // Insert booking into Supabase
-    const { data, error } = await supabase
-      .from('bookings')
-      .insert([bookingRecord])
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error saving booking:', error)
-      throw new Error('Failed to save booking')
-    }
-
-    console.log('Booking saved successfully:', data)
-    return data.id
-  } catch (error) {
-    console.error('Database error:', error)
-    throw error
   }
-}
 
   // Send email notification (placeholder for SendGrid integration)
   const sendEmailNotification = async (bookingId: string) => {
@@ -357,6 +415,10 @@ const saveBookingToDatabase = async (): Promise<string | null> => {
     setAddressSuggestions([])
     setShowAddressSuggestions(false)
     setIsSubmitting(false)
+    setApplianceTypeSearch("")
+    setApplianceTypeOpen(false)
+    setManufacturerSearch("")
+    setManufacturerOpen(false)
     setBookingData({
       applianceType: "",
       manufacturer: "",
@@ -407,67 +469,67 @@ const saveBookingToDatabase = async (): Promise<string | null> => {
   }
 
   // Replace your handleStripePayment function with this:
-const handleStripePayment = async () => {
-  if (!selectedPricing || isSubmitting) return
+  const handleStripePayment = async () => {
+    if (!selectedPricing || isSubmitting) return
 
-  setIsSubmitting(true)
+    setIsSubmitting(true)
 
-  try {
-    // First save the booking to get an ID
-    const bookingId = await saveBookingToDatabase()
-    
-    if (!bookingId) {
-      throw new Error('Failed to create booking')
-    }
+    try {
+      // First save the booking to get an ID
+      const bookingId = await saveBookingToDatabase()
+      
+      if (!bookingId) {
+        throw new Error('Failed to create booking')
+      }
 
-    // Create Stripe Checkout session instead of payment intent
-    const response = await fetch("/api/create-checkout-session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        amount: selectedPricing.price * 100, // Convert to pence
-        currency: "gbp",
-        bookingId: bookingId,
-        bookingData: {
-          firstName: bookingData.firstName,
-          email: bookingData.email,
-          serviceType: selectedPricing.type,
-          manufacturer: bookingData.manufacturer,
-          applianceType: bookingData.applianceType,
+      // Create Stripe Checkout session instead of payment intent
+      const response = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }),
-    })
+        body: JSON.stringify({
+          amount: selectedPricing.price * 100, // Convert to pence
+          currency: "gbp",
+          bookingId: bookingId,
+          bookingData: {
+            firstName: bookingData.firstName,
+            email: bookingData.email,
+            serviceType: selectedPricing.type,
+            manufacturer: bookingData.manufacturer,
+            applianceType: bookingData.applianceType,
+          },
+        }),
+      })
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error || "Payment setup failed")
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Payment setup failed")
+      }
+
+      const { sessionId } = await response.json()
+
+      // Redirect to Stripe Checkout
+      const stripe = await stripePromise
+      if (!stripe) throw new Error("Stripe failed to load")
+
+      const { error } = await stripe.redirectToCheckout({
+        sessionId: sessionId,
+      })
+
+      if (error) {
+        console.error("Stripe checkout error:", error)
+        throw new Error(error.message || "Payment redirect failed")
+      }
+
+      // User will be redirected to Stripe, then back to success/cancel pages
+
+    } catch (error) {
+      console.error("Payment error:", error)
+      alert(`Payment failed: ${error.message}\n\nPlease try again or contact support.`)
+      setIsSubmitting(false)
     }
-
-    const { sessionId } = await response.json()
-
-    // Redirect to Stripe Checkout
-    const stripe = await stripePromise
-    if (!stripe) throw new Error("Stripe failed to load")
-
-    const { error } = await stripe.redirectToCheckout({
-      sessionId: sessionId,
-    })
-
-    if (error) {
-      console.error("Stripe checkout error:", error)
-      throw new Error(error.message || "Payment redirect failed")
-    }
-
-    // User will be redirected to Stripe, then back to success/cancel pages
-
-  } catch (error) {
-    console.error("Payment error:", error)
-    alert(`Payment failed: ${error.message}\n\nPlease try again or contact support.`)
-    setIsSubmitting(false)
   }
-}
 
   const renderProgressBar = () => {
     const goToStep = (step: number) => {
@@ -576,46 +638,106 @@ const handleStripePayment = async () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Appliance Type <span className="text-red-500">*</span>
+              Category <span className="text-red-500">*</span>
             </label>
-            <Select
-              value={bookingData.applianceType}
-              onValueChange={(value) => updateBookingData("applianceType", value)}
-              disabled={isSubmitting}
-            >
-              <SelectTrigger className="w-full text-base">
-                <SelectValue placeholder="Select appliance type" />
-              </SelectTrigger>
-              <SelectContent>
-                {applianceTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder="Type Category e.g., Washing Machine"
+                value={applianceTypeSearch}
+                onChange={(e) => {
+                  setApplianceTypeSearch(e.target.value)
+                  setBookingData(prev => ({ ...prev, applianceType: "" }))
+                  if (e.target.value.length > 0) {
+                    setApplianceTypeOpen(true)
+                  }
+                }}
+                onFocus={() => applianceTypeSearch.length > 0 && setApplianceTypeOpen(true)}
+                onBlur={() => setTimeout(() => setApplianceTypeOpen(false), 200)}
+                className="w-full text-base"
+                disabled={isSubmitting}
+              />
+              
+              {/* Autocomplete dropdown */}
+              {applianceTypeOpen && applianceTypeSearch.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-auto">
+                  {applianceTypes
+                    .filter(type => type.toLowerCase().includes(applianceTypeSearch.toLowerCase()))
+                    .map((type) => (
+                      <div
+                        key={type}
+                        className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          setBookingData(prev => ({ ...prev, applianceType: type }))
+                          setApplianceTypeSearch(type)
+                          setApplianceTypeOpen(false)
+                        }}
+                      >
+                        {type}
+                      </div>
+                    ))}
+                  {applianceTypes.filter(type => type.toLowerCase().includes(applianceTypeSearch.toLowerCase())).length === 0 && (
+                    <div className="px-3 py-2 text-sm text-gray-500">No matching appliance types</div>
+                  )}
+                </div>
+              )}
+            </div>
+            {bookingData.applianceType && (
+              <p className="text-xs text-green-600 mt-1">✓ Selected: {bookingData.applianceType}</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Manufacturer <span className="text-red-500">*</span>
+              Brand <span className="text-red-500">*</span>
             </label>
-            <Select
-              value={bookingData.manufacturer}
-              onValueChange={(value) => updateBookingData("manufacturer", value)}
-              disabled={isSubmitting}
-            >
-              <SelectTrigger className="w-full text-base">
-                <SelectValue placeholder="Select manufacturer" />
-              </SelectTrigger>
-              <SelectContent>
-                {manufacturers.map((manufacturer) => (
-                  <SelectItem key={manufacturer} value={manufacturer}>
-                    {manufacturer}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder="Type brand (e.g., Bosch)"
+                value={manufacturerSearch}
+                onChange={(e) => {
+                  setManufacturerSearch(e.target.value)
+                  setBookingData(prev => ({ ...prev, manufacturer: "" }))
+                  if (e.target.value.length > 0) {
+                    setManufacturerOpen(true)
+                  }
+                }}
+                onFocus={() => manufacturerSearch.length > 0 && setManufacturerOpen(true)}
+                onBlur={() => setTimeout(() => setManufacturerOpen(false), 200)}
+                className="w-full text-base"
+                disabled={isSubmitting}
+              />
+              
+              {/* Autocomplete dropdown */}
+              {manufacturerOpen && manufacturerSearch.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-auto">
+                  {manufacturers
+                    .filter(brand => brand.toLowerCase().includes(manufacturerSearch.toLowerCase()))
+                    .map((brand) => (
+                      <div
+                        key={brand}
+                        className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          setBookingData(prev => ({ ...prev, manufacturer: brand }))
+                          setManufacturerSearch(brand)
+                          setManufacturerOpen(false)
+                        }}
+                      >
+                        {brand}
+                      </div>
+                    ))}
+                  {manufacturers.filter(brand => brand.toLowerCase().includes(manufacturerSearch.toLowerCase())).length === 0 && (
+                    <div className="px-3 py-2 text-sm text-gray-500">No matching manufacturers</div>
+                  )}
+                </div>
+              )}
+            </div>
+            {bookingData.manufacturer && (
+              <p className="text-xs text-green-600 mt-1">✓ Selected: {bookingData.manufacturer}</p>
+            )}
           </div>
 
           <div>
@@ -969,13 +1091,13 @@ const handleStripePayment = async () => {
       </div>
 
       <div className="flex flex-col gap-3 mt-6">
-<Button
-  onClick={nextStep}
-  className="bg-green-600 hover:bg-green-700"
-  disabled={!bookingData.firstName || !bookingData.email || !bookingData.mobile || !bookingData.fullAddress || isSubmitting}
->
-  Continue & Review
-</Button>
+        <Button
+          onClick={nextStep}
+          className="bg-green-600 hover:bg-green-700"
+          disabled={!bookingData.firstName || !bookingData.email || !bookingData.mobile || !bookingData.fullAddress || isSubmitting}
+        >
+          Continue & Review
+        </Button>
 
         <Button 
           variant="outline" 
