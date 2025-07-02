@@ -371,6 +371,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       
       if (data.Items && data.Items.length > 0) {
         const addressData: LoqateRetrieveResult = data.Items[0]
+        console.log("Loqate full response:", addressData)
         
         const addressParts = [
           addressData.Line1,
