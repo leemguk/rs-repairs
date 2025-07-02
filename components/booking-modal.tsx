@@ -33,6 +33,11 @@ interface LoqateRetrieveResult {
   Line5: string
   City: string
   PostalCode: string
+  District: string
+  BuildingName: string
+  BuildingNumber: string
+  Street: string
+  [key: string]: any  // This allows for any additional fields
 }
 
 // Loqate API key
