@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       const emailMsg = {
         to: booking.email,
         from: process.env.SENDGRID_FROM_EMAIL!,
-        subject: `Booking Confirmed - RS Repairs Service #${booking.id.slice(0, 8)}`,
+        subject: `Booking Confirmed - RS Repairs Service ${booking.id.slice(0, 8)}`,
         html: `
           <!DOCTYPE html>
           <html lang="en">
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
                                                               <strong style="color: #374151;">Booking ID:</strong>
                                                           </td>
                                                           <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                                                              <span style="color: #6b7280;">#${booking.id.slice(0, 8)}</span>
+                                                              <span style="color: #6b7280;">${booking.id.slice(0, 8)}</span>
                                                           </td>
                                                       </tr>
                                                       <tr>
@@ -248,7 +248,7 @@ Thank you for choosing RS Repairs, in association with Pacifica Group. Please ch
 Your booking is now being processed and you will receive a text message to your mobile on the day of your engineer visit.
 
 Booking Details:
-Booking ID: #${booking.id.slice(0, 8)}
+Booking ID: ${booking.id.slice(0, 8)}
 Customer Name: ${booking.full_name}
 Email: ${booking.email}
 Mobile: ${booking.mobile}
