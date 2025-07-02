@@ -388,7 +388,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
         
         console.log("Address parts:", addressParts)
         
-        const fullAddress = addressParts.join(", ")
+        const fullAddress = addressParts.join(", ") + (addressData.PostalCode ? `, ${addressData.PostalCode}` : "")
         
         console.log("Full address built:", fullAddress)
         console.log("About to update booking data...")
