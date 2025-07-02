@@ -13,6 +13,9 @@ function PaymentSuccessContent() {
   const [isProcessing, setIsProcessing] = useState(true)
   const [error, setError] = useState('')
 
+  // Get short booking reference
+  const shortBookingRef = bookingId ? bookingId.split('-')[0] : ''
+
   useEffect(() => {
     const processPayment = async () => {
       if (!sessionId || !bookingId) {
@@ -102,7 +105,7 @@ function PaymentSuccessContent() {
           
           <div className="bg-green-50 p-4 rounded-lg">
             <p className="text-sm text-green-800">
-              <strong>Booking ID:</strong> {bookingId}
+              <strong>Booking Reference:</strong> {shortBookingRef}
             </p>
           </div>
 
