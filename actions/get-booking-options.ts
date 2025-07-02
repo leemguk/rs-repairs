@@ -1,43 +1,69 @@
 'use server';
 
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 
 export async function getBookingApplianceTypes(): Promise<string[]> {
   try {
-    // Use the same RPC function as spare parts to get categories efficiently
+    const supabase = createClient();
+    
+    // Use ONLY the RPC function - it already returns ALL distinct categories
     const { data, error } = await supabase
       .rpc('get_spare_parts_categories');
-
+    
     if (error) {
-      console.error('Error fetching appliance types:', error);
+      console.error('Error calling get_spare_parts_categories:', error);
       return [];
     }
 
-    return data || [];
+    if (!data || !Array.isArray(data)) {
+      return [];
+    }
+
+    // The RPC returns {category: "..."} objects
+    const categories = data
+      .map(item => item.category || item.get_spare_parts_categories)
+      .filter(Boolean);
+    
+    console.log(`Loaded ${categories.length} categories for booking`);
+    return categories;
+    
   } catch (error) {
-    console.error('Error in getBookingApplianceTypes:', error);
+    console.error('Unexpected error:', error);
     return [];
   }
 }
 
 export async function getBookingBrands(applianceType: string): Promise<string[]> {
   try {
-    if (!applianceType) return [];
-
-    // Use the same RPC function as spare parts to get brands efficiently
-    const { data, error } = await supabase
-      .rpc('get_spare_parts_brands', {
-        category_param: applianceType
-      });
-
-    if (error) {
-      console.error('Error fetching brands:', error);
+    const supabase = createClient();
+    
+    if (!applianceType) {
       return [];
     }
-
-    return data || [];
+    
+    // Use RPC function for brands by category
+    const { data, error } = await supabase
+      .rpc('get_spare_parts_brands_by_category', { p_category: applianceType });
+    
+    if (error) {
+      console.error('Error fetching brands for category:', error);
+      return [];
+    }
+    
+    if (!data) {
+      return [];
+    }
+    
+    // Extract brands from the response
+    const brands = data
+      .map(item => item.brand || item.get_spare_parts_brands_by_category)
+      .filter(Boolean);
+    
+    console.log(`Found ${brands.length} brands for category: ${applianceType}`);
+    return brands;
+    
   } catch (error) {
-    console.error('Error in getBookingBrands:', error);
+    console.error('Unexpected error:', error);
     return [];
   }
 }
