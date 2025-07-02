@@ -15,6 +15,29 @@ import { supabase } from "@/lib/supabase"
 import type { Booking } from "@/lib/supabase"
 import { getBookingApplianceTypes, getBookingBrands } from "@/actions/get-booking-options"
 
+// Loqate interfaces
+interface LoqateFindResult {
+  Id: string
+  Type: string
+  Text: string
+  Highlight: string
+  Description: string
+}
+
+interface LoqateRetrieveResult {
+  Id: string
+  Line1: string
+  Line2: string
+  Line3: string
+  Line4: string
+  Line5: string
+  City: string
+  PostalCode: string
+}
+
+// Loqate API key
+const LOQATE_KEY = process.env.NEXT_PUBLIC_LOQATE_KEY || ""
+
 interface BookingModalProps {
   isOpen: boolean
   onClose: () => void
@@ -277,7 +300,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     }
   }
 
-  // Mock Loqate address search function
+  // Loqate address search function
   const searchAddresses = async (query: string) => {
     if (query.length < 3) {
       setAddressSuggestions([])
@@ -285,28 +308,43 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       return
     }
 
-    // Simulate API call to Loqate
-    setTimeout(() => {
-      const mockSuggestions = [
-        {
-          id: "1",
-          text: `${query} Street, London`,
-          description: "London, SW1A 1AA",
-        },
-        {
-          id: "2",
-          text: `${query} Road, Manchester`,
-          description: "Manchester, M1 1AA",
-        },
-        {
-          id: "3",
-          text: `${query} Avenue, Birmingham`,
-          description: "Birmingham, B1 1AA",
-        },
-      ]
-      setAddressSuggestions(mockSuggestions)
-      setShowAddressSuggestions(true)
-    }, 300)
+    try {
+      const response = await fetch(
+        `https://api.addressy.com/Capture/Interactive/Find/v1.1/json3.ws?` +
+        new URLSearchParams({
+          Key: LOQATE_KEY,
+          Text: query,
+          Countries: "GB",
+          Limit: "10",
+          Language: "en-gb",
+        })
+      )
+
+      if (!response.ok) {
+        console.error("Loqate API error:", response.status)
+        return
+      }
+
+      const data = await response.json()
+      
+      if (data.Items && data.Items.length > 0) {
+        const suggestions = data.Items.map((item: LoqateFindResult) => ({
+          id: item.Id,
+          text: item.Text,
+          description: item.Description,
+        }))
+        
+        setAddressSuggestions(suggestions)
+        setShowAddressSuggestions(true)
+      } else {
+        setAddressSuggestions([])
+        setShowAddressSuggestions(false)
+      }
+    } catch (error) {
+      console.error("Error searching addresses:", error)
+      setAddressSuggestions([])
+      setShowAddressSuggestions(false)
+    }
   }
 
   const handleAddressSearch = (value: string) => {
@@ -315,28 +353,59 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
   }
 
   const selectAddress = async (suggestion: { id: string; text: string; description: string }) => {
-    // In real implementation, this would call Loqate's retrieve API to get full address details
-    // For now, we'll simulate the response
-    const mockFullAddress = {
-      line1: suggestion.text.split(",")[0],
-      line2: "",
-      city: suggestion.description.split(",")[0],
-      postcode: suggestion.description.split(",")[1]?.trim() || "",
-      fullAddress: `${suggestion.text}, ${suggestion.description}`,
+    try {
+      const response = await fetch(
+        `https://api.addressy.com/Capture/Interactive/Retrieve/v1.1/json3.ws?` +
+        new URLSearchParams({
+          Key: LOQATE_KEY,
+          Id: suggestion.id,
+        })
+      )
+
+      if (!response.ok) {
+        console.error("Loqate Retrieve API error:", response.status)
+        return
+      }
+
+      const data = await response.json()
+      
+      if (data.Items && data.Items.length > 0) {
+        const addressData: LoqateRetrieveResult = data.Items[0]
+        
+        const addressParts = [
+          addressData.Line1,
+          addressData.Line2,
+          addressData.Line3,
+          addressData.Line4,
+          addressData.Line5,
+        ].filter(Boolean)
+        
+        const fullAddress = addressParts.join(", ")
+        
+        setBookingData((prev) => ({
+          ...prev,
+          address: addressData.Line1 || "",
+          fullAddress: fullAddress,
+          postcode: addressData.PostalCode || "",
+        }))
+
+        setAddressSearchValue(fullAddress)
+        setShowAddressSuggestions(false)
+        setAddressSuggestions([])
+      }
+    } catch (error) {
+      console.error("Error retrieving address:", error)
+      setBookingData((prev) => ({
+        ...prev,
+        address: suggestion.text,
+        fullAddress: `${suggestion.text}, ${suggestion.description}`,
+        postcode: "",
+      }))
+      
+      setAddressSearchValue(`${suggestion.text}, ${suggestion.description}`)
+      setShowAddressSuggestions(false)
+      setAddressSuggestions([])
     }
-
-    // Update the booking data with the selected address
-    setBookingData((prev) => ({
-      ...prev,
-      address: mockFullAddress.line1,
-      fullAddress: mockFullAddress.fullAddress,
-      postcode: mockFullAddress.postcode,
-    }))
-
-    // Set the display value and hide suggestions
-    setAddressSearchValue(mockFullAddress.fullAddress)
-    setShowAddressSuggestions(false)
-    setAddressSuggestions([])
   }
 
   const nextStep = () => {
