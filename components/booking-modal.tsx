@@ -1,4 +1,3 @@
-//force deploy
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
@@ -639,12 +638,12 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Appliance Type <span className="text-red-500">*</span>
+              Category <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <Input
                 type="text"
-                placeholder="Type appliance type (e.g., Washing Machine)"
+                placeholder="Type Category e.g., Washing Machine"
                 value={applianceTypeSearch}
                 onChange={(e) => {
                   setApplianceTypeSearch(e.target.value)
@@ -691,12 +690,12 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Manufacturer <span className="text-red-500">*</span>
+              Brand <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <Input
                 type="text"
-                placeholder="Type manufacturer name (e.g., Bosch)"
+                placeholder="Type brand (e.g., Bosch)"
                 value={manufacturerSearch}
                 onChange={(e) => {
                   setManufacturerSearch(e.target.value)
