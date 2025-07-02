@@ -381,7 +381,12 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
           addressData.Line5,
         ].filter(Boolean)
         
+        console.log("Address parts:", addressParts)
+        
         const fullAddress = addressParts.join(", ")
+        
+        console.log("Full address built:", fullAddress)
+        console.log("About to update booking data...")
         
         setBookingData((prev) => ({
           ...prev,
