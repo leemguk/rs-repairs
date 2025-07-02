@@ -1025,16 +1025,8 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
           </ul>
         </div>
 
-        <Button
-          variant="outline"
-          className="w-full border-green-600 text-green-600 hover:bg-green-50 mt-8"
-          onClick={prevStep}
-          disabled={isSubmitting}
-        >
-          {"<"} Change Appliance Details
-        </Button>
-      </div>
-
+        </div>
+      
       <div className="flex justify-end">
         <Button
           onClick={nextStep}
@@ -1047,6 +1039,17 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
           }
         >
           Continue to Details
+        </Button>
+      </div>
+      
+      <div className="flex justify-end mt-3">
+        <Button
+          variant="outline"
+          className="w-full border-green-600 text-green-600 hover:bg-green-50"
+          onClick={prevStep}
+          disabled={isSubmitting}
+        >
+          {"<"} Change Appliance Details
         </Button>
       </div>
     </div>
