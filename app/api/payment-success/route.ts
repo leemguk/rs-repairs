@@ -87,14 +87,14 @@ export async function POST(request: NextRequest) {
       const emailMsg = {
         to: booking.email,
         from: process.env.SENDGRID_FROM_EMAIL!,
-        subject: `Booking Confirmed - RS Repairs Service #${booking.id.slice(0, 8)}`,
+        subject: `Booking Confirmed - Repair Help ${booking.id.slice(0, 8)}`,
         html: `
           <!DOCTYPE html>
           <html lang="en">
           <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>RS Repairs - Booking Confirmation</title>
+              <title>Repair Help - Booking Confirmation</title>
           </head>
           <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
               <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4;">
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
                               <!-- Header -->
                               <tr>
                                   <td style="background-color: #2563eb; padding: 30px; text-align: center;">
-                                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">RS Repairs</h1>
+                                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">Repair Help</h1>
                                       <p style="color: #bfdbfe; margin: 5px 0 0 0; font-size: 14px;">Professional Appliance Repair Service</p>
                                   </td>
                               </tr>
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
                                       <!-- Confirmation Message -->
                                       <div style="margin: 30px 0;">
                                           <p style="color: #4b5563; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6;">Dear <strong>${booking.full_name}</strong>,</p>
-                                          <p style="color: #4b5563; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6;">Thank you for choosing RS Repairs, in association with Pacifica Group. Please check your booking details below. If there are any errors or omissions please call <strong>01010101010</strong> to amend.</p>
+                                          <p style="color: #4b5563; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6;">Thank you for choosing Repair Help, in partnership with Pacifica Group. Please check your booking details below. If there are any errors or omissions please call <strong>01010101010</strong> to amend.</p>
                                           <p style="color: #4b5563; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6;">Your booking is now being processed and you will receive a text message to your mobile on the day of your engineer visit.</p>
                                       </div>
                                       
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
                                                               <strong style="color: #374151;">Booking ID:</strong>
                                                           </td>
                                                           <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                                                              <span style="color: #6b7280;">#${booking.id.slice(0, 8)}</span>
+                                                              <span style="color: #6b7280;">${booking.id.slice(0, 8)}</span>
                                                           </td>
                                                       </tr>
                                                       <tr>
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
                               <!-- Footer -->
                               <tr>
                                   <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
-                                      <p style="color: #6b7280; margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">RS Repairs</p>
+                                      <p style="color: #6b7280; margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">Repair Help</p>
                                       <p style="color: #9ca3af; margin: 0 0 15px 0; font-size: 12px;">Professional Appliance Repair Service</p>
                                       <p style="color: #9ca3af; margin: 0 0 15px 0; font-size: 11px;">In association with Pacifica Group</p>
                                       <p style="color: #9ca3af; margin: 0; font-size: 11px;">
@@ -239,16 +239,16 @@ export async function POST(request: NextRequest) {
           </html>
         `,
         text: `
-RS Repairs - Booking Confirmation
+Repair Help - Booking Confirmation
 
 Dear ${booking.full_name},
 
-Thank you for choosing RS Repairs, in association with Pacifica Group. Please check your booking details below. If there are any errors or omissions please call 01010101010 to amend.
+Thank you for choosing Repair Help, in partnership with Pacifica Group. Please check your booking details below. If there are any errors or omissions please call 01010101010 to amend.
 
 Your booking is now being processed and you will receive a text message to your mobile on the day of your engineer visit.
 
 Booking Details:
-Booking ID: #${booking.id.slice(0, 8)}
+Booking ID: ${booking.id.slice(0, 8)}
 Customer Name: ${booking.full_name}
 Email: ${booking.email}
 Mobile: ${booking.mobile}
@@ -259,8 +259,8 @@ Service Type: ${formatServiceType(booking.service_type)}
 Appointment: ${getAppointmentText()}
 Service Price: £${(booking.service_price / 100).toFixed(2)}
 
-RS Repairs - Professional Appliance Repair Service
-In association with Pacifica Group
+Repair Help - Professional Appliance Repair Service
+In partnership with Pacifica Group
         `
       }
 
