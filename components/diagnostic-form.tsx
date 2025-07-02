@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -29,6 +29,7 @@ import {
 } from "lucide-react"
 import { diagnoseProblem } from "../actions/diagnose"
 import { Checkbox } from "@/components/ui/checkbox"
+import { getDiagnosisApplianceTypes, getDiagnosisBrands } from "@/actions/get-diagnosis-options"
 
 interface DiagnosisResult {
   errorCodeMeaning?: string
@@ -95,6 +96,7 @@ const exampleDiagnosis: DiagnosisResult = {
 }
 
 export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
+  // Original state
   const [appliance, setAppliance] = useState("")
   const [brand, setBrand] = useState("")
   const [problem, setProblem] = useState("")
@@ -108,6 +110,64 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
   const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(null)
   const [error, setError] = useState("")
   const [showExample, setShowExample] = useState(false)
+
+  // New autocomplete states
+  const [applianceSearch, setApplianceSearch] = useState("")
+  const [applianceOpen, setApplianceOpen] = useState(false)
+  const [brandSearch, setBrandSearch] = useState("")
+  const [brandOpen, setBrandOpen] = useState(false)
+  
+  // Dynamic data from database
+  const [applianceTypes, setApplianceTypes] = useState<string[]>([])
+  const [brands, setBrands] = useState<string[]>([])
+  const [isLoadingApplianceTypes, setIsLoadingApplianceTypes] = useState(true)
+  const [isLoadingBrands, setIsLoadingBrands] = useState(false)
+
+  // Load appliance types on mount
+  useEffect(() => {
+    const loadApplianceTypes = async () => {
+      setIsLoadingApplianceTypes(true)
+      try {
+        const types = await getDiagnosisApplianceTypes()
+        setApplianceTypes(types)
+      } catch (error) {
+        console.error('Error loading appliance types:', error)
+      } finally {
+        setIsLoadingApplianceTypes(false)
+      }
+    }
+
+    loadApplianceTypes()
+  }, [])
+
+  // Load brands when appliance type changes
+  useEffect(() => {
+    const loadBrands = async () => {
+      if (!appliance) {
+        setBrands([])
+        setBrand("")
+        setBrandSearch("")
+        return
+      }
+
+      setIsLoadingBrands(true)
+      try {
+        const brandsData = await getDiagnosisBrands(appliance)
+        setBrands(brandsData)
+        // Reset brand if it's not in the new list
+        if (brand && !brandsData.includes(brand)) {
+          setBrand("")
+          setBrandSearch("")
+        }
+      } catch (error) {
+        console.error('Error loading brands:', error)
+      } finally {
+        setIsLoadingBrands(false)
+      }
+    }
+
+    loadBrands()
+  }, [appliance])
 
   const handleAskAI = () => {
     if (!appliance.trim() || !problem.trim()) {
@@ -622,29 +682,111 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               <label htmlFor="appliance" className="text-sm font-medium">
                 What appliance is having issues?
               </label>
-              <Input
-                id="appliance"
-                placeholder="e.g., Washing machine, Refrigerator, Dishwasher..."
-                value={appliance}
-                onChange={(e) => setAppliance(e.target.value)}
-                className="w-full text-base"
-              />
+              <div className="relative">
+                <Input
+                  id="appliance"
+                  type="text"
+                  placeholder="Type appliance type (e.g., Washing Machine)"
+                  value={applianceSearch}
+                  onChange={(e) => {
+                    setApplianceSearch(e.target.value)
+                    setAppliance("")
+                    if (e.target.value.length > 0) {
+                      setApplianceOpen(true)
+                    }
+                  }}
+                  onFocus={() => applianceSearch.length > 0 && setApplianceOpen(true)}
+                  onBlur={() => setTimeout(() => setApplianceOpen(false), 200)}
+                  className="w-full text-base"
+                  disabled={isLoading}
+                />
+                
+                {/* Autocomplete dropdown */}
+                {applianceOpen && applianceSearch.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-auto">
+                    {applianceTypes
+                      .filter(type => type.toLowerCase().includes(applianceSearch.toLowerCase()))
+                      .map((type) => (
+                        <div
+                          key={type}
+                          className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            setAppliance(type)
+                            setApplianceSearch(type)
+                            setApplianceOpen(false)
+                          }}
+                        >
+                          {type}
+                        </div>
+                      ))}
+                    {applianceTypes.filter(type => type.toLowerCase().includes(applianceSearch.toLowerCase())).length === 0 && (
+                      <div className="px-3 py-2 text-sm text-gray-500">No matching appliance types</div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {appliance && (
+                <p className="text-xs text-green-600 mt-1">✓ Selected: {appliance}</p>
+              )}
             </div>
+            
             <div className="space-y-2">
               <label htmlFor="brand" className="text-sm font-medium">
                 Appliance brand <span className="text-gray-500">(optional)</span>
               </label>
-              <Input
-                id="brand"
-                placeholder="e.g., Bosch, Samsung, LG, Whirlpool..."
-                value={brand}
-                onChange={(e) => setBrand(e.target.value)}
-                className="w-full text-base"
-              />
+              <div className="relative">
+                <Input
+                  id="brand"
+                  type="text"
+                  placeholder="Type brand name (e.g., Bosch)"
+                  value={brandSearch}
+                  onChange={(e) => {
+                    setBrandSearch(e.target.value)
+                    setBrand("")
+                    if (e.target.value.length > 0) {
+                      setBrandOpen(true)
+                    }
+                  }}
+                  onFocus={() => brandSearch.length > 0 && setBrandOpen(true)}
+                  onBlur={() => setTimeout(() => setBrandOpen(false), 200)}
+                  className="w-full text-base"
+                  disabled={isLoading || !appliance}
+                />
+                
+                {/* Autocomplete dropdown */}
+                {brandOpen && brandSearch.length > 0 && appliance && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-auto">
+                    {brands
+                      .filter(b => b.toLowerCase().includes(brandSearch.toLowerCase()))
+                      .map((b) => (
+                        <div
+                          key={b}
+                          className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            setBrand(b)
+                            setBrandSearch(b)
+                            setBrandOpen(false)
+                          }}
+                        >
+                          {b}
+                        </div>
+                      ))}
+                    {brands.filter(b => b.toLowerCase().includes(brandSearch.toLowerCase())).length === 0 && (
+                      <div className="px-3 py-2 text-sm text-gray-500">No matching brands</div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {brand && (
+                <p className="text-xs text-green-600 mt-1">✓ Selected: {brand}</p>
+              )}
               <p className="text-xs text-gray-500">
                 Helpful for error codes and brand-specific diagnostics
               </p>
             </div>
+            
             <div className="space-y-2">
               <label htmlFor="problem" className="text-sm font-medium">
                 Describe the problem in detail
@@ -655,6 +797,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                 value={problem}
                 onChange={(e) => setProblem(e.target.value)}
                 className="w-full min-h-[100px] text-base"
+                disabled={isLoading}
               />
               <p className="text-xs text-gray-500">
                 Include any error codes if displayed on your appliance
