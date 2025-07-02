@@ -1,4 +1,3 @@
-//forced deploy
 "use client"
 
 import { useState } from "react"
@@ -415,7 +414,7 @@ export default function Component() {
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <h2 className="text-2xl font-bold tracking-tighter sm:text-3xl md:text-4xl lg:text-5xl text-gray-900">
-                  Why Choose RS Repairs?
+                  Why Choose Repair Help?
                 </h2>
                 <p className="max-w-[900px] text-gray-600 text-sm sm:text-base md:text-lg lg:text-xl/relaxed">
                   We're the trusted choice for appliance repair with over 20 years of experience
