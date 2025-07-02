@@ -262,7 +262,6 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
         throw new Error('Failed to save booking')
       }
 
-      console.log('Booking saved successfully:', data)
       return data.id
     } catch (error) {
       console.error('Database error:', error)
@@ -288,8 +287,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
         appointmentTime: selectedPricing?.type === 'same-day' ? 'Before 6pm' : bookingData.selectedTimeSlot
       }
 
-      console.log('Email notification data:', emailData)
-      
+           
       // TODO: Replace with actual SendGrid API call
       // const response = await fetch('/api/send-booking-email', {
       //   method: 'POST',
@@ -376,8 +374,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       
       if (data.Items && data.Items.length > 0) {
         const addressData: LoqateRetrieveResult = data.Items[0]
-        console.log("Loqate full response:", addressData)
-        
+                
         const addressParts = [
           addressData.Line1,
           addressData.Line2,
@@ -386,12 +383,9 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
           addressData.Line5,
         ].filter(Boolean)
         
-        console.log("Address parts:", addressParts)
-        
+             
         const fullAddress = addressParts.join(", ") + (addressData.PostalCode ? `, ${addressData.PostalCode}` : "")
         
-        console.log("Full address built:", fullAddress)
-        console.log("About to update booking data...")
         
         setBookingData((prev) => ({
           ...prev,
@@ -406,11 +400,6 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       }
     } catch (error) {
       console.error("Error retrieving address:", error)
-      console.log("Setting booking data with:", {
-  address: addressData.Line1,
-  fullAddress: fullAddress,
-  postcode: addressData.PostalCode
-})
       setBookingData((prev) => ({
         ...prev,
         address: suggestion.text,
