@@ -627,7 +627,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                 placeholder="e.g., Washing machine, Refrigerator, Dishwasher..."
                 value={appliance}
                 onChange={(e) => setAppliance(e.target.value)}
-                className="w-full text-base"
+                className="w-full text-base placeholder:text-sm"
               />
             </div>
             <div className="space-y-2">
@@ -639,7 +639,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                 placeholder="e.g., Bosch, Samsung, LG, Whirlpool..."
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
-                className="w-full text-base"
+                className="w-full text-base placeholder:text-sm"
               />
               <p className="text-xs text-gray-500">
                 Helpful for error codes and brand-specific diagnostics
@@ -654,7 +654,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                 placeholder="e.g., My washing machine makes loud banging noises during the spin cycle and clothes come out still wet. Error code E4 is showing on the display..."
                 value={problem}
                 onChange={(e) => setProblem(e.target.value)}
-                className="w-full min-h-[100px] text-base"
+                className="w-full min-h-[100px] text-base placeholder:text-sm"
               />
               <p className="text-xs text-gray-500">
                 Include any error codes if displayed on your appliance
@@ -669,17 +669,17 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
 
             {!showEmailVerification && (
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button onClick={handleAskAI} className="flex-1 bg-blue-600 hover:bg-blue-700" size="lg">
-                  <Lightbulb className="mr-2 h-4 w-4" />
+                <Button onClick={handleAskAI} className="w-full bg-blue-600 hover:bg-blue-700 h-9 sm:h-10 text-xs sm:text-sm font-medium" size="lg">
+                  <Lightbulb className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   Diagnose Your Fault
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleShowExample}
-                  className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50"
+                  className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 h-9 sm:h-10 text-xs sm:text-sm font-medium"
                   size="lg"
                 >
-                  <Eye className="mr-2 h-4 w-4" />
+                  <Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   See Example Report
                 </Button>
               </div>

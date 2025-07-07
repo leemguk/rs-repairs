@@ -130,8 +130,9 @@ export default function Component() {
         {/* Hero Section */}
         <section className="w-full py-8 md:py-16 lg:py-24 xl:py-32 bg-gradient-to-br from-orange-50 to-orange-100">
           <div className="container px-4 md:px-6 max-w-6xl mx-auto">
-            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
-              <div className="flex flex-col justify-center space-y-4">
+            <div className="flex flex-col xl:flex-row items-center xl:items-stretch gap-6 xl:gap-12">
+              {/* Text content */}
+              <div className="order-2 xl:order-1 flex-1 flex flex-col justify-center space-y-4 w-full">
                 <div className="space-y-2">
                   <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200 text-xs sm:text-sm">
                     #1 Appliance Repair Service
@@ -148,14 +149,14 @@ export default function Component() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:gap-3 justify-start">
                   <Button
                     size="lg"
-                    className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto text-sm sm:text-base"
+                    className="w-full sm:flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold text-base sm:text-lg rounded-lg py-3"
                     onClick={() => scrollToSection("diagnosis")}
                   >
                     Diagnose your fault
                   </Button>
                   <Button
                     size="lg"
-                    className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto text-sm sm:text-base"
+                    className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-base sm:text-lg rounded-lg py-3"
                     onClick={() => scrollToSection("services")}
                   >
                     Choose your service
@@ -163,7 +164,7 @@ export default function Component() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="border-orange-600 text-orange-600 hover:bg-orange-50 w-full sm:w-auto text-sm sm:text-base"
+                    className="w-full sm:flex-1 border-orange-600 text-orange-600 hover:bg-orange-50 font-bold text-base sm:text-lg rounded-lg py-3"
                     onClick={() => window.open("tel:03030036404", "_self")}
                   >
                     Call: 0303 003 6404
@@ -184,13 +185,14 @@ export default function Component() {
                   </div>
                 </div>
               </div>
-              <div className="order-first lg:order-last">
+              {/* Image */}
+              <div className="order-1 xl:order-2 w-full mb-6 xl:mb-0 xl:w-[600px] flex-shrink-0 flex justify-center items-center">
                 <Image
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/u1413117298_home_appliance_repair_engineer_fixing_a_washing_m_8d6cb4f2-d9c0-4104-80fc-e2347e5d6011_0-BJSdS62cYeaxjal14Kq6TBUiXHfdJm.png"
-                  width="600"
-                  height="400"
+                  width={600}
+                  height={400}
                   alt="Professional appliance repair engineer working on washing machine"
-                  className="mx-auto aspect-video overflow-hidden rounded-xl object-cover w-full max-w-md lg:max-w-none"
+                  className="w-full max-w-full h-auto aspect-video rounded-xl object-cover"
                 />
               </div>
             </div>
