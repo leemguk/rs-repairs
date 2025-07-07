@@ -149,14 +149,14 @@ export default function Component() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:gap-3 justify-start">
                   <Button
                     size="lg"
-                    className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto text-sm sm:text-base"
+                    className="w-full sm:flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold text-base sm:text-lg rounded-lg py-3"
                     onClick={() => scrollToSection("diagnosis")}
                   >
                     Diagnose your fault
                   </Button>
                   <Button
                     size="lg"
-                    className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto text-sm sm:text-base"
+                    className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-base sm:text-lg rounded-lg py-3"
                     onClick={() => scrollToSection("services")}
                   >
                     Choose your service
@@ -164,7 +164,7 @@ export default function Component() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="border-orange-600 text-orange-600 hover:bg-orange-50 w-full sm:w-auto text-sm sm:text-base"
+                    className="w-full sm:flex-1 border-orange-600 text-orange-600 hover:bg-orange-50 font-bold text-base sm:text-lg rounded-lg py-3"
                     onClick={() => window.open("tel:03030036404", "_self")}
                   >
                     Call: 0303 003 6404
