@@ -669,17 +669,17 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
 
             {!showEmailVerification && (
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button onClick={handleAskAI} className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-base sm:text-lg rounded-lg py-3" size="lg">
-                  <Lightbulb className="mr-2 h-4 w-4" />
+                <Button onClick={handleAskAI} className="w-full bg-blue-600 hover:bg-blue-700 h-9 sm:h-10 text-xs sm:text-sm font-medium" size="lg">
+                  <Lightbulb className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   Diagnose Your Fault
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleShowExample}
-                  className="w-full sm:flex-1 border-blue-600 text-blue-600 hover:bg-blue-50 font-bold text-base sm:text-lg rounded-lg py-3"
+                  className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 h-9 sm:h-10 text-xs sm:text-sm font-medium"
                   size="lg"
                 >
-                  <Eye className="mr-2 h-4 w-4" />
+                  <Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   See Example Report
                 </Button>
               </div>
