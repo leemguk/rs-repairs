@@ -627,7 +627,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                 placeholder="e.g., Washing machine, Refrigerator, Dishwasher..."
                 value={appliance}
                 onChange={(e) => setAppliance(e.target.value)}
-                className="w-full text-base"
+                className="w-full text-base placeholder:text-sm"
               />
             </div>
             <div className="space-y-2">
@@ -639,7 +639,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                 placeholder="e.g., Bosch, Samsung, LG, Whirlpool..."
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
-                className="w-full text-base"
+                className="w-full text-base placeholder:text-sm"
               />
               <p className="text-xs text-gray-500">
                 Helpful for error codes and brand-specific diagnostics
@@ -654,7 +654,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                 placeholder="e.g., My washing machine makes loud banging noises during the spin cycle and clothes come out still wet. Error code E4 is showing on the display..."
                 value={problem}
                 onChange={(e) => setProblem(e.target.value)}
-                className="w-full min-h-[100px] text-base"
+                className="w-full min-h-[100px] text-base placeholder:text-sm"
               />
               <p className="text-xs text-gray-500">
                 Include any error codes if displayed on your appliance
