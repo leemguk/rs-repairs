@@ -17,11 +17,11 @@ const nextConfig = {
         headers: [
           {
             key: 'X-Frame-Options',
-            value: 'ALLOWALL',
+            value: 'ALLOW-FROM https://www.ransomspares.co.uk',
           },
           {
             key: 'Content-Security-Policy',
-            value: 'frame-ancestors *',
+            value: 'frame-ancestors https://www.ransomspares.co.uk',
           },
         ],
       },
