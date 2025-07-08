@@ -13,7 +13,7 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/widget/booking*',
+        source: '/widget/booking(.*)',
         headers: [
           {
             key: 'Content-Security-Policy',
