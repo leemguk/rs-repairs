@@ -126,29 +126,42 @@ export function BookingForm() {
   useEffect(() => {
     if (!isWidget) return
 
+    let lastHeight = 0
+    
     const sendHeight = () => {
-      const height = document.body.scrollHeight
-      window.parent.postMessage({
-        type: 'rs-repairs-booking-height',
-        height: height
-      }, '*') // In production, replace '*' with the specific origin like 'https://www.ransomspares.co.uk'
+      // Use the main container height instead of body to avoid feedback loops
+      const container = document.querySelector('.booking-form-container')
+      const height = container ? container.scrollHeight : document.documentElement.scrollHeight
+      
+      // Only send if height has changed significantly (more than 10px)
+      if (Math.abs(height - lastHeight) > 10) {
+        lastHeight = height
+        window.parent.postMessage({
+          type: 'rs-repairs-booking-height',
+          height: height
+        }, '*') // In production, replace '*' with the specific origin like 'https://www.ransomspares.co.uk'
+      }
     }
 
-    // Send initial height
-    sendHeight()
+    // Send initial height after a short delay
+    setTimeout(sendHeight, 100)
 
-    // Watch for changes
+    // Watch for changes with debouncing
+    let timeoutId
     const resizeObserver = new ResizeObserver(() => {
-      sendHeight()
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(sendHeight, 100)
     })
 
-    resizeObserver.observe(document.body)
-
-    // Also send height on step changes
-    sendHeight()
+    // Observe the main container instead of body
+    const container = document.querySelector('.booking-form-container')
+    if (container) {
+      resizeObserver.observe(container)
+    }
 
     return () => {
       resizeObserver.disconnect()
+      clearTimeout(timeoutId)
     }
   }, [isWidget, currentStep]) // Re-run when step changes
 
@@ -1148,7 +1161,7 @@ export function BookingForm() {
 
   // Instead of Dialog, render the form directly:
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="booking-form-container w-full max-w-4xl mx-auto">
       <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
         {renderProgressBar()}
         <div className="mt-6">

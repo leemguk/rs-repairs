@@ -19,16 +19,20 @@
       if (iframe && event.data.height) {
         // Add some padding to prevent cut-off
         const newHeight = event.data.height + 20;
+        const currentHeight = parseInt(iframe.style.height) || 0;
         
-        // Smooth height transition
-        iframe.style.transition = 'height 0.3s ease';
-        iframe.style.height = newHeight + 'px';
-        
-        // Optional: Scroll to iframe if height increased significantly
-        // Uncomment if you want this behavior
-        // if (newHeight > parseInt(iframe.style.height || '0') + 100) {
-        //   iframe.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // }
+        // Only update if height change is significant (more than 10px)
+        if (Math.abs(newHeight - currentHeight) > 10) {
+          // Smooth height transition
+          iframe.style.transition = 'height 0.3s ease';
+          iframe.style.height = newHeight + 'px';
+          
+          // Optional: Scroll to iframe if height increased significantly
+          // Uncomment if you want this behavior
+          // if (newHeight > currentHeight + 100) {
+          //   iframe.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // }
+        }
       }
     }
   });
