@@ -43,7 +43,7 @@ export function BreadcrumbSteps({
                 >
                   <div
                     className={cn(
-                      "flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all",
+                      "flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all flex-shrink-0",
                       isCompleted && "bg-green-600 border-green-600",
                       isCurrent && "bg-white border-green-600",
                       !isCompleted && !isCurrent && "bg-gray-100 border-gray-300"
