@@ -17,15 +17,26 @@
       const iframe = document.querySelector('iframe[src*="widget/booking"]');
       
       if (iframe && event.data.height) {
+        // Detect mobile
+        const isMobile = window.innerWidth <= 768;
+        
         // Add generous padding to prevent cut-off and eliminate scroll
-        const newHeight = event.data.height + 60;
+        const padding = isMobile ? 80 : 60;
+        const newHeight = event.data.height + padding;
         const currentHeight = parseInt(iframe.style.height) || 0;
         
-        // Only update if height change is significant (more than 10px)
-        if (Math.abs(newHeight - currentHeight) > 10) {
+        // More sensitive threshold for mobile
+        const threshold = isMobile ? 5 : 10;
+        
+        console.log('Parent received height:', event.data.height, 'New height:', newHeight, 'Mobile:', isMobile); // Debug log
+        
+        // Only update if height change is significant
+        if (Math.abs(newHeight - currentHeight) > threshold) {
           // Smooth height transition
           iframe.style.transition = 'height 0.3s ease';
           iframe.style.height = newHeight + 'px';
+          
+          console.log('Updated iframe height to:', newHeight + 'px'); // Debug log
           
           // Optional: Scroll to iframe if height increased significantly
           // Uncomment if you want this behavior

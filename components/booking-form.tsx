@@ -159,9 +159,16 @@ export function BookingForm() {
         height = document.documentElement.scrollHeight
       }
       
-      // Only send if height has changed significantly (more than 10px)
-      if (Math.abs(height - lastHeight) > 10) {
+      // Add extra padding for mobile devices
+      const isMobile = window.innerWidth <= 768
+      const extraPadding = isMobile ? 40 : 20
+      height += extraPadding
+      
+      // Only send if height has changed significantly (more than 5px for mobile)
+      const threshold = isMobile ? 5 : 10
+      if (Math.abs(height - lastHeight) > threshold) {
         lastHeight = height
+        console.log('Sending height:', height, 'Mobile:', isMobile) // Debug log
         window.parent.postMessage({
           type: 'rs-repairs-booking-height',
           height: height
