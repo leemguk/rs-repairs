@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Clock, CheckCircle, Calendar, ChevronRight, User, MapPin } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { BreadcrumbSteps } from "@/components/ui/breadcrumb-steps"
 import { supabase } from "@/lib/supabase"
 import type { Booking } from "@/lib/supabase"
 import { getBookingApplianceTypes, getBookingBrands } from "@/actions/get-booking-options"
@@ -64,6 +65,7 @@ export function BookingForm() {
   const [currentStep, setCurrentStep] = useState(1)
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isWidget, setIsWidget] = useState(false)
   const [addressSuggestions, setAddressSuggestions] = useState<
     Array<{
       id: string
@@ -112,6 +114,14 @@ export function BookingForm() {
   })
 
   const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_your_key_here")
+
+  // Check if we're in widget mode
+  useEffect(() => {
+    // Check if we're on the widget path or in an iframe
+    const isWidgetPath = window.location.pathname.includes('/widget/booking')
+    const isInIframe = window.self !== window.top
+    setIsWidget(isWidgetPath || isInIframe)
+  }, [])
 
   // Load appliance types on mount
   useEffect(() => {
@@ -396,6 +406,7 @@ export function BookingForm() {
           amount: selectedPricing.price * 100, // Convert to pence
           currency: "gbp",
           bookingId: bookingId,
+          isWidget: isWidget,
           bookingData: {
             firstName: bookingData.firstName,
             email: bookingData.email,
@@ -428,27 +439,25 @@ export function BookingForm() {
     }
   }
 
-  // --- Render Functions (copied from BookingModal) ---
+  // --- Render Functions ---
 
-  const renderProgressBar = () => {
-    const goToStep = (step: number) => {
-      if (step <= currentStep && !isSubmitting) {
-        setCurrentStep(step)
-        window.scrollTo({ top: 0, behavior: "auto" })
-        setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 50)
-        setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 150)
-      }
+  const breadcrumbSteps = [
+    { id: 1, title: "Your Appliance", shortTitle: "Appliance" },
+    { id: 2, title: "Service & Appointment", shortTitle: "Service" },
+    { id: 3, title: "Your Details", shortTitle: "Details" },
+    { id: 4, title: "Payment & Confirmation", shortTitle: "Payment" }
+  ]
+
+  const handleStepClick = (step: number) => {
+    if (step <= currentStep && !isSubmitting) {
+      setCurrentStep(step)
+      window.scrollTo({ top: 0, behavior: "smooth" })
     }
-    return (
-      <div className="flex items-center justify-between mb-6 sm:mb-8">
-        {/* ...progress bar UI as in BookingModal... */}
-      </div>
-    )
   }
 
   // --- Step 1 ---
   const renderStep1 = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 min-h-[500px]">
       <div>
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">1. Your Appliance</h2>
         <div className="space-y-4">
@@ -588,7 +597,7 @@ export function BookingForm() {
 
   // --- Step 2 ---
   const renderStep2 = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 min-h-[500px]">
       <div>
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">2. Select Service & Appointment</h2>
         <p className="text-gray-600 mb-6">
@@ -778,7 +787,7 @@ export function BookingForm() {
 
   // --- Step 3 ---
   const renderStep3 = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 min-h-[500px]">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Full Name: <span className="text-red-500">*</span>
@@ -902,7 +911,7 @@ export function BookingForm() {
 
   // --- Step 4 ---
   const renderStep4 = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 min-h-[500px]">
       <div>
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">4. Payment & Confirmation</h2>
         <p className="text-gray-600 mb-6">Review your booking and complete payment to confirm your appointment.</p>
@@ -1052,11 +1061,18 @@ export function BookingForm() {
   // Instead of Dialog, render the form directly:
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-8 bg-white rounded-lg shadow-lg">
-      {renderProgressBar()}
-      {currentStep === 1 && renderStep1()}
-      {currentStep === 2 && renderStep2()}
-      {currentStep === 3 && renderStep3()}
-      {currentStep === 4 && renderStep4()}
+      <BreadcrumbSteps 
+        steps={breadcrumbSteps} 
+        currentStep={currentStep} 
+        onStepClick={handleStepClick}
+        className="mb-8"
+      />
+      <div className="mt-6">
+        {currentStep === 1 && renderStep1()}
+        {currentStep === 2 && renderStep2()}
+        {currentStep === 3 && renderStep3()}
+        {currentStep === 4 && renderStep4()}
+      </div>
     </div>
   )
 } 

@@ -10,11 +10,23 @@ function PaymentSuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
   const bookingId = searchParams.get('booking_id')
+  const isWidget = searchParams.get('widget') === 'true'
   const [isProcessing, setIsProcessing] = useState(true)
   const [error, setError] = useState('')
+  const [isInIframe, setIsInIframe] = useState(false)
 
   // Get short booking reference
   const shortBookingRef = bookingId ? bookingId.split('-')[0] : ''
+
+  // Check if we're in an iframe or widget mode
+  useEffect(() => {
+    try {
+      setIsInIframe(window.self !== window.top || isWidget)
+    } catch (e) {
+      // If we can't access window.top due to cross-origin, we're likely in an iframe
+      setIsInIframe(true)
+    }
+  }, [isWidget])
 
   useEffect(() => {
     const processPayment = async () => {
@@ -77,7 +89,13 @@ function PaymentSuccessContent() {
             <h1 className="text-xl font-bold text-red-800 mb-2">Payment Error</h1>
             <p className="text-red-600 mb-4">{error}</p>
             <Button 
-              onClick={() => window.location.href = '/'}
+              onClick={() => {
+                if (isInIframe) {
+                  window.top.location.href = 'https://www.ransomspares.co.uk/engineer-booking-form.htm'
+                } else {
+                  window.location.href = '/'
+                }
+              }}
               className="bg-red-600 hover:bg-red-700"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -121,7 +139,13 @@ function PaymentSuccessContent() {
           </div>
 
           <Button 
-            onClick={() => window.location.href = '/'}
+            onClick={() => {
+              if (isInIframe) {
+                window.top.location.href = 'https://www.ransomspares.co.uk/engineer-booking-form.htm'
+              } else {
+                window.location.href = '/'
+              }
+            }}
             className="w-full bg-green-600 hover:bg-green-700"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
