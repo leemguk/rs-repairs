@@ -1,7 +1,8 @@
 // booking-form.tsx
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import { loadStripe } from "@stripe/stripe-js"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -64,6 +65,8 @@ export function BookingForm() {
   // State for accordion-based form
   const [openSections, setOpenSections] = useState(["step-1"]) // Start with first section open
   const [completedSections, setCompletedSections] = useState<string[]>([])
+  const addressInputRef = useRef<HTMLInputElement>(null)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isWidget, setIsWidget] = useState(false)
@@ -468,6 +471,16 @@ export function BookingForm() {
   const handleAddressSearch = (value: string) => {
     setAddressSearchValue(value)
     searchAddresses(value)
+    
+    // Update dropdown position when searching
+    if (addressInputRef.current) {
+      const rect = addressInputRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      })
+    }
   }
 
   // Add selectAddress function
@@ -998,27 +1011,24 @@ export function BookingForm() {
           </label>
           <div className="relative">
             <Input
+              ref={addressInputRef}
               value={addressSearchValue}
               onChange={(e) => handleAddressSearch(e.target.value)}
               placeholder="Start typing your address..."
               className="w-full text-base pr-10"
               disabled={isSubmitting}
+              onFocus={() => {
+                if (addressInputRef.current) {
+                  const rect = addressInputRef.current.getBoundingClientRect()
+                  setDropdownPosition({
+                    top: rect.bottom + window.scrollY + 4,
+                    left: rect.left + window.scrollX,
+                    width: rect.width
+                  })
+                }
+              }}
             />
             <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            {showAddressSuggestions && addressSuggestions.length > 0 && !isSubmitting && (
-              <div className="absolute z-[9999] w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto" style={{ zIndex: 99999 }}>
-                {addressSuggestions.map((suggestion) => (
-                  <div
-                    key={suggestion.id}
-                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                    onClick={() => selectAddress(suggestion)}
-                  >
-                    <div className="font-medium text-sm text-gray-900">{suggestion.text}</div>
-                    <div className="text-xs text-gray-500">{suggestion.description}</div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
           {bookingData.fullAddress && !showAddressSuggestions && (
             <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -1258,6 +1268,32 @@ export function BookingForm() {
           </AccordionItem>
         </Accordion>
       </div>
+      
+      {/* Portal for address dropdown to escape accordion overflow constraints */}
+      {showAddressSuggestions && addressSuggestions.length > 0 && !isSubmitting && typeof window !== 'undefined' && 
+        createPortal(
+          <div 
+            className="fixed z-[99999] bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
+            style={{
+              top: `${dropdownPosition.top}px`,
+              left: `${dropdownPosition.left}px`,
+              width: `${dropdownPosition.width}px`
+            }}
+          >
+            {addressSuggestions.map((suggestion) => (
+              <div
+                key={suggestion.id}
+                className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                onClick={() => selectAddress(suggestion)}
+              >
+                <div className="font-medium text-sm text-gray-900">{suggestion.text}</div>
+                <div className="text-xs text-gray-500">{suggestion.description}</div>
+              </div>
+            ))}
+          </div>,
+          document.body
+        )
+      }
     </div>
   )
 } 
