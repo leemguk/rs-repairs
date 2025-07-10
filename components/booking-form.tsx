@@ -585,7 +585,7 @@ export function BookingForm() {
 
     return (
       <div className="flex items-center justify-between mb-6 sm:mb-8">
-        <div className="flex items-center flex-1">
+        <div className="flex items-center flex-1 overflow-hidden">
           {/* Step 1 - Appliance */}
           <div
             className={`flex items-center cursor-pointer transition-colors ${
@@ -594,10 +594,10 @@ export function BookingForm() {
             onClick={() => goToStep(1)}
           >
             <div className={`w-2 sm:w-3 h-1 ${currentStep >= 1 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
-            <span className="text-xs sm:text-sm font-medium">Appliance</span>
+            <span className="text-xs sm:text-sm font-medium whitespace-nowrap">Appliance</span>
           </div>
 
-          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mx-2 sm:mx-4" />
+          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mx-1 sm:mx-3 flex-shrink-0" />
 
           {/* Step 2 - Appointment */}
           <div
@@ -609,10 +609,11 @@ export function BookingForm() {
             onClick={() => goToStep(2)}
           >
             <div className={`w-2 sm:w-3 h-1 ${currentStep >= 2 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
-            <span className="text-xs sm:text-sm font-medium">Appointment</span>
+            <span className="text-xs sm:text-sm font-medium whitespace-nowrap hidden sm:inline">Appointment</span>
+            <span className="text-xs sm:text-sm font-medium whitespace-nowrap sm:hidden">Service</span>
           </div>
 
-          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mx-2 sm:mx-4" />
+          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mx-1 sm:mx-3 flex-shrink-0" />
 
           {/* Step 3 - Details */}
           <div
@@ -624,10 +625,10 @@ export function BookingForm() {
             onClick={() => goToStep(3)}
           >
             <div className={`w-2 sm:w-3 h-1 ${currentStep >= 3 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
-            <span className="text-xs sm:text-sm font-medium">Details</span>
+            <span className="text-xs sm:text-sm font-medium whitespace-nowrap">Details</span>
           </div>
 
-          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mx-2 sm:mx-4" />
+          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mx-1 sm:mx-3 flex-shrink-0" />
 
           {/* Step 4 - Confirm */}
           <div
@@ -639,7 +640,8 @@ export function BookingForm() {
             onClick={() => goToStep(4)}
           >
             <div className={`w-2 sm:w-3 h-1 ${currentStep >= 4 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
-            <span className="text-xs sm:text-sm font-medium">Confirm</span>
+            <span className="text-xs sm:text-sm font-medium whitespace-nowrap hidden sm:inline">Confirm</span>
+            <span className="text-xs sm:text-sm font-medium whitespace-nowrap sm:hidden">Pay</span>
           </div>
         </div>
       </div>
