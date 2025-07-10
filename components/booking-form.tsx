@@ -124,15 +124,33 @@ export function BookingForm() {
     const widgetMode = isWidgetPath || isInIframe
     setIsWidget(widgetMode)
     
-    // Add widget-mode class to hide scrollbars
+    // Add widget-mode class for iframe-specific styling
     if (widgetMode) {
       document.documentElement.classList.add('widget-mode')
       document.body.classList.add('widget-mode')
+      
+      // Only hide vertical scroll if the content fits in the iframe
+      const checkContentHeight = () => {
+        const contentHeight = document.documentElement.scrollHeight
+        const viewportHeight = window.innerHeight
+        
+        // If content is much larger than viewport, allow scrolling
+        if (contentHeight > viewportHeight + 100) {
+          document.body.style.overflowY = 'auto'
+          document.documentElement.style.overflowY = 'auto'
+        }
+      }
+      
+      // Check height after initial render and when content changes
+      setTimeout(checkContentHeight, 100)
     }
     
     return () => {
       document.documentElement.classList.remove('widget-mode')
       document.body.classList.remove('widget-mode')
+      // Reset overflow styles
+      document.body.style.overflowY = ''
+      document.documentElement.style.overflowY = ''
     }
   }, [])
 
