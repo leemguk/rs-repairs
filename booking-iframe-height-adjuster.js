@@ -17,8 +17,8 @@
       const iframe = document.querySelector('iframe[src*="widget/booking"]');
       
       if (iframe && event.data.height) {
-        // Add some padding to prevent cut-off
-        const newHeight = event.data.height + 20;
+        // Add some padding to prevent cut-off and eliminate scroll
+        const newHeight = event.data.height + 40;
         const currentHeight = parseInt(iframe.style.height) || 0;
         
         // Only update if height change is significant (more than 10px)

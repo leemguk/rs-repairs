@@ -131,7 +131,21 @@ export function BookingForm() {
     const sendHeight = () => {
       // Use the main container height instead of body to avoid feedback loops
       const container = document.querySelector('.booking-form-container')
-      const height = container ? container.scrollHeight : document.documentElement.scrollHeight
+      let height = 0
+      
+      if (container) {
+        // Get the container's total height including margins
+        const rect = container.getBoundingClientRect()
+        const styles = window.getComputedStyle(container)
+        const marginTop = parseFloat(styles.marginTop) || 0
+        const marginBottom = parseFloat(styles.marginBottom) || 0
+        height = rect.height + marginTop + marginBottom
+        
+        // Add the container's offset from top of page
+        height += container.offsetTop
+      } else {
+        height = document.documentElement.scrollHeight
+      }
       
       // Only send if height has changed significantly (more than 10px)
       if (Math.abs(height - lastHeight) > 10) {
