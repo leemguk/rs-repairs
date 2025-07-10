@@ -119,7 +119,19 @@ export function BookingForm() {
     // Check if we're on the widget path or in an iframe
     const isWidgetPath = window.location.pathname.includes('/widget/booking')
     const isInIframe = window.self !== window.top
-    setIsWidget(isWidgetPath || isInIframe)
+    const widgetMode = isWidgetPath || isInIframe
+    setIsWidget(widgetMode)
+    
+    // Add widget-mode class to hide scrollbars
+    if (widgetMode) {
+      document.documentElement.classList.add('widget-mode')
+      document.body.classList.add('widget-mode')
+    }
+    
+    return () => {
+      document.documentElement.classList.remove('widget-mode')
+      document.body.classList.remove('widget-mode')
+    }
   }, [])
 
   // Send height updates to parent when in iframe
