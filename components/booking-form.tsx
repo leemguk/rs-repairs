@@ -1005,21 +1005,21 @@ export function BookingForm() {
               disabled={isSubmitting}
             />
             <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            {showAddressSuggestions && addressSuggestions.length > 0 && !isSubmitting && (
+              <div className="absolute z-[9999] w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto" style={{ zIndex: 99999 }}>
+                {addressSuggestions.map((suggestion) => (
+                  <div
+                    key={suggestion.id}
+                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    onClick={() => selectAddress(suggestion)}
+                  >
+                    <div className="font-medium text-sm text-gray-900">{suggestion.text}</div>
+                    <div className="text-xs text-gray-500">{suggestion.description}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          {showAddressSuggestions && addressSuggestions.length > 0 && !isSubmitting && (
-            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-              {addressSuggestions.map((suggestion) => (
-                <div
-                  key={suggestion.id}
-                  className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                  onClick={() => selectAddress(suggestion)}
-                >
-                  <div className="font-medium text-sm text-gray-900">{suggestion.text}</div>
-                  <div className="text-xs text-gray-500">{suggestion.description}</div>
-                </div>
-              ))}
-            </div>
-          )}
           {bookingData.fullAddress && !showAddressSuggestions && (
             <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-start gap-2">
@@ -1233,14 +1233,14 @@ export function BookingForm() {
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="step-3" className="border rounded-lg" data-section="step-3">
+          <AccordionItem value="step-3" className="border rounded-lg overflow-visible" data-section="step-3">
             <AccordionTrigger 
               className="px-6 py-4 hover:no-underline"
               disabled={!completedSections.includes("step-2")}
             >
               {renderSectionHeader("Your Details", completedSections.includes("step-3"), 3)}
             </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
+            <AccordionContent className="px-6 pb-6 overflow-visible">
               {renderStep3()}
             </AccordionContent>
           </AccordionItem>
