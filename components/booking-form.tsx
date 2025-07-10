@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Clock, CheckCircle, Calendar, ChevronRight, User, MapPin } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { BreadcrumbSteps } from "@/components/ui/breadcrumb-steps"
 import { supabase } from "@/lib/supabase"
 import type { Booking } from "@/lib/supabase"
 import { getBookingApplianceTypes, getBookingBrands } from "@/actions/get-booking-options"
@@ -441,18 +440,77 @@ export function BookingForm() {
 
   // --- Render Functions ---
 
-  const breadcrumbSteps = [
-    { id: 1, title: "Your Appliance", shortTitle: "Appliance" },
-    { id: 2, title: "Service & Appointment", shortTitle: "Service" },
-    { id: 3, title: "Your Details", shortTitle: "Details" },
-    { id: 4, title: "Payment & Confirmation", shortTitle: "Payment" }
-  ]
-
-  const handleStepClick = (step: number) => {
-    if (step <= currentStep && !isSubmitting) {
-      setCurrentStep(step)
-      window.scrollTo({ top: 0, behavior: "smooth" })
+  const renderProgressBar = () => {
+    const goToStep = (step: number) => {
+      if (step <= currentStep && !isSubmitting) {
+        setCurrentStep(step)
+        window.scrollTo({ top: 0, behavior: "auto" })
+        setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 50)
+        setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 150)
+      }
     }
+
+    return (
+      <div className="flex items-center justify-between mb-6 sm:mb-8">
+        <div className="flex items-center flex-1">
+          {/* Step 1 - Appliance */}
+          <div
+            className={`flex items-center cursor-pointer transition-colors ${
+              currentStep >= 1 ? "text-green-600 hover:text-green-700" : "text-gray-400"
+            } ${isSubmitting ? "pointer-events-none" : ""}`}
+            onClick={() => goToStep(1)}
+          >
+            <div className={`w-2 sm:w-3 h-1 ${currentStep >= 1 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
+            <span className="text-xs sm:text-sm font-medium">Appliance</span>
+          </div>
+
+          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mx-2 sm:mx-4" />
+
+          {/* Step 2 - Appointment */}
+          <div
+            className={`flex items-center transition-colors ${
+              currentStep >= 2
+                ? "text-green-600 hover:text-green-700 cursor-pointer"
+                : "text-gray-400 cursor-pointer hover:text-gray-600"
+            } ${isSubmitting ? "pointer-events-none" : ""}`}
+            onClick={() => goToStep(2)}
+          >
+            <div className={`w-2 sm:w-3 h-1 ${currentStep >= 2 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
+            <span className="text-xs sm:text-sm font-medium">Appointment</span>
+          </div>
+
+          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mx-2 sm:mx-4" />
+
+          {/* Step 3 - Details */}
+          <div
+            className={`flex items-center transition-colors ${
+              currentStep >= 3
+                ? "text-green-600 hover:text-green-700 cursor-pointer"
+                : "text-gray-400 cursor-pointer hover:text-gray-600"
+            } ${isSubmitting ? "pointer-events-none" : ""}`}
+            onClick={() => goToStep(3)}
+          >
+            <div className={`w-2 sm:w-3 h-1 ${currentStep >= 3 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
+            <span className="text-xs sm:text-sm font-medium">Details</span>
+          </div>
+
+          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mx-2 sm:mx-4" />
+
+          {/* Step 4 - Confirm */}
+          <div
+            className={`flex items-center transition-colors ${
+              currentStep >= 4
+                ? "text-green-600 hover:text-green-700 cursor-pointer"
+                : "text-gray-400 cursor-pointer hover:text-gray-600"
+            } ${isSubmitting ? "pointer-events-none" : ""}`}
+            onClick={() => goToStep(4)}
+          >
+            <div className={`w-2 sm:w-3 h-1 ${currentStep >= 4 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
+            <span className="text-xs sm:text-sm font-medium">Confirm</span>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // --- Step 1 ---
@@ -1060,18 +1118,15 @@ export function BookingForm() {
 
   // Instead of Dialog, render the form directly:
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-8 bg-white rounded-lg shadow-lg">
-      <BreadcrumbSteps 
-        steps={breadcrumbSteps} 
-        currentStep={currentStep} 
-        onStepClick={handleStepClick}
-        className="mb-8"
-      />
-      <div className="mt-6">
-        {currentStep === 1 && renderStep1()}
-        {currentStep === 2 && renderStep2()}
-        {currentStep === 3 && renderStep3()}
-        {currentStep === 4 && renderStep4()}
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
+        {renderProgressBar()}
+        <div className="mt-6">
+          {currentStep === 1 && renderStep1()}
+          {currentStep === 2 && renderStep2()}
+          {currentStep === 3 && renderStep3()}
+          {currentStep === 4 && renderStep4()}
+        </div>
       </div>
     </div>
   )
