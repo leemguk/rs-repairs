@@ -122,6 +122,36 @@ export function BookingForm() {
     setIsWidget(isWidgetPath || isInIframe)
   }, [])
 
+  // Send height updates to parent when in iframe
+  useEffect(() => {
+    if (!isWidget) return
+
+    const sendHeight = () => {
+      const height = document.body.scrollHeight
+      window.parent.postMessage({
+        type: 'rs-repairs-booking-height',
+        height: height
+      }, '*') // In production, replace '*' with the specific origin like 'https://www.ransomspares.co.uk'
+    }
+
+    // Send initial height
+    sendHeight()
+
+    // Watch for changes
+    const resizeObserver = new ResizeObserver(() => {
+      sendHeight()
+    })
+
+    resizeObserver.observe(document.body)
+
+    // Also send height on step changes
+    sendHeight()
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [isWidget, currentStep]) // Re-run when step changes
+
   // Load appliance types on mount
   useEffect(() => {
     const loadApplianceTypes = async () => {
