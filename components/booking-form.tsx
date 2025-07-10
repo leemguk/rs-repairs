@@ -477,9 +477,15 @@ export function BookingForm() {
       if (addressInputRef.current) {
         const rect = addressInputRef.current.getBoundingClientRect()
         console.log('Input position:', rect) // Debug log
+        
+        // For iframe context, we need to render the dropdown within the iframe, not the parent page
+        // Use absolute positioning relative to the document instead of fixed
+        const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+        const scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft
+        
         setDropdownPosition({
-          top: rect.bottom + window.scrollY + 4,
-          left: rect.left + window.scrollX,
+          top: rect.bottom + scrollTop + 4,
+          left: rect.left + scrollLeft,
           width: rect.width
         })
       }
@@ -1025,9 +1031,13 @@ export function BookingForm() {
                   if (addressInputRef.current) {
                     const rect = addressInputRef.current.getBoundingClientRect()
                     console.log('Focus position:', rect) // Debug log
+                    
+                    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+                    const scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft
+                    
                     setDropdownPosition({
-                      top: rect.bottom + window.scrollY + 4,
-                      left: rect.left + window.scrollX,
+                      top: rect.bottom + scrollTop + 4,
+                      left: rect.left + scrollLeft,
                       width: rect.width
                     })
                   }
@@ -1279,7 +1289,7 @@ export function BookingForm() {
       {showAddressSuggestions && addressSuggestions.length > 0 && !isSubmitting && typeof window !== 'undefined' && 
         createPortal(
           <div 
-            className="fixed z-[99999] bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
+            className="absolute z-[99999] bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
             style={{
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`,
