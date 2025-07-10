@@ -1,7 +1,8 @@
 // booking-form.tsx
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import { loadStripe } from "@stripe/stripe-js"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,8 +10,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Clock, CheckCircle, Calendar, ChevronRight, User, MapPin } from "lucide-react"
+import { Clock, CheckCircle, Calendar, ChevronRight, User, MapPin, Check } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { supabase } from "@/lib/supabase"
 import type { Booking } from "@/lib/supabase"
 import { getBookingApplianceTypes, getBookingBrands } from "@/actions/get-booking-options"
@@ -60,8 +62,11 @@ interface BookingData {
 }
 
 export function BookingForm() {
-  // State and logic copied from BookingModal, minus modal/dialog logic
-  const [currentStep, setCurrentStep] = useState(1)
+  // State for accordion-based form
+  const [openSections, setOpenSections] = useState(["step-1"]) // Start with first section open
+  const [completedSections, setCompletedSections] = useState<string[]>([])
+  const addressInputRef = useRef<HTMLInputElement>(null)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isWidget, setIsWidget] = useState(false)
@@ -122,15 +127,33 @@ export function BookingForm() {
     const widgetMode = isWidgetPath || isInIframe
     setIsWidget(widgetMode)
     
-    // Add widget-mode class to hide scrollbars
+    // Add widget-mode class for iframe-specific styling
     if (widgetMode) {
       document.documentElement.classList.add('widget-mode')
       document.body.classList.add('widget-mode')
+      
+      // Only hide vertical scroll if the content fits in the iframe
+      const checkContentHeight = () => {
+        const contentHeight = document.documentElement.scrollHeight
+        const viewportHeight = window.innerHeight
+        
+        // If content is much larger than viewport, allow scrolling
+        if (contentHeight > viewportHeight + 100) {
+          document.body.style.overflowY = 'auto'
+          document.documentElement.style.overflowY = 'auto'
+        }
+      }
+      
+      // Check height after initial render and when content changes
+      setTimeout(checkContentHeight, 100)
     }
     
     return () => {
       document.documentElement.classList.remove('widget-mode')
       document.body.classList.remove('widget-mode')
+      // Reset overflow styles
+      document.body.style.overflowY = ''
+      document.documentElement.style.overflowY = ''
     }
   }, [])
 
@@ -253,7 +276,7 @@ export function BookingForm() {
       window.removeEventListener('orientationchange', handleOrientationChange)
       window.removeEventListener('resize', handleOrientationChange)
     }
-  }, [isWidget, currentStep]) // Re-run when step changes
+  }, [isWidget, openSections, completedSections]) // Re-run when sections change
 
   // Load appliance types on mount
   useEffect(() => {
@@ -306,14 +329,41 @@ export function BookingForm() {
     setBookingData((prev) => ({ ...prev, [field]: value }))
   }
 
-  // Add nextStep function
-  const nextStep = () => {
-    if (currentStep < 4) {
-      setCurrentStep(currentStep + 1)
-      window.scrollTo({ top: 0, behavior: "auto" })
-      setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 50)
-      setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 150)
+  // Function to complete a section and open the next one
+  const completeSection = (currentSection: string, nextSection?: string) => {
+    setCompletedSections(prev => {
+      if (!prev.includes(currentSection)) {
+        return [...prev, currentSection]
+      }
+      return prev
+    })
+    
+    if (nextSection) {
+      setOpenSections([nextSection])
+      // Scroll to next section after a brief delay
+      setTimeout(() => {
+        const nextElement = document.querySelector(`[data-section="${nextSection}"]`)
+        if (nextElement) {
+          nextElement.scrollIntoView({ behavior: "smooth", block: "start" })
+        }
+      }, 100)
     }
+  }
+
+  // Validation functions for each section
+  const isStep1Valid = () => {
+    return bookingData.applianceType && bookingData.manufacturer && bookingData.applianceFault
+  }
+
+  const isStep2Valid = () => {
+    if (!selectedPricing) return false
+    if (selectedPricing.type === "next-day" && !bookingData.selectedTimeSlot) return false
+    if (selectedPricing.type === "standard" && (!bookingData.selectedDate || !bookingData.selectedTimeSlot)) return false
+    return true
+  }
+
+  const isStep3Valid = () => {
+    return bookingData.firstName && bookingData.email && bookingData.mobile && bookingData.fullAddress
   }
 
   // Add pricingOptions array
@@ -370,14 +420,9 @@ export function BookingForm() {
     return dates
   }
 
-  // Add prevStep function
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
-      window.scrollTo({ top: 0, behavior: "auto" })
-      setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 50)
-      setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 150)
-    }
+  // Handle accordion value changes
+  const handleAccordionChange = (value: string[]) => {
+    setOpenSections(value)
   }
 
   // Add searchAddresses function
@@ -426,6 +471,25 @@ export function BookingForm() {
   const handleAddressSearch = (value: string) => {
     setAddressSearchValue(value)
     searchAddresses(value)
+    
+    // Update dropdown position when searching with a small delay to ensure accurate positioning
+    setTimeout(() => {
+      if (addressInputRef.current) {
+        const rect = addressInputRef.current.getBoundingClientRect()
+        console.log('Input position:', rect) // Debug log
+        
+        // For iframe context, we need to render the dropdown within the iframe, not the parent page
+        // Use absolute positioning relative to the document instead of fixed
+        const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+        const scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft
+        
+        setDropdownPosition({
+          top: rect.bottom + scrollTop + 4,
+          left: rect.left + scrollLeft,
+          width: rect.width
+        })
+      }
+    }, 10)
   }
 
   // Add selectAddress function
@@ -573,86 +637,23 @@ export function BookingForm() {
 
   // --- Render Functions ---
 
-  const renderProgressBar = () => {
-    const goToStep = (step: number) => {
-      if (step <= currentStep && !isSubmitting) {
-        setCurrentStep(step)
-        window.scrollTo({ top: 0, behavior: "auto" })
-        setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 50)
-        setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 150)
-      }
-    }
-
+  const renderSectionHeader = (title: string, isCompleted: boolean, stepNumber: number) => {
     return (
-      <div className="flex items-center justify-between mb-6 sm:mb-8">
-        <div className="flex items-center flex-1 overflow-hidden">
-          {/* Step 1 - Appliance */}
-          <div
-            className={`flex items-center cursor-pointer transition-colors ${
-              currentStep >= 1 ? "text-green-600 hover:text-green-700" : "text-gray-400"
-            } ${isSubmitting ? "pointer-events-none" : ""}`}
-            onClick={() => goToStep(1)}
-          >
-            <div className={`w-2 sm:w-3 h-1 ${currentStep >= 1 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
-            <span className="text-xs sm:text-sm font-medium whitespace-nowrap">Appliance</span>
-          </div>
-
-          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mx-1 sm:mx-3 flex-shrink-0" />
-
-          {/* Step 2 - Appointment */}
-          <div
-            className={`flex items-center transition-colors ${
-              currentStep >= 2
-                ? "text-green-600 hover:text-green-700 cursor-pointer"
-                : "text-gray-400 cursor-pointer hover:text-gray-600"
-            } ${isSubmitting ? "pointer-events-none" : ""}`}
-            onClick={() => goToStep(2)}
-          >
-            <div className={`w-2 sm:w-3 h-1 ${currentStep >= 2 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
-            <span className="text-xs sm:text-sm font-medium whitespace-nowrap hidden sm:inline">Appointment</span>
-            <span className="text-xs sm:text-sm font-medium whitespace-nowrap sm:hidden">Service</span>
-          </div>
-
-          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mx-1 sm:mx-3 flex-shrink-0" />
-
-          {/* Step 3 - Details */}
-          <div
-            className={`flex items-center transition-colors ${
-              currentStep >= 3
-                ? "text-green-600 hover:text-green-700 cursor-pointer"
-                : "text-gray-400 cursor-pointer hover:text-gray-600"
-            } ${isSubmitting ? "pointer-events-none" : ""}`}
-            onClick={() => goToStep(3)}
-          >
-            <div className={`w-2 sm:w-3 h-1 ${currentStep >= 3 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
-            <span className="text-xs sm:text-sm font-medium whitespace-nowrap">Details</span>
-          </div>
-
-          <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mx-1 sm:mx-3 flex-shrink-0" />
-
-          {/* Step 4 - Confirm */}
-          <div
-            className={`flex items-center transition-colors ${
-              currentStep >= 4
-                ? "text-green-600 hover:text-green-700 cursor-pointer"
-                : "text-gray-400 cursor-pointer hover:text-gray-600"
-            } ${isSubmitting ? "pointer-events-none" : ""}`}
-            onClick={() => goToStep(4)}
-          >
-            <div className={`w-2 sm:w-3 h-1 ${currentStep >= 4 ? "bg-green-600" : "bg-gray-300"} mr-1 sm:mr-2`} />
-            <span className="text-xs sm:text-sm font-medium whitespace-nowrap hidden sm:inline">Confirm</span>
-            <span className="text-xs sm:text-sm font-medium whitespace-nowrap sm:hidden">Pay</span>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+          isCompleted ? "bg-green-600 text-white" : "bg-gray-200 text-gray-600"
+        }`}>
+          {isCompleted ? <Check className="w-4 h-4" /> : stepNumber}
         </div>
+        <span className="text-lg font-semibold">{title}</span>
       </div>
     )
   }
 
   // --- Step 1 ---
   const renderStep1 = () => (
-    <div className="space-y-6 min-h-[500px]">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">1. Your Appliance</h2>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -778,11 +779,11 @@ export function BookingForm() {
       </div>
       <div className="flex justify-end">
         <Button
-          onClick={nextStep}
+          onClick={() => completeSection("step-1", "step-2")}
           className="bg-green-600 hover:bg-green-700 w-full"
-          disabled={!bookingData.applianceType || !bookingData.manufacturer || !bookingData.applianceFault || isSubmitting}
+          disabled={!isStep1Valid() || isSubmitting}
         >
-          Continue
+          Continue to Service Selection
         </Button>
       </div>
     </div>
@@ -790,9 +791,8 @@ export function BookingForm() {
 
   // --- Step 2 ---
   const renderStep2 = () => (
-    <div className="space-y-6 min-h-[500px]">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">2. Select Service & Appointment</h2>
         <p className="text-gray-600 mb-6">
           Choose your preferred service speed and appointment time. All prices include call-out, diagnosis, and repair.
         </p>
@@ -953,26 +953,11 @@ export function BookingForm() {
       </div>
       <div className="flex justify-end">
         <Button
-          onClick={nextStep}
+          onClick={() => completeSection("step-2", "step-3")}
           className="bg-green-600 hover:bg-green-700 w-full"
-          disabled={
-            !selectedPricing ||
-            (selectedPricing.type === "next-day" && !bookingData.selectedTimeSlot) ||
-            (selectedPricing.type === "standard" && (!bookingData.selectedDate || !bookingData.selectedTimeSlot)) ||
-            isSubmitting
-          }
+          disabled={!isStep2Valid() || isSubmitting}
         >
-          Continue to Details
-        </Button>
-      </div>
-      <div className="flex justify-end mt-3">
-        <Button
-          variant="outline"
-          className="w-full border-green-600 text-green-600 hover:bg-green-50"
-          onClick={prevStep}
-          disabled={isSubmitting}
-        >
-          {"<"} Change Appliance Details
+          Continue to Your Details
         </Button>
       </div>
     </div>
@@ -980,7 +965,7 @@ export function BookingForm() {
 
   // --- Step 3 ---
   const renderStep3 = () => (
-    <div className="space-y-6 min-h-[500px]">
+    <div className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Full Name: <span className="text-red-500">*</span>
@@ -1035,28 +1020,32 @@ export function BookingForm() {
           </label>
           <div className="relative">
             <Input
+              ref={addressInputRef}
               value={addressSearchValue}
               onChange={(e) => handleAddressSearch(e.target.value)}
               placeholder="Start typing your address..."
               className="w-full text-base pr-10"
               disabled={isSubmitting}
+              onFocus={() => {
+                setTimeout(() => {
+                  if (addressInputRef.current) {
+                    const rect = addressInputRef.current.getBoundingClientRect()
+                    console.log('Focus position:', rect) // Debug log
+                    
+                    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+                    const scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft
+                    
+                    setDropdownPosition({
+                      top: rect.bottom + scrollTop + 4,
+                      left: rect.left + scrollLeft,
+                      width: rect.width
+                    })
+                  }
+                }, 10)
+              }}
             />
             <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
-          {showAddressSuggestions && addressSuggestions.length > 0 && !isSubmitting && (
-            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-              {addressSuggestions.map((suggestion) => (
-                <div
-                  key={suggestion.id}
-                  className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                  onClick={() => selectAddress(suggestion)}
-                >
-                  <div className="font-medium text-sm text-gray-900">{suggestion.text}</div>
-                  <div className="text-xs text-gray-500">{suggestion.description}</div>
-                </div>
-              ))}
-            </div>
-          )}
           {bookingData.fullAddress && !showAddressSuggestions && (
             <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-start gap-2">
@@ -1082,21 +1071,13 @@ export function BookingForm() {
           )}
         </div>
       </div>
-      <div className="flex flex-col gap-3 mt-6">
+      <div className="flex justify-end mt-6">
         <Button
-          onClick={nextStep}
-          className="bg-green-600 hover:bg-green-700"
-          disabled={!bookingData.firstName || !bookingData.email || !bookingData.mobile || !bookingData.fullAddress || isSubmitting}
+          onClick={() => completeSection("step-3", "step-4")}
+          className="bg-green-600 hover:bg-green-700 w-full"
+          disabled={!isStep3Valid() || isSubmitting}
         >
-          Continue & Review
-        </Button>
-        <Button 
-          variant="outline" 
-          className="border-green-600 text-green-600 hover:bg-green-50" 
-          onClick={prevStep}
-          disabled={isSubmitting}
-        >
-          {"<"} Change Details
+          Continue to Payment
         </Button>
       </div>
     </div>
@@ -1104,9 +1085,8 @@ export function BookingForm() {
 
   // --- Step 4 ---
   const renderStep4 = () => (
-    <div className="space-y-6 min-h-[500px]">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">4. Payment & Confirmation</h2>
         <p className="text-gray-600 mb-6">Review your booking and complete payment to confirm your appointment.</p>
         <div className="space-y-6">
           <Card className="border-2 border-green-200 bg-green-50">
@@ -1237,14 +1217,6 @@ export function BookingForm() {
               <span>🔒 Secure payment powered by</span>
               <span className="font-semibold">Stripe</span>
             </div>
-            <Button 
-              variant="outline" 
-              className="border-green-600 text-green-600 hover:bg-green-50" 
-              onClick={prevStep}
-              disabled={isSubmitting}
-            >
-              {"<"} Back to Details
-            </Button>
           </div>
         </div>
       </div>
@@ -1255,14 +1227,90 @@ export function BookingForm() {
   return (
     <div className="booking-form-container w-full max-w-4xl mx-auto" data-widget="true">
       <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
-        {renderProgressBar()}
-        <div className="mt-6">
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
-          {currentStep === 4 && renderStep4()}
+        <div className="mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Engineer Booking Form</h1>
+          <p className="text-gray-600">Complete the sections below to book your appliance repair</p>
         </div>
+        
+        <Accordion 
+          type="multiple" 
+          value={openSections} 
+          onValueChange={handleAccordionChange}
+          className="space-y-4"
+        >
+          <AccordionItem value="step-1" className="border rounded-lg" data-section="step-1">
+            <AccordionTrigger className="px-6 py-4 hover:no-underline">
+              {renderSectionHeader("Your Appliance", completedSections.includes("step-1"), 1)}
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              {renderStep1()}
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="step-2" className="border rounded-lg" data-section="step-2">
+            <AccordionTrigger 
+              className="px-6 py-4 hover:no-underline"
+              disabled={!completedSections.includes("step-1")}
+            >
+              {renderSectionHeader("Service & Appointment", completedSections.includes("step-2"), 2)}
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              {renderStep2()}
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="step-3" className="border rounded-lg overflow-visible" data-section="step-3">
+            <AccordionTrigger 
+              className="px-6 py-4 hover:no-underline"
+              disabled={!completedSections.includes("step-2")}
+            >
+              {renderSectionHeader("Your Details", completedSections.includes("step-3"), 3)}
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6 overflow-visible">
+              {renderStep3()}
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="step-4" className="border rounded-lg" data-section="step-4">
+            <AccordionTrigger 
+              className="px-6 py-4 hover:no-underline"
+              disabled={!completedSections.includes("step-3")}
+            >
+              {renderSectionHeader("Payment & Confirmation", completedSections.includes("step-4"), 4)}
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              {renderStep4()}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
+      
+      {/* Portal for address dropdown to escape accordion overflow constraints */}
+      {showAddressSuggestions && addressSuggestions.length > 0 && !isSubmitting && typeof window !== 'undefined' && 
+        createPortal(
+          <div 
+            className="absolute z-[99999] bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
+            style={{
+              top: `${dropdownPosition.top}px`,
+              left: `${dropdownPosition.left}px`,
+              width: `${dropdownPosition.width}px`
+            }}
+            onClick={() => console.log('Dropdown position:', dropdownPosition)} // Debug log
+          >
+            {addressSuggestions.map((suggestion) => (
+              <div
+                key={suggestion.id}
+                className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                onClick={() => selectAddress(suggestion)}
+              >
+                <div className="font-medium text-sm text-gray-900">{suggestion.text}</div>
+                <div className="text-xs text-gray-500">{suggestion.description}</div>
+              </div>
+            ))}
+          </div>,
+          document.body
+        )
+      }
     </div>
   )
 } 

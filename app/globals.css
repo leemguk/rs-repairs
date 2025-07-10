@@ -6,22 +6,24 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Hide scrollbars when in iframe widget mode */
+/* Hide scrollbars when in iframe widget mode - but only horizontal overflow */
 body.widget-mode {
-  overflow: hidden !important;
+  overflow-x: hidden !important;
 }
 
 html.widget-mode {
-  overflow: hidden !important;
+  overflow-x: hidden !important;
 }
 
-/* Hide scrollbars for all widget pages immediately */
-html:has([data-widget="true"]) {
-  overflow: hidden !important;
-}
-
-body:has([data-widget="true"]) {
-  overflow: hidden !important;
+/* For iframe context only - hide vertical scrollbars when content fits */
+@media screen and (max-height: 2000px) {
+  html.widget-mode {
+    overflow-y: auto !important;
+  }
+  
+  body.widget-mode {
+    overflow-y: auto !important;
+  }
 }
 
 @layer utilities {
