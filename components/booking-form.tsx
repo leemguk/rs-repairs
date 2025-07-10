@@ -145,6 +145,8 @@ export function BookingForm() {
       const container = document.querySelector('.booking-form-container')
       let height = 0
       
+      const isMobile = window.innerWidth <= 768
+      
       if (container) {
         // Get the container's total height including margins
         const rect = container.getBoundingClientRect()
@@ -155,29 +157,70 @@ export function BookingForm() {
         
         // Add the container's offset from top of page
         height += container.offsetTop
+        
+        // On mobile, also try alternative height calculations
+        if (isMobile) {
+          const scrollHeight = container.scrollHeight
+          const offsetHeight = container.offsetHeight
+          const alternativeHeight = Math.max(height, scrollHeight, offsetHeight)
+          if (alternativeHeight > height) {
+            height = alternativeHeight
+          }
+        }
       } else {
         height = document.documentElement.scrollHeight
       }
       
       // Add extra padding for mobile devices
-      const isMobile = window.innerWidth <= 768
       const extraPadding = isMobile ? 40 : 20
       height += extraPadding
       
-      // Only send if height has changed significantly (more than 5px for mobile)
-      const threshold = isMobile ? 5 : 10
-      if (Math.abs(height - lastHeight) > threshold) {
+      // On mobile, be more aggressive with sending updates
+      const threshold = isMobile ? 1 : 10
+      const shouldSend = isMobile ? true : Math.abs(height - lastHeight) > threshold
+      
+      if (shouldSend && height > 0) {
         lastHeight = height
-        console.log('Sending height:', height, 'Mobile:', isMobile) // Debug log
-        window.parent.postMessage({
-          type: 'rs-repairs-booking-height',
-          height: height
-        }, '*') // In production, replace '*' with the specific origin like 'https://www.ransomspares.co.uk'
+        console.log('Sending height:', height, 'Mobile:', isMobile, 'Container found:', !!container) // Debug log
+        
+        // Try multiple ways to send the message for mobile compatibility
+        try {
+          window.parent.postMessage({
+            type: 'rs-repairs-booking-height',
+            height: height,
+            timestamp: Date.now(),
+            mobile: isMobile
+          }, '*')
+          
+          // For mobile, send a second message after a brief delay
+          if (isMobile) {
+            setTimeout(() => {
+              window.parent.postMessage({
+                type: 'rs-repairs-booking-height',
+                height: height,
+                timestamp: Date.now(),
+                mobile: isMobile,
+                retry: true
+              }, '*')
+            }, 50)
+          }
+        } catch (e) {
+          console.error('Failed to send height message:', e)
+        }
       }
     }
 
-    // Send initial height after a short delay
+    // Send initial height after multiple delays for mobile
     setTimeout(sendHeight, 100)
+    setTimeout(sendHeight, 500)  // Additional delay for mobile
+    setTimeout(sendHeight, 1000) // Even longer delay for mobile rendering
+    
+    // Also send height on orientation change (mobile)
+    const handleOrientationChange = () => {
+      setTimeout(sendHeight, 100)
+    }
+    window.addEventListener('orientationchange', handleOrientationChange)
+    window.addEventListener('resize', handleOrientationChange)
 
     // Watch for changes with debouncing
     let timeoutId
@@ -192,9 +235,23 @@ export function BookingForm() {
       resizeObserver.observe(container)
     }
 
+    // For mobile, also observe viewport changes
+    const viewportObserver = new ResizeObserver(() => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(sendHeight, 200)
+    })
+    
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        setTimeout(sendHeight, 100)
+      })
+    }
+
     return () => {
       resizeObserver.disconnect()
       clearTimeout(timeoutId)
+      window.removeEventListener('orientationchange', handleOrientationChange)
+      window.removeEventListener('resize', handleOrientationChange)
     }
   }, [isWidget, currentStep]) // Re-run when step changes
 
