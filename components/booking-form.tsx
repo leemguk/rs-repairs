@@ -1226,7 +1226,7 @@ export function BookingForm() {
   // Instead of Dialog, render the form directly:
   return (
     <div className="booking-form-container w-full max-w-4xl mx-auto" data-widget="true">
-      <div className="bg-white rounded-lg shadow-2xl p-4 sm:p-6 md:p-8">
+      <div className="bg-white rounded-lg p-4 sm:p-6 md:p-8" style={{ boxShadow: '0 0 8px rgba(0, 0, 0, 0.1)' }}>
         <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Engineer Booking Form</h1>
           <p className="text-gray-600">Complete the sections below to book your appliance repair</p>
