@@ -17,7 +17,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: 'frame-ancestors https://www.ransomspares.co.uk',
+            value: 'frame-ancestors https://www.ransomspares.co.uk https://www.ransomdev.co.uk',
           },
         ],
       },
