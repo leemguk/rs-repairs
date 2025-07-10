@@ -15,6 +15,15 @@ html.widget-mode {
   overflow: hidden !important;
 }
 
+/* Hide scrollbars for all widget pages immediately */
+html:has([data-widget="true"]) {
+  overflow: hidden !important;
+}
+
+body:has([data-widget="true"]) {
+  overflow: hidden !important;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
