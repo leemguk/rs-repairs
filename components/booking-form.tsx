@@ -472,15 +472,18 @@ export function BookingForm() {
     setAddressSearchValue(value)
     searchAddresses(value)
     
-    // Update dropdown position when searching
-    if (addressInputRef.current) {
-      const rect = addressInputRef.current.getBoundingClientRect()
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-        width: rect.width
-      })
-    }
+    // Update dropdown position when searching with a small delay to ensure accurate positioning
+    setTimeout(() => {
+      if (addressInputRef.current) {
+        const rect = addressInputRef.current.getBoundingClientRect()
+        console.log('Input position:', rect) // Debug log
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        })
+      }
+    }, 10)
   }
 
   // Add selectAddress function
@@ -1018,14 +1021,17 @@ export function BookingForm() {
               className="w-full text-base pr-10"
               disabled={isSubmitting}
               onFocus={() => {
-                if (addressInputRef.current) {
-                  const rect = addressInputRef.current.getBoundingClientRect()
-                  setDropdownPosition({
-                    top: rect.bottom + window.scrollY + 4,
-                    left: rect.left + window.scrollX,
-                    width: rect.width
-                  })
-                }
+                setTimeout(() => {
+                  if (addressInputRef.current) {
+                    const rect = addressInputRef.current.getBoundingClientRect()
+                    console.log('Focus position:', rect) // Debug log
+                    setDropdownPosition({
+                      top: rect.bottom + window.scrollY + 4,
+                      left: rect.left + window.scrollX,
+                      width: rect.width
+                    })
+                  }
+                }, 10)
               }}
             />
             <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -1279,6 +1285,7 @@ export function BookingForm() {
               left: `${dropdownPosition.left}px`,
               width: `${dropdownPosition.width}px`
             }}
+            onClick={() => console.log('Dropdown position:', dropdownPosition)} // Debug log
           >
             {addressSuggestions.map((suggestion) => (
               <div
