@@ -28,15 +28,20 @@
         // More sensitive threshold for mobile
         const threshold = isMobile ? 5 : 10;
         
-        console.log('Parent received height:', event.data.height, 'New height:', newHeight, 'Mobile:', isMobile); // Debug log
+        console.log('Parent received height:', event.data.height, 'New height:', newHeight, 'Mobile:', isMobile, 'Data mobile:', event.data.mobile); // Debug log
+        
+        // For mobile, be more aggressive about updating
+        const shouldUpdate = isMobile ? 
+          Math.abs(newHeight - currentHeight) > 1 : 
+          Math.abs(newHeight - currentHeight) > threshold;
         
         // Only update if height change is significant
-        if (Math.abs(newHeight - currentHeight) > threshold) {
-          // Smooth height transition
-          iframe.style.transition = 'height 0.3s ease';
+        if (shouldUpdate || event.data.mobile) {
+          // Smooth height transition (faster on mobile)
+          iframe.style.transition = isMobile ? 'height 0.1s ease' : 'height 0.3s ease';
           iframe.style.height = newHeight + 'px';
           
-          console.log('Updated iframe height to:', newHeight + 'px'); // Debug log
+          console.log('Updated iframe height to:', newHeight + 'px', 'Was mobile message:', event.data.mobile); // Debug log
           
           // Optional: Scroll to iframe if height increased significantly
           // Uncomment if you want this behavior
