@@ -1187,7 +1187,7 @@ export function BookingForm() {
 
   // Instead of Dialog, render the form directly:
   return (
-    <div className="booking-form-container w-full max-w-4xl mx-auto">
+    <div className="booking-form-container w-full max-w-4xl mx-auto" data-widget="true">
       <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
         {renderProgressBar()}
         <div className="mt-6">
