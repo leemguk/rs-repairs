@@ -340,13 +340,25 @@ export function BookingForm() {
     
     if (nextSection) {
       setOpenSections([nextSection])
-      // Scroll to next section after a brief delay
+      // Scroll to next section after accordion animation completes
       setTimeout(() => {
-        const nextElement = document.querySelector(`[data-section="${nextSection}"]`)
+        // First try to find the accordion trigger (section header)
+        const nextTrigger = document.querySelector(`[data-section="${nextSection}"] [data-state="open"]`)
+        const nextElement = nextTrigger || document.querySelector(`[data-section="${nextSection}"]`)
+        
         if (nextElement) {
-          nextElement.scrollIntoView({ behavior: "smooth", block: "start" })
+          // Calculate proper scroll position with offset for better visibility
+          const elementRect = nextElement.getBoundingClientRect()
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+          const targetPosition = elementRect.top + scrollTop - 20 // 20px offset from top
+          
+          // Use smooth scrolling with proper positioning
+          window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+          })
         }
-      }, 100)
+      }, 300) // Increased delay to allow accordion animation to complete
     }
   }
 
