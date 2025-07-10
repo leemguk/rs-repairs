@@ -8,7 +8,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(request: NextRequest) {
   try {
-    const { amount, currency = 'gbp', bookingId, bookingData } = await request.json()
+    const { amount, currency = 'gbp', bookingId, bookingData, isWidget } = await request.json()
 
     // Validate required fields
     if (!amount || !bookingId) {
@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'payment',
-      success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&booking_id=${bookingId}`,
-      cancel_url: `${baseUrl}/payment-cancelled?booking_id=${bookingId}`,
+      success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&booking_id=${bookingId}${isWidget ? '&widget=true' : ''}`,
+      cancel_url: `${baseUrl}/payment-cancelled?booking_id=${bookingId}${isWidget ? '&widget=true' : ''}`,
       customer_email: bookingData?.email,
       metadata: {
         bookingId: bookingId,

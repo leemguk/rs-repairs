@@ -10,6 +10,7 @@ function PaymentSuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
   const bookingId = searchParams.get('booking_id')
+  const isWidget = searchParams.get('widget') === 'true'
   const [isProcessing, setIsProcessing] = useState(true)
   const [error, setError] = useState('')
   const [isInIframe, setIsInIframe] = useState(false)
@@ -17,10 +18,15 @@ function PaymentSuccessContent() {
   // Get short booking reference
   const shortBookingRef = bookingId ? bookingId.split('-')[0] : ''
 
-  // Check if we're in an iframe
+  // Check if we're in an iframe or widget mode
   useEffect(() => {
-    setIsInIframe(window.self !== window.top)
-  }, [])
+    try {
+      setIsInIframe(window.self !== window.top || isWidget)
+    } catch (e) {
+      // If we can't access window.top due to cross-origin, we're likely in an iframe
+      setIsInIframe(true)
+    }
+  }, [isWidget])
 
   useEffect(() => {
     const processPayment = async () => {

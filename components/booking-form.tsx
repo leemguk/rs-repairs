@@ -65,6 +65,7 @@ export function BookingForm() {
   const [currentStep, setCurrentStep] = useState(1)
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isWidget, setIsWidget] = useState(false)
   const [addressSuggestions, setAddressSuggestions] = useState<
     Array<{
       id: string
@@ -113,6 +114,14 @@ export function BookingForm() {
   })
 
   const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_your_key_here")
+
+  // Check if we're in widget mode
+  useEffect(() => {
+    // Check if we're on the widget path or in an iframe
+    const isWidgetPath = window.location.pathname.includes('/widget/booking')
+    const isInIframe = window.self !== window.top
+    setIsWidget(isWidgetPath || isInIframe)
+  }, [])
 
   // Load appliance types on mount
   useEffect(() => {
@@ -397,6 +406,7 @@ export function BookingForm() {
           amount: selectedPricing.price * 100, // Convert to pence
           currency: "gbp",
           bookingId: bookingId,
+          isWidget: isWidget,
           bookingData: {
             firstName: bookingData.firstName,
             email: bookingData.email,
