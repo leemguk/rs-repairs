@@ -166,13 +166,16 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     loadManufacturers()
   }, [bookingData.applianceType])
 
+  // Check if same-day booking is enabled
+  const isSameDayEnabled = process.env.NEXT_PUBLIC_ENABLE_SAME_DAY_BOOKING === 'true'
+  
   const pricingOptions = [
     {
       type: "same-day" as const,
       price: 149,
       description: "Same Day Service",
       subtitle: "Book before midday",
-      available: new Date().getHours() < 12,
+      available: isSameDayEnabled && new Date().getHours() < 12,
       date: new Date().toLocaleDateString("en-GB", {
         weekday: "long",
         day: "numeric",
@@ -200,6 +203,14 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       date: "Flexible scheduling",
     },
   ]
+
+  // Filter out same-day option when disabled
+  const availablePricingOptions = pricingOptions.filter(option => {
+    if (option.type === "same-day") {
+      return isSameDayEnabled
+    }
+    return true
+  })
 
   // Generate standard service date options (7 days starting from day after tomorrow)
   const generateStandardDates = () => {
@@ -862,7 +873,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
         </p>
 
         <div className="space-y-4">
-          {pricingOptions.map((option) => (
+          {availablePricingOptions.map((option) => (
             <div
               key={option.type}
               className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all ${

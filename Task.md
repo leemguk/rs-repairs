@@ -108,6 +108,7 @@
 ✅ Built spare parts search functionality
 ✅ Implemented address autocomplete
 ✅ Added environment variable control for same-day booking availability
+✅ Hidden same-day booking option in both booking-form.tsx and booking-modal.tsx
 
 ## Notes
 - All development should follow existing code patterns
