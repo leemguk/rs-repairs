@@ -1,6 +1,6 @@
 // booking-iframe-height-adjuster.js
 // This script should be included on the parent page (www.ransomspares.co.uk)
-// It listens for height messages from the RS Repairs booking form iframe and adjusts the iframe height
+// It listens for height messages from the Repair Help booking form iframe and adjusts the iframe height
 
 (function() {
   // Listen for messages from the iframe
@@ -13,7 +13,7 @@
 
     // Check if this is a height message from our booking form
     if (event.data && event.data.type === 'rs-repairs-booking-height') {
-      // Find the RS Repairs booking iframe
+      // Find the Repair Help booking iframe
       const iframe = document.querySelector('iframe[src*="widget/booking"]');
       
       if (iframe && event.data.height) {
