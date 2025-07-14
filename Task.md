@@ -109,6 +109,7 @@
 ✅ Implemented address autocomplete
 ✅ Added environment variable control for same-day booking availability
 ✅ Hidden same-day booking option in both booking-form.tsx and booking-modal.tsx
+✅ Reordered landing page sections - DiagnoSys now appears before Choose Your Solution
 
 ## Notes
 - All development should follow existing code patterns
