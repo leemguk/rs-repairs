@@ -7,7 +7,7 @@
   window.addEventListener('message', function(event) {
     // Security check - only accept messages from your domain
     // In production, replace this with your actual domain
-    if (event.origin !== 'https://your-rs-repairs-domain.com') {
+    if (event.origin !== 'https://your-repair-help-domain.com') {
       return; // Ignore messages from other domains
     }
 
