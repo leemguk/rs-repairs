@@ -13,8 +13,7 @@ import { Clock, CheckCircle, Calendar, ChevronRight, User, MapPin } from "lucide
 import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/lib/supabase"
 import type { Booking } from "@/lib/supabase"
-import { getBookingApplianceTypes, getBookingBrands } from "@/actions/get-booking-options"
-import { getBrandPricing } from "@/lib/brand-pricing"
+import { getRepairBookingCategories, getRepairBookingBrands, getRepairBrandPrice } from "@/actions/get-repair-booking-options"
 
 // Loqate interfaces
 interface LoqateFindResult {
@@ -90,9 +89,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     date?: string
   } | null>(null)
 
-  // Autocomplete states for Appliance Type and Manufacturer
-  const [applianceTypeSearch, setApplianceTypeSearch] = useState("")
-  const [applianceTypeOpen, setApplianceTypeOpen] = useState(false)
+  // Autocomplete states for Manufacturer (Category now uses dropdown)
   const [manufacturerSearch, setManufacturerSearch] = useState("")
   const [manufacturerOpen, setManufacturerOpen] = useState(false)
   
@@ -126,7 +123,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     const loadApplianceTypes = async () => {
       setIsLoadingApplianceTypes(true)
       try {
-        const types = await getBookingApplianceTypes()
+        const types = await getRepairBookingCategories()
         setApplianceTypes(types)
       } catch (error) {
         console.error('Error loading appliance types:', error)
@@ -138,41 +135,64 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     loadApplianceTypes()
   }, [])
 
-  // Load manufacturers when appliance type changes
+  // Load all brands on component mount (no dependency on category)
   useEffect(() => {
-    const loadManufacturers = async () => {
-      if (!bookingData.applianceType) {
-        setManufacturers([])
-        setBookingData(prev => ({ ...prev, manufacturer: "" }))
-        setManufacturerSearch("")
-        return
-      }
-
+    const loadAllBrands = async () => {
       setIsLoadingManufacturers(true)
       try {
-        const brands = await getBookingBrands(bookingData.applianceType)
+        const brands = await getRepairBookingBrands()
         setManufacturers(brands)
-        // Reset manufacturer if it's not in the new list
-        if (bookingData.manufacturer && !brands.includes(bookingData.manufacturer)) {
-          setBookingData(prev => ({ ...prev, manufacturer: "" }))
-          setManufacturerSearch("")
-        }
       } catch (error) {
-        console.error('Error loading manufacturers:', error)
+        console.error('Failed to load brands:', error)
+        setManufacturers([])
       } finally {
         setIsLoadingManufacturers(false)
       }
     }
-
-    loadManufacturers()
-  }, [bookingData.applianceType])
+    loadAllBrands()
+  }, [])
 
   // Check if same-day and next-day booking are enabled
   const isSameDayEnabled = process.env.NEXT_PUBLIC_ENABLE_SAME_DAY_BOOKING === 'true'
   const isNextDayEnabled = process.env.NEXT_PUBLIC_ENABLE_NEXT_DAY_BOOKING === 'true'
   
-  // Get dynamic pricing based on selected manufacturer
-  const brandPricing = getBrandPricing(bookingData.manufacturer)
+  // State for dynamic pricing from database
+  const [brandPricing, setBrandPricing] = useState({
+    sameDayPrice: 189,
+    nextDayPrice: 179,
+    standardPrice: 169
+  })
+
+  // Load pricing when manufacturer changes
+  useEffect(() => {
+    const loadBrandPricing = async () => {
+      if (!bookingData.manufacturer) {
+        setBrandPricing({
+          sameDayPrice: 189,
+          nextDayPrice: 179,
+          standardPrice: 169
+        })
+        return
+      }
+      
+      try {
+        const basePrice = await getRepairBrandPrice(bookingData.manufacturer)
+        setBrandPricing({
+          sameDayPrice: basePrice + 20,
+          nextDayPrice: basePrice + 10,
+          standardPrice: basePrice
+        })
+      } catch (error) {
+        console.error('Failed to load brand pricing:', error)
+        setBrandPricing({
+          sameDayPrice: 189,
+          nextDayPrice: 179,
+          standardPrice: 169
+        })
+      }
+    }
+    loadBrandPricing()
+  }, [bookingData.manufacturer])
   
   const pricingOptions = [
     {
@@ -734,52 +754,22 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Category <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Type Category e.g., Washing Machine"
-                value={applianceTypeSearch}
-                onChange={(e) => {
-                  setApplianceTypeSearch(e.target.value)
-                  setBookingData(prev => ({ ...prev, applianceType: "" }))
-                  if (e.target.value.length > 0) {
-                    setApplianceTypeOpen(true)
-                  }
-                }}
-                onFocus={() => applianceTypeSearch.length > 0 && setApplianceTypeOpen(true)}
-                onBlur={() => setTimeout(() => setApplianceTypeOpen(false), 200)}
-                className="w-full text-base"
-                disabled={isSubmitting}
-              />
-              
-              {/* Autocomplete dropdown */}
-              {applianceTypeOpen && applianceTypeSearch.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-auto">
-                  {applianceTypes
-                    .filter(type => type.toLowerCase().includes(applianceTypeSearch.toLowerCase()))
-                    .map((type) => (
-                      <div
-                        key={type}
-                        className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
-                        onMouseDown={(e) => {
-                          e.preventDefault()
-                          setBookingData(prev => ({ ...prev, applianceType: type }))
-                          setApplianceTypeSearch(type)
-                          setApplianceTypeOpen(false)
-                        }}
-                      >
-                        {type}
-                      </div>
-                    ))}
-                  {applianceTypes.filter(type => type.toLowerCase().includes(applianceTypeSearch.toLowerCase())).length === 0 && (
-                    <div className="px-3 py-2 text-sm text-gray-500">No matching appliance types</div>
-                  )}
-                </div>
-              )}
-            </div>
-            {bookingData.applianceType && (
-              <p className="text-xs text-green-600 mt-1">✓ Selected: {bookingData.applianceType}</p>
-            )}
+            <Select
+              value={bookingData.applianceType}
+              onValueChange={(value) => setBookingData(prev => ({ ...prev, applianceType: value }))}
+              disabled={isSubmitting || isLoadingApplianceTypes}
+            >
+              <SelectTrigger className="w-full text-base">
+                <SelectValue placeholder={isLoadingApplianceTypes ? "Loading categories..." : "Select appliance category"} />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {applianceTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
