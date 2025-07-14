@@ -128,6 +128,7 @@ SENDGRID_API_KEY=
 
 # Feature Flags
 NEXT_PUBLIC_ENABLE_SAME_DAY_BOOKING=false # Set to 'true' to enable same-day booking option
+NEXT_PUBLIC_ENABLE_NEXT_DAY_BOOKING=false # Set to 'true' to enable next-day booking option
 ```
 
 ## Widget Integration
