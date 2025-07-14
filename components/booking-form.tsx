@@ -16,6 +16,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { supabase } from "@/lib/supabase"
 import type { Booking } from "@/lib/supabase"
 import { getBookingApplianceTypes, getBookingBrands } from "@/actions/get-booking-options"
+import { getBrandPricing } from "@/lib/brand-pricing"
 
 // Loqate interfaces
 interface LoqateFindResult {
@@ -377,11 +378,14 @@ export function BookingForm() {
   const isSameDayEnabled = process.env.NEXT_PUBLIC_ENABLE_SAME_DAY_BOOKING === 'true'
   const isNextDayEnabled = process.env.NEXT_PUBLIC_ENABLE_NEXT_DAY_BOOKING === 'true'
   
+  // Get dynamic pricing based on selected manufacturer
+  const brandPricing = getBrandPricing(bookingData.manufacturer)
+  
   // Add pricingOptions array
   const pricingOptions = [
     {
       type: "same-day" as const,
-      price: 149,
+      price: brandPricing.sameDayPrice,
       description: "Same Day Service",
       subtitle: "Book before midday",
       available: isSameDayEnabled && new Date().getHours() < 12,
@@ -393,7 +397,7 @@ export function BookingForm() {
     },
     {
       type: "next-day" as const,
-      price: 129,
+      price: brandPricing.nextDayPrice,
       description: "Next Day Service",
       subtitle: "Tomorrow",
       available: isNextDayEnabled,
@@ -405,7 +409,7 @@ export function BookingForm() {
     },
     {
       type: "standard" as const,
-      price: 109,
+      price: brandPricing.standardPrice,
       description: "Standard Service",
       subtitle: "Within 2-3 days",
       available: true,
