@@ -373,6 +373,9 @@ export function BookingForm() {
     return bookingData.firstName && bookingData.email && bookingData.mobile && bookingData.fullAddress
   }
 
+  // Check if same-day booking is enabled
+  const isSameDayEnabled = process.env.NEXT_PUBLIC_ENABLE_SAME_DAY_BOOKING === 'true'
+  
   // Add pricingOptions array
   const pricingOptions = [
     {
@@ -380,7 +383,7 @@ export function BookingForm() {
       price: 149,
       description: "Same Day Service",
       subtitle: "Book before midday",
-      available: new Date().getHours() < 12,
+      available: isSameDayEnabled && new Date().getHours() < 12,
       date: new Date().toLocaleDateString("en-GB", {
         weekday: "long",
         day: "numeric",
@@ -408,6 +411,14 @@ export function BookingForm() {
       date: "Flexible scheduling",
     },
   ]
+
+  // Filter out same-day option when disabled
+  const availablePricingOptions = pricingOptions.filter(option => {
+    if (option.type === "same-day") {
+      return isSameDayEnabled
+    }
+    return true
+  })
 
   // Add generateStandardDates function
   const generateStandardDates = () => {
@@ -804,7 +815,7 @@ export function BookingForm() {
           Choose your preferred service speed and appointment time. All prices include call-out, diagnosis, and repair.
         </p>
         <div className="space-y-4">
-          {pricingOptions.map((option) => (
+          {availablePricingOptions.map((option) => (
             <div
               key={option.type}
               className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all ${
