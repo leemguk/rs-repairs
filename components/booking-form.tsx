@@ -373,6 +373,9 @@ export function BookingForm() {
     return bookingData.firstName && bookingData.email && bookingData.mobile && bookingData.fullAddress
   }
 
+  // Check if same-day booking is enabled
+  const isSameDayEnabled = process.env.NEXT_PUBLIC_ENABLE_SAME_DAY_BOOKING === 'true'
+  
   // Add pricingOptions array
   const pricingOptions = [
     {
@@ -380,7 +383,7 @@ export function BookingForm() {
       price: 149,
       description: "Same Day Service",
       subtitle: "Book before midday",
-      available: new Date().getHours() < 12 && process.env.NEXT_PUBLIC_ENABLE_SAME_DAY_BOOKING === 'true',
+      available: isSameDayEnabled && new Date().getHours() < 12,
       date: new Date().toLocaleDateString("en-GB", {
         weekday: "long",
         day: "numeric",
@@ -412,7 +415,7 @@ export function BookingForm() {
   // Filter out same-day option when disabled
   const availablePricingOptions = pricingOptions.filter(option => {
     if (option.type === "same-day") {
-      return process.env.NEXT_PUBLIC_ENABLE_SAME_DAY_BOOKING === 'true'
+      return isSameDayEnabled
     }
     return true
   })
