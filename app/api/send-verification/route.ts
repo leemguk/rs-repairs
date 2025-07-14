@@ -41,14 +41,14 @@ export async function POST(request: NextRequest) {
     const msg = {
       to: email,
       from: process.env.SENDGRID_FROM_EMAIL!,
-      subject: 'Verify Your Diagnostic Tool Access - RS Spares',
+      subject: 'Verify Your Diagnostic Tool Access - Repair Help',
       html: `
         <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>RS Spares - Verification Code</title>
+            <title>Repair Help - Verification Code</title>
         </head>
         <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
             <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4;">
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
                             <!-- Header -->
                             <tr>
                                 <td style="background-color: #2563eb; padding: 30px; text-align: center;">
-                                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">RS Spares</h1>
+                                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">Repair Help</h1>
                                     <p style="color: #bfdbfe; margin: 5px 0 0 0; font-size: 14px;">Home Appliance Repair Solutions</p>
                                 </td>
                             </tr>
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
                                     <!-- Instructions -->
                                     <h3 style="color: #1f2937; margin: 30px 0 15px 0; font-size: 18px;">How to use this code:</h3>
                                     <ol style="color: #4b5563; margin: 0; padding-left: 20px; line-height: 1.6;">
-                                        <li style="margin-bottom: 8px;">Return to the RS Spares Diagnostic Tool</li>
+                                        <li style="margin-bottom: 8px;">Return to the Repair Help Diagnostic Tool</li>
                                         <li style="margin-bottom: 8px;">Enter the 6-digit code above</li>
                                         <li style="margin-bottom: 8px;">Start diagnosing your appliance issues</li>
                                     </ol>
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
                             <!-- Footer -->
                             <tr>
                                 <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
-                                    <p style="color: #6b7280; margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">RS Spares</p>
+                                    <p style="color: #6b7280; margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">Repair Help</p>
                                     <p style="color: #9ca3af; margin: 0 0 15px 0; font-size: 12px;">Your trusted partner for appliance diagnostics</p>
                                     <p style="color: #9ca3af; margin: 0 0 15px 0; font-size: 11px;">Part of the Ransom Spares Group, Unit 3 Flushing Meadow, Yeovil, BA21 5DL</p>
                                     <p style="color: #9ca3af; margin: 0; font-size: 11px;">
@@ -115,23 +115,23 @@ export async function POST(request: NextRequest) {
         </html>
       `,
       text: `
-RS Spares - Verify Your Diagnostic Tool Access
+Repair Help - Verify Your Diagnostic Tool Access
 
 Your verification code is: ${verificationCode}
 
 This code expires in 10 minutes.
 
 How to use this code:
-1. Return to the RS Spares Diagnostic Tool
+1. Return to the Repair Help Diagnostic Tool
 2. Enter the 6-digit code above
 3. Start diagnosing your appliance issues
 
-Security Notice: Never share this code with anyone. RS Spares will never ask for your verification code via phone or email.
+Security Notice: Never share this code with anyone. Repair Help will never ask for your verification code via phone or email.
 
-Need help? Contact us at support@rsspares.com or visit https://rsspares.com/help
+Need help? Contact us through our support channels
 
-RS Spares - Your trusted partner for appliance diagnostics
-123 Industrial Way, Tech City, TC 12345 | Phone: (555) 123-4567
+Repair Help - Your trusted partner for appliance diagnostics
+Part of the Ransom Spares Group, Unit 3 Flushing Meadow, Yeovil, BA21 5DL
       `
     }
 

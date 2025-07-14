@@ -367,7 +367,7 @@ Be specific to ${brand} ${appliance} and base your response on the search result
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "X-Title": "RS Repairs AI Diagnosis"
+        "X-Title": "Repair Help AI Diagnosis"
       },
       body: JSON.stringify({
         model: 'anthropic/claude-3.5-sonnet',

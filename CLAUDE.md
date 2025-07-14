@@ -22,10 +22,11 @@
 
 ### Component Structure
 - **Landing Page**: `appliance-repair-landing.tsx` - Main service selection
-- **Booking Flow**: `components/booking-form.tsx` - Multi-step accordion form
+- **Booking Modal**: `components/booking-modal.tsx` - Pop-up booking form on main site
+- **Booking Widget**: `components/booking-form.tsx` - Embeddable widget for external sites
 - **Diagnostics**: `components/diagnostic-form.tsx` - AI-powered fault diagnosis
 - **Spare Parts**: `components/spare-parts-search.tsx` - Inventory search
-- **Modals**: `components/booking-modal.tsx`, `components/warranty-modal.tsx`
+- **Other Modals**: `components/warranty-modal.tsx`
 
 ### Server Actions
 - **Diagnostics**: `actions/diagnose.ts` - AI diagnosis with caching
@@ -81,22 +82,48 @@
 
 ### Core Components
 - `appliance-repair-landing.tsx:400-450` - Service selection logic
-- `booking-form.tsx:160-280` - Widget iframe height management
+- `booking-modal.tsx:856-1057` - Pop-up modal booking flow (main site)
+- `booking-form.tsx:160-280` - Embeddable widget with iframe height management
 - `diagnostic-form.tsx:207-221` - AI diagnosis submission
 - `diagnose.ts:67-187` - Diagnostic caching system
 
 ### Key Features
 - **AI Caching**: Reduces API costs by reusing similar diagnostics
-- **Widget Mode**: Automatic iframe height adjustment for mobile
-- **Payment Flow**: Stripe integration with booking persistence
+- **Booking Modal**: Pop-up modal for main site with step navigation
+- **Booking Widget**: Embeddable iframe with automatic height adjustment for mobile
+- **Payment Flow**: Stripe integration with booking persistence (both modal and widget)
 - **Address Lookup**: UK-specific address validation
+
+## Booking Components Architecture
+
+### Two Separate Booking Flows
+
+**1. Booking Modal (`booking-modal.tsx`)**
+- **Purpose**: Pop-up modal on the main landing page
+- **Navigation**: Step-by-step wizard with progress bar
+- **Layout**: Dialog overlay with left/right column layout
+- **Scroll**: Internal scrolling within modal
+- **Usage**: Triggered by "Book Appointment" buttons on main site
+
+**2. Booking Widget (`booking-form.tsx`)**
+- **Purpose**: Embeddable iframe widget for external sites
+- **Navigation**: Accordion-style expandable sections  
+- **Layout**: Single column, full-width container
+- **Scroll**: Auto-height adjustment via postMessage to parent
+- **Usage**: Embedded on external sites like www.ransomspares.co.uk
+
+### Key Differences
+- **Modal**: Uses React Dialog, step navigation, side-by-side layout
+- **Widget**: Uses Accordion, iframe-optimized, auto-height messaging
+- **Both**: Share same pricing options, Stripe integration, and form validation
 
 ## Common Issues & Solutions
 
-### Mobile Widget Problems
-- iframe height not adjusting: Check `booking-form.tsx:160-280`
-- Touch events not working: Review event handlers in forms
-- Viewport issues: Use `window.visualViewport` for mobile keyboards
+### Booking Component Issues
+- **Modal Problems**: Check `booking-modal.tsx` for step navigation issues
+- **Widget iframe height**: Check `booking-form.tsx:160-280` for height adjustment
+- **Touch events**: Review event handlers in both booking components
+- **Viewport issues**: Use `window.visualViewport` for mobile keyboards (widget only)
 
 ### Payment Integration
 - Stripe webhook handling in `/api/payment-success`
@@ -128,6 +155,7 @@ SENDGRID_API_KEY=
 
 # Feature Flags
 NEXT_PUBLIC_ENABLE_SAME_DAY_BOOKING=false # Set to 'true' to enable same-day booking option
+NEXT_PUBLIC_ENABLE_NEXT_DAY_BOOKING=false # Set to 'true' to enable next-day booking option
 ```
 
 ## Widget Integration

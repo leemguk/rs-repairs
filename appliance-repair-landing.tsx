@@ -199,6 +199,28 @@ export default function Component() {
           </div>
         </section>
 
+        {/* AI Diagnostic Section */}
+        <section
+          id="diagnosis"
+          className="w-full py-8 md:py-16 lg:py-24 xl:py-32 bg-gradient-to-br from-blue-50 to-indigo-50"
+        >
+          <div className="container px-4 md:px-6 max-w-6xl mx-auto">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 text-xs sm:text-sm">
+                  AI-Powered Diagnostics
+                </Badge>
+                <h2 className="text-2xl font-bold tracking-tighter sm:text-3xl md:text-4xl lg:text-5xl text-gray-900">
+                  DiagnoSys - Help You Make The Right Repair Choice?
+                </h2>
+              </div>
+            </div>
+            <div className="mx-auto max-w-3xl py-8 sm:py-12">
+              <DiagnosticForm onBookEngineer={handleBookEngineerFromDiagnostic} />
+            </div>
+          </div>
+        </section>
+
         {/* Main Service Options */}
         <section id="services" className="w-full py-8 md:py-16 lg:py-24 xl:py-32">
           <div className="container px-4 md:px-6 max-w-6xl mx-auto">
@@ -388,27 +410,6 @@ export default function Component() {
           </div>
         </section>
 
-        {/* AI Diagnostic Section */}
-        <section
-          id="diagnosis"
-          className="w-full py-8 md:py-16 lg:py-24 xl:py-32 bg-gradient-to-br from-blue-50 to-indigo-50"
-        >
-          <div className="container px-4 md:px-6 max-w-6xl mx-auto">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 text-xs sm:text-sm">
-                  AI-Powered Diagnostics
-                </Badge>
-                <h2 className="text-2xl font-bold tracking-tighter sm:text-3xl md:text-4xl lg:text-5xl text-gray-900">
-                  DiagnoSys - Help You Make The Right Repair Choice?
-                </h2>
-              </div>
-            </div>
-            <div className="mx-auto max-w-3xl py-8 sm:py-12">
-              <DiagnosticForm onBookEngineer={handleBookEngineerFromDiagnostic} />
-            </div>
-          </div>
-        </section>
 
         {/* Features Section */}
         <section id="about" className="w-full py-8 md:py-16 lg:py-24 xl:py-32 bg-gray-50">

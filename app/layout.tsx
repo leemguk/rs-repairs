@@ -3,8 +3,8 @@ import { Analytics } from '@vercel/analytics/react'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'RS Repairs - Professional Appliance Repair Services',
-  description: 'Book expert appliance repairs with RS Repairs. Same-day service available.',
+  title: 'Repair Help - Professional Appliance Repair Services',
+  description: 'Book expert appliance repairs with Repair Help. Same-day service available.',
   // Add noindex to prevent search engine indexing
   robots: {
     index: false,

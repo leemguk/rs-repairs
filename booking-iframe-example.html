@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RS Repairs Booking Form - Iframe Example</title>
+    <title>Repair Help Booking Form - Iframe Example</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -33,8 +33,8 @@
     <div class="iframe-container">
         <iframe 
             id="booking-iframe"
-            src="https://your-rs-repairs-domain.com/widget/booking"
-            title="RS Repairs Booking Form"
+            src="https://your-repair-help-domain.com/widget/booking"
+            title="Repair Help Booking Form"
             allowtransparency="true"
             frameborder="0">
         </iframe>
@@ -44,8 +44,8 @@
         // Listen for messages from the iframe
         window.addEventListener('message', function(event) {
             // Security check - only accept messages from your domain
-            // Replace this with your actual RS Repairs domain
-            if (event.origin !== 'https://your-rs-repairs-domain.com') {
+            // Replace this with your actual Repair Help domain
+            if (event.origin !== 'https://your-repair-help-domain.com') {
                 return; // Ignore messages from other domains
             }
 

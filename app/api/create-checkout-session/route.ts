@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: currency,
             product_data: {
-              name: `RS Repairs - ${bookingData?.serviceType || 'Appliance Repair'} Service`,
+              name: `Repair Help - ${bookingData?.serviceType || 'Appliance Repair'} Service`,
               description: `${bookingData?.manufacturer || ''} ${bookingData?.applianceType || ''}`.trim(),
             },
             unit_amount: amountInPence,

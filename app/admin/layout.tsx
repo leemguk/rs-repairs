@@ -133,7 +133,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center border-b px-6">
-            <h2 className="text-xl font-bold">RS Repairs Admin</h2>
+            <h2 className="text-xl font-bold">Repair Help Admin</h2>
           </div>
 
           {/* Navigation */}

@@ -166,8 +166,9 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     loadManufacturers()
   }, [bookingData.applianceType])
 
-  // Check if same-day booking is enabled
+  // Check if same-day and next-day booking are enabled
   const isSameDayEnabled = process.env.NEXT_PUBLIC_ENABLE_SAME_DAY_BOOKING === 'true'
+  const isNextDayEnabled = process.env.NEXT_PUBLIC_ENABLE_NEXT_DAY_BOOKING === 'true'
   
   const pricingOptions = [
     {
@@ -187,7 +188,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       price: 129,
       description: "Next Day Service",
       subtitle: "Tomorrow",
-      available: true,
+      available: isNextDayEnabled,
       date: new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString("en-GB", {
         weekday: "long",
         day: "numeric",
@@ -204,10 +205,13 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     },
   ]
 
-  // Filter out same-day option when disabled
+  // Filter out same-day and next-day options when disabled
   const availablePricingOptions = pricingOptions.filter(option => {
     if (option.type === "same-day") {
       return isSameDayEnabled
+    }
+    if (option.type === "next-day") {
+      return isNextDayEnabled
     }
     return true
   })

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         serviceType: bookingData?.serviceType || '',
         appliance: `${bookingData?.manufacturer || ''} ${bookingData?.applianceType || ''}`.trim(),
       },
-      description: `RS Repairs - ${bookingData?.serviceType || 'Appliance Repair'} Service`,
+      description: `Repair Help - ${bookingData?.serviceType || 'Appliance Repair'} Service`,
       receipt_email: bookingData?.email || undefined,
     })
 
