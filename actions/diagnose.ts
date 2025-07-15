@@ -2,7 +2,6 @@
 "use server"
 
 import { supabase } from '@/lib/supabase'
-import { sendDiagnosticReportEmail } from '@/lib/send-diagnostic-email'
 
 interface DiagnosisResult {
   errorCodeMeaning?: string
@@ -545,6 +544,26 @@ Be specific to ${brand} ${appliance} and base your response on the search result
     console.error('Error in AI diagnosis:', error)
     return null
   }
+}
+
+// Helper function to send diagnostic report email
+async function sendDiagnosticReportEmail(
+  email: string,
+  appliance: string,
+  brand: string,
+  problem: string,
+  diagnosis: DiagnosisResult,
+  errorCode: string | null
+): Promise<void> {
+  // Don't send email in this server action - it causes issues in Vercel
+  // Instead, we could:
+  // 1. Use a queue/background job service
+  // 2. Send from client after receiving diagnosis
+  // 3. Use webhooks or edge functions
+  
+  console.log('Email sending temporarily disabled - would send diagnostic report to:', email)
+  
+  // TODO: Implement proper email sending solution for server actions in Vercel
 }
 
 // Main diagnosis function
