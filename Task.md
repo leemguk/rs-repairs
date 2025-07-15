@@ -37,6 +37,9 @@
 ## Active Tasks
 
 ### 🔧 Bug Fixes & Improvements
+- [ ] **Fix diagnostic report email sending** - Currently fails in Vercel server actions
+  - Consider alternatives: client-side API call, edge functions, or queue service
+  - Email template already exists in `/api/send-diagnostic-report`
 - [ ] Fix mobile responsiveness issues in **booking widget** (iframe)
 - [ ] Optimize iframe height adjustment for mobile devices (widget only)
 - [ ] Improve step navigation in **booking modal**

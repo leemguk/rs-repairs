@@ -546,25 +546,9 @@ Be specific to ${brand} ${appliance} and base your response on the search result
   }
 }
 
-// Helper function to send diagnostic report email
-async function sendDiagnosticReportEmail(
-  email: string,
-  appliance: string,
-  brand: string,
-  problem: string,
-  diagnosis: DiagnosisResult,
-  errorCode: string | null
-): Promise<void> {
-  // Don't send email in this server action - it causes issues in Vercel
-  // Instead, we could:
-  // 1. Use a queue/background job service
-  // 2. Send from client after receiving diagnosis
-  // 3. Use webhooks or edge functions
-  
-  console.log('Email sending temporarily disabled - would send diagnostic report to:', email)
-  
-  // TODO: Implement proper email sending solution for server actions in Vercel
-}
+// Email sending has been moved to client-side (diagnostic-form.tsx)
+// This avoids issues with server actions making HTTP requests in Vercel deployments
+// The /api/send-diagnostic-report endpoint is called directly from the client after diagnosis
 
 // Main diagnosis function
 export async function diagnoseProblem(
@@ -595,9 +579,8 @@ export async function diagnoseProblem(
       // Save this as a new entry but mark it as cached
       await saveDiagnosticToDatabase(appliance, brand, problem, email, cachedDiagnosis, detectedErrorCode, true)
       
-      // Send diagnostic report email asynchronously
-      sendDiagnosticReportEmail(email, appliance, brand, problem, cachedDiagnosis, detectedErrorCode)
-        .catch(error => console.error('Failed to send diagnostic report email:', error))
+      // Email sending is now handled client-side after diagnosis is displayed
+      // This avoids issues with server actions in Vercel
       
       return cachedDiagnosis
     }
@@ -1019,36 +1002,9 @@ async function saveDiagnosticToDatabase(
     } else {
       console.log(`Diagnostic saved to database ${wasCached ? '(from cache)' : '(from AI)'} - validated: ${!errorCode ? 'cleaned' : 'with error code'}`)
       
-      // Send diagnostic report email asynchronously
-      try {
-        // In server actions, we need to construct the URL properly
-        const baseUrl = process.env.VERCEL_URL 
-          ? `https://${process.env.VERCEL_URL}`
-          : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-          
-        const emailResponse = await fetch(`${baseUrl}/api/send-diagnostic-report`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            appliance,
-            brand,
-            problem,
-            diagnosis: validatedDiagnosis,
-            errorCode
-          })
-        })
-        
-        if (emailResponse.ok) {
-          console.log('Diagnostic report email sent successfully to:', email)
-        } else {
-          const errorData = await emailResponse.json()
-          console.error('Failed to send diagnostic report email:', errorData.error)
-        }
-      } catch (emailError) {
-        console.error('Error sending diagnostic report email:', emailError)
-        // Don't throw - we don't want email failures to break the diagnosis flow
-      }
+      // Email sending is now handled client-side in diagnostic-form.tsx
+      // This avoids issues with server actions making HTTP requests in Vercel
+      console.log('Diagnostic saved. Email will be sent from client-side.')
     }
   } catch (error) {
     console.error('Failed to save diagnostic to database:', error)

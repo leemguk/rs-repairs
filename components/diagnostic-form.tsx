@@ -108,6 +108,8 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
   const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(null)
   const [error, setError] = useState("")
   const [showExample, setShowExample] = useState(false)
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [emailSentStatus, setEmailSentStatus] = useState<'pending' | 'success' | 'error' | null>(null)
 
   const handleAskAI = () => {
     if (!appliance.trim() || !problem.trim()) {
@@ -204,15 +206,54 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
     }
   }
 
+  const sendDiagnosticEmail = async (diagnosisResult: DiagnosisResult) => {
+    setIsSendingEmail(true)
+    setEmailSentStatus('pending')
+    
+    try {
+      const response = await fetch('/api/send-diagnostic-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          appliance,
+          brand,
+          problem,
+          diagnosis: diagnosisResult,
+          errorCode: diagnosisResult.errorCodeMeaning ? problem.match(/[A-Z]+[0-9]+|[0-9]+[A-Z]+|[A-Z]-?[0-9]+|[0-9]+-?[A-Z]+/i)?.[0] || null : null
+        })
+      })
+      
+      if (response.ok) {
+        setEmailSentStatus('success')
+      } else {
+        const errorData = await response.json()
+        console.error('Failed to send diagnostic email:', errorData.error)
+        setEmailSentStatus('error')
+      }
+    } catch (error) {
+      console.error('Error sending diagnostic email:', error)
+      setEmailSentStatus('error')
+    } finally {
+      setIsSendingEmail(false)
+    }
+  }
+
   const handleDiagnosticSubmit = async () => {
     setIsLoading(true)
     setError("")
     setDiagnosis(null)
     setShowExample(false)
+    setEmailSentStatus(null)
 
     try {
       const result = await diagnoseProblem(appliance, brand, problem, email)
       setDiagnosis(result)
+      
+      // Send email report after successful diagnosis
+      sendDiagnosticEmail(result)
     } catch (err) {
       setError("Sorry, we encountered an error. Please try again.")
     } finally {
@@ -813,7 +854,65 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
 
       {showExample && renderDiagnosticResults(exampleDiagnosis, true)}
 
-      {diagnosis && !showExample && renderDiagnosticResults(diagnosis, false)}
+      {diagnosis && !showExample && (
+        <>
+          {renderDiagnosticResults(diagnosis, false)}
+          
+          {/* Email Status Notification */}
+          {emailSentStatus && (
+            <Card className={`border-2 mt-4 ${
+              emailSentStatus === 'success' ? 'border-green-200 bg-green-50' : 
+              emailSentStatus === 'error' ? 'border-yellow-200 bg-yellow-50' : 
+              'border-blue-200 bg-blue-50'
+            }`}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  {emailSentStatus === 'pending' && (
+                    <>
+                      <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+                      <p className="text-blue-800">Sending diagnostic report to your email...</p>
+                    </>
+                  )}
+                  {emailSentStatus === 'success' && (
+                    <>
+                      <Mail className="h-5 w-5 text-green-600" />
+                      <p className="text-green-800">
+                        Diagnostic report sent to <strong>{email}</strong>. Check your inbox!
+                      </p>
+                    </>
+                  )}
+                  {emailSentStatus === 'error' && (
+                    <>
+                      <AlertCircle className="h-5 w-5 text-yellow-600" />
+                      <div className="flex-1">
+                        <p className="text-yellow-800">
+                          Unable to send email report. Your diagnosis is saved above.
+                        </p>
+                        <Button
+                          onClick={() => sendDiagnosticEmail(diagnosis)}
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          disabled={isSendingEmail}
+                        >
+                          {isSendingEmail ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Retrying...
+                            </>
+                          ) : (
+                            <>Retry Email</>  
+                          )}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
     </div>
   )
 }
