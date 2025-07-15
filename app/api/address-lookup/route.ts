@@ -69,28 +69,27 @@ export async function POST(request: NextRequest) {
     
     // Handle postcode search
     if (action === 'find') {
-      if (!postcode) {
+      if (!postcode || typeof postcode !== 'string') {
         return NextResponse.json(
-          { error: 'Postcode is required' },
+          { error: 'Search term is required' },
           { status: 400 }
         )
       }
       
-      // Validate and sanitize postcode
-      const postcodeValidation = validateUKPostcode(postcode)
-      if (!postcodeValidation.isValid) {
+      // Sanitize search term (don't validate as strict postcode since users type partial postcodes)
+      const searchTerm = sanitizeInput(postcode).trim()
+      
+      if (searchTerm.length < 2) {
         return NextResponse.json(
-          { error: postcodeValidation.errors[0] },
+          { error: 'Please enter at least 2 characters' },
           { status: 400 }
         )
       }
-      
-      const sanitizedPostcode = sanitizeInput(postcode).toUpperCase()
       
       // Call Loqate Find API
       const url = `https://api.addressy.com/Capture/Interactive/Find/v1.10/json3.ws?` +
         `Key=${loqateKey}&` +
-        `SearchTerm=${encodeURIComponent(sanitizedPostcode)}&` +
+        `SearchTerm=${encodeURIComponent(searchTerm)}&` +
         `Country=GB&` +
         `Limit=100`
       
