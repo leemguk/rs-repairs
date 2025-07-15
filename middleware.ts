@@ -1,131 +1,47 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// Rate limiting configuration
+// Simple rate limiting configuration
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute
-const RATE_LIMITS = {
-  '/api/create-checkout-session': 5, // 5 requests per minute for payments
-  '/api/payment-success': 10,
-  '/api/send-verification': 5,
-  '/api/verify-code': 10,
-  '/api/send-diagnostic-report': 10,
-  '/api/address-lookup': 20,
-  default: 30 // Default rate limit for other endpoints
-}
-
-function getRateLimit(pathname: string): number {
-  for (const [path, limit] of Object.entries(RATE_LIMITS)) {
-    if (pathname.startsWith(path)) {
-      return limit
-    }
-  }
-  return RATE_LIMITS.default
-}
-
-function checkRateLimit(ip: string, pathname: string): boolean {
-  const key = `${ip}:${pathname}`
-  const now = Date.now()
-  const record = rateLimitMap.get(key)
-  const limit = getRateLimit(pathname)
-  
-  if (!record || now > record.resetTime) {
-    rateLimitMap.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
-    return true
-  }
-  
-  if (record.count >= limit) {
-    return false
-  }
-  
-  record.count++
-  return true
-}
-
-// Clean up old rate limit records
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, record] of rateLimitMap.entries()) {
-    if (now > record.resetTime) {
-      rateLimitMap.delete(key)
-    }
-  }
-}, RATE_LIMIT_WINDOW)
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   
   // Only apply to API routes
-  if (!pathname.startsWith('/api/')) {
-    return NextResponse.next()
-  }
-  
-  // Get client IP
-  const forwarded = request.headers.get('x-forwarded-for')
-  const ip = forwarded ? forwarded.split(',')[0] : request.ip || 'unknown'
-  
-  // Check rate limit
-  if (!checkRateLimit(ip, pathname)) {
-    return new NextResponse(
-      JSON.stringify({ error: 'Too many requests. Please try again later.' }),
-      {
-        status: 429,
-        headers: {
-          'Content-Type': 'application/json',
-          'Retry-After': '60',
-        },
-      }
-    )
-  }
-  
-  // Create response with security headers
-  const response = NextResponse.next()
-  
-  // Security headers
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('X-Frame-Options', 'DENY')
-  response.headers.set('X-XSS-Protection', '1; mode=block')
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  
-  // Content Security Policy
-  const csp = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://api.loqate.com",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https: blob:",
-    "font-src 'self' data:",
-    "connect-src 'self' https://api.stripe.com https://api.addressy.com https://api.loqate.com",
-    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'self' https://www.ransomspares.co.uk https://ransomspares.co.uk",
-  ].join('; ')
-  
-  response.headers.set('Content-Security-Policy', csp)
-  
-  // CORS headers for specific endpoints
-  if (pathname === '/api/address-lookup') {
-    const origin = request.headers.get('origin')
-    const allowedOrigins = [
-      process.env.NEXT_PUBLIC_APP_URL,
-      'https://www.ransomspares.co.uk',
-      'https://ransomspares.co.uk'
-    ].filter(Boolean)
+  if (pathname.startsWith('/api/')) {
+    // Get client IP
+    const forwarded = request.headers.get('x-forwarded-for')
+    const ip = forwarded ? forwarded.split(',')[0] : 'unknown'
     
-    if (origin && allowedOrigins.includes(origin)) {
-      response.headers.set('Access-Control-Allow-Origin', origin)
-      response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS')
-      response.headers.set('Access-Control-Allow-Headers', 'Content-Type')
+    // Simple rate limiting
+    const key = `${ip}:${pathname}`
+    const now = Date.now()
+    const record = rateLimitMap.get(key)
+    const limit = pathname.includes('checkout') ? 10 : 50 // Lower limit for payment endpoints
+    
+    if (!record || now > record.resetTime) {
+      rateLimitMap.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
+    } else if (record.count >= limit) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': '60',
+          },
+        }
+      )
+    } else {
+      record.count++
     }
   }
   
-  return response
+  // Continue with the request
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: [
-    '/api/:path*',
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: '/api/:path*',
 }
