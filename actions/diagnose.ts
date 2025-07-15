@@ -201,12 +201,12 @@ async function searchForErrorCode(
   serpApiKey: string
 ): Promise<{ searchResults: SearchResult[], relevantInfo: string }> {
   try {
-    // Improved queries - removed hardcoded "washing machine", added more variety
+    // Improved queries - more specific to avoid cross-appliance confusion
     const queries = [
-      `${brand} ${appliance} error code ${errorCode} meaning`,
-      `${brand} ${errorCode} error code what does it mean`,
-      `error code ${errorCode} ${brand} ${appliance} fix solution`,
-      `"error ${errorCode}" "${brand}" repair guide`
+      `${brand} ${appliance} error code ${errorCode} meaning -dishwasher -dryer -oven`,
+      `"${brand} ${appliance}" "${errorCode}" error code what does it mean`,
+      `error code ${errorCode} "${brand}" "${appliance}" fix solution`,
+      `"${errorCode} error" "${brand} ${appliance}" troubleshooting`
     ]
     
     let allResults: SearchResult[] = []
@@ -256,8 +256,24 @@ async function searchForErrorCode(
               const lowerTitle = result.title.toLowerCase()
               const lowerErrorCode = errorCode.toLowerCase()
               const lowerBrand = brand.toLowerCase()
+              const lowerAppliance = appliance.toLowerCase()
               
               let score = 0
+              
+              // Penalize results for wrong appliance type
+              const wrongAppliances = ['dishwasher', 'dryer', 'oven', 'refrigerator', 'fridge', 'freezer', 'microwave']
+              const isWrongAppliance = wrongAppliances.some(wrong => 
+                wrong !== lowerAppliance && (lowerSnippet.includes(wrong) || lowerTitle.includes(wrong))
+              )
+              
+              if (isWrongAppliance) {
+                score -= 5 // Heavy penalty for wrong appliance
+              }
+              
+              // Bonus for correct appliance mention
+              if (lowerSnippet.includes(lowerAppliance) || lowerTitle.includes(lowerAppliance)) {
+                score += 2
+              }
               
               // Score based on presence of error code
               if (lowerSnippet.includes(lowerErrorCode)) score += 3
@@ -361,8 +377,24 @@ async function searchWithBraveAPI(
       const lowerTitle = result.title.toLowerCase()
       const lowerErrorCode = errorCode.toLowerCase()
       const lowerBrand = brand.toLowerCase()
+      const lowerAppliance = appliance.toLowerCase()
       
       let score = 0
+      
+      // Penalize results for wrong appliance type
+      const wrongAppliances = ['dishwasher', 'dryer', 'oven', 'refrigerator', 'fridge', 'freezer', 'microwave']
+      const isWrongAppliance = wrongAppliances.some(wrong => 
+        wrong !== lowerAppliance && (lowerSnippet.includes(wrong) || lowerTitle.includes(wrong))
+      )
+      
+      if (isWrongAppliance) {
+        score -= 5 // Heavy penalty for wrong appliance
+      }
+      
+      // Bonus for correct appliance mention
+      if (lowerSnippet.includes(lowerAppliance) || lowerTitle.includes(lowerAppliance)) {
+        score += 2
+      }
       
       // Score based on presence of error code
       if (lowerSnippet.includes(lowerErrorCode)) score += 3
