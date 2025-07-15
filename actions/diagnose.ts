@@ -546,6 +546,10 @@ Be specific to ${brand} ${appliance} and base your response on the search result
   }
 }
 
+// Email sending has been moved to client-side (diagnostic-form.tsx)
+// This avoids issues with server actions making HTTP requests in Vercel deployments
+// The /api/send-diagnostic-report endpoint is called directly from the client after diagnosis
+
 // Main diagnosis function
 export async function diagnoseProblem(
   appliance: string, 
@@ -574,6 +578,10 @@ export async function diagnoseProblem(
       console.log('Cached diagnosis data:', JSON.stringify(cachedDiagnosis, null, 2))
       // Save this as a new entry but mark it as cached
       await saveDiagnosticToDatabase(appliance, brand, problem, email, cachedDiagnosis, detectedErrorCode, true)
+      
+      // Email sending is now handled client-side after diagnosis is displayed
+      // This avoids issues with server actions in Vercel
+      
       return cachedDiagnosis
     }
 
@@ -631,18 +639,33 @@ export async function diagnoseProblem(
         aiResult.sourceUrls = searchUrls.slice(0, 3)
       }
       await saveDiagnosticToDatabase(appliance, brand, problem, email, aiResult, detectedErrorCode, false)
+      
+      // Send diagnostic report email asynchronously (don't block the response)
+      sendDiagnosticReportEmail(email, appliance, brand, problem, aiResult, detectedErrorCode)
+        .catch(error => console.error('Failed to send diagnostic report email:', error))
+      
       return aiResult
     }
 
     console.log('AI diagnosis failed, using emergency fallback')
     const fallbackResult = getEmergencyFallback(appliance, brand, problem)
     await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult, detectedErrorCode, false)
+    
+    // Send diagnostic report email even for fallback results
+    sendDiagnosticReportEmail(email, appliance, brand, problem, fallbackResult, detectedErrorCode)
+      .catch(error => console.error('Failed to send diagnostic report email:', error))
+    
     return fallbackResult
 
   } catch (error) {
     console.error("Diagnosis error:", error)
     const fallbackResult = getEmergencyFallback(appliance, brand, problem)
     await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult, null, false)
+    
+    // Send diagnostic report email even for error cases
+    sendDiagnosticReportEmail(email, appliance, brand, problem, fallbackResult, null)
+      .catch(error => console.error('Failed to send diagnostic report email:', error))
+    
     return fallbackResult
   }
 }
@@ -978,6 +1001,10 @@ async function saveDiagnosticToDatabase(
       console.error('Database save error:', error)
     } else {
       console.log(`Diagnostic saved to database ${wasCached ? '(from cache)' : '(from AI)'} - validated: ${!errorCode ? 'cleaned' : 'with error code'}`)
+      
+      // Email sending is now handled client-side in diagnostic-form.tsx
+      // This avoids issues with server actions making HTTP requests in Vercel
+      console.log('Diagnostic saved. Email will be sent from client-side.')
     }
   } catch (error) {
     console.error('Failed to save diagnostic to database:', error)

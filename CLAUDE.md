@@ -88,7 +88,8 @@
 - `diagnose.ts:67-187` - Diagnostic caching system
 
 ### Key Features
-- **AI Caching**: Reduces API costs by reusing similar diagnostics
+- **AI Caching**: Reduces API costs by reusing similar diagnostics (with exact error code matching)
+- **Enhanced Error Code Search**: Appliance-specific filtering prevents cross-contamination (e.g., dishwasher vs washing machine)
 - **Booking Modal**: Pop-up modal for main site with step navigation
 - **Booking Widget**: Embeddable iframe with automatic height adjustment for mobile
 - **Payment Flow**: Stripe integration with booking persistence (both modal and widget)
@@ -131,8 +132,10 @@
 - Email confirmations via SendGrid
 
 ### AI Diagnostics
-- Cache system in `diagnose.ts:67-187` for cost optimization
+- Cache system in `diagnose.ts:67-187` for cost optimization (exact error code matching required)
 - Error code detection patterns in `diagnose.ts:29-64`
+- Enhanced search with appliance-specific filtering in `diagnose.ts:190-314`
+- Scoring system penalizes wrong appliance types (-5 points)
 - Fallback responses when AI fails
 
 ## Environment Variables Required
@@ -156,6 +159,9 @@ SENDGRID_API_KEY=
 # Feature Flags
 NEXT_PUBLIC_ENABLE_SAME_DAY_BOOKING=false # Set to 'true' to enable same-day booking option
 NEXT_PUBLIC_ENABLE_NEXT_DAY_BOOKING=false # Set to 'true' to enable next-day booking option
+
+# Site URL (for API calls from server actions)
+NEXT_PUBLIC_SITE_URL=https://repairs.ransomspares.co.uk
 ```
 
 ## Widget Integration

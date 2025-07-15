@@ -12,6 +12,7 @@ DiagnoSys is an intelligent appliance fault diagnosis system that combines AI an
 - **Error Code Research**: Automated web search for brand-specific error codes
 - **Email Verification**: Secure access with 6-digit verification codes
 - **Professional Reports**: Comprehensive diagnostic reports with safety warnings
+- **Automated Email Reports**: Diagnostic results automatically emailed to users
 - **Service Recommendations**: DIY, professional, or warranty guidance based on historical data
 - **Conversion Tracking**: Monitors booking conversion rates by error code and recommendation type
 - **British Market Focus**: UK terminology, pricing, and compliance
@@ -54,6 +55,7 @@ interface ProblemInput {
 - 6-digit verification code sent via SendGrid
 - 10-minute expiration window
 - One-time use with automatic cleanup
+- User consent checkbox for receiving diagnostic report
 
 ### 3. AI Analysis Process
 
@@ -82,18 +84,27 @@ SELECT * FROM search_similar_diagnostics(
 ```
 
 **Cache Hit Criteria**:
-- Similarity score ≥ 0.7 OR exact error code match
+- For error code diagnoses: MUST have exact error code match
+- For non-error diagnoses: Similarity score ≥ 0.7
 - Returns cached result (~70% of requests)
 - Confidence score: 0.9 for cached, 1.0 for fresh AI
 
 #### Phase 3: Web Search Enhancement
 ```javascript
-// Search queries for error code information
+// Enhanced search queries with appliance-specific filtering
 const queries = [
-  `${brand} ${appliance} error code ${errorCode} meaning fix`,
-  `"${brand}" "${errorCode}" error washing machine solution`,
-  `${brand} error ${errorCode} troubleshooting guide`
+  `${brand} ${appliance} error code ${errorCode} meaning -dishwasher -dryer -oven`,
+  `"${brand} ${appliance}" "${errorCode}" error code what does it mean`,
+  `error code ${errorCode} "${brand}" "${appliance}" fix solution`,
+  `"${errorCode} error" "${brand} ${appliance}" troubleshooting`
 ]
+
+// Relevance scoring system
+- Penalizes wrong appliance types: -5 points
+- Rewards correct appliance mentions: +2 points
+- Error code presence: +3 points (snippet), +2 points (title)
+- Brand presence: +2 points (snippet), +1 point (title)
+- Minimum score threshold: 2 points
 ```
 
 #### Phase 4: AI Diagnosis
@@ -155,6 +166,22 @@ INSERT INTO diagnostics (
   converted_to_booking, created_at
 ) VALUES (...)
 ```
+
+### 6. Email Report Delivery
+After successful database storage, the system automatically sends a comprehensive diagnostic report to the user's email address:
+
+- **Triggered After**: Successful database save
+- **Email Contents**: 
+  - Complete diagnostic results
+  - Error code meanings (if applicable)
+  - Possible causes
+  - DIY and professional recommendations
+  - Safety warnings
+  - Cost and time estimates
+  - Call-to-action buttons for booking/parts
+- **Email Template**: Responsive HTML with plain text fallback
+- **Spam Compliance**: User opted-in during verification, includes unsubscribe link
+- **Error Handling**: Email failures don't break diagnosis flow
 
 ## Database Schema
 
@@ -316,6 +343,39 @@ export async function diagnoseProblem(
 ): Promise<DiagnosisResult>
 ```
 
+### Email Report Delivery
+
+#### POST `/api/send-diagnostic-report`
+```json
+{
+  "email": "user@example.com",
+  "appliance": "Washing machine",
+  "brand": "Samsung",
+  "problem": "Making loud noise E4 error",
+  "diagnosis": {
+    "errorCodeMeaning": "E4 indicates unbalanced load",
+    "possibleCauses": ["..."],
+    "recommendations": { "diy": ["..."], "professional": ["..."] },
+    "urgency": "medium",
+    "estimatedCost": "£109-£149",
+    "difficulty": "moderate",
+    "recommendedService": "professional",
+    "serviceReason": "...",
+    "timeEstimate": "1-2 hours",
+    "safetyWarnings": ["..."]
+  },
+  "errorCode": "E4"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Diagnostic report sent successfully"
+}
+```
+
 ## Configuration
 
 ### Environment Variables
@@ -338,16 +398,24 @@ SENDGRID_FROM_EMAIL=your_from_email
 ### Performance Tuning
 ```javascript
 // Cache configuration
-const CACHE_THRESHOLD = 0.7;  // Similarity threshold for cache hits
+const CACHE_THRESHOLD = 0.7;  // Similarity threshold for cache hits (non-error diagnoses only)
 const CACHE_CONFIDENCE = 0.9;  // Confidence score for cached results
+// Error code diagnoses require exact match regardless of similarity
 
 // Cost optimization
 const MAX_PROFESSIONAL_COST = 149;  // Maximum professional service cost
 const MAX_DIY_COST = 50;           // Maximum DIY repair cost
 
 // Search configuration
-const MAX_SEARCH_RESULTS = 10;     // Maximum search results per query
-const SEARCH_TIMEOUT = 5000;       // Search timeout in milliseconds
+const SEARCH_RESULTS_PER_QUERY = 10;  // Results per SerpAPI query (increased from 5)
+const MAX_SEARCH_RESULTS = 15;        // Maximum search results to return
+const SEARCH_TIMEOUT = 5000;          // Search timeout in milliseconds
+const UK_LOCATION = 'uk';             // Location parameter for UK-specific results
+
+// Scoring configuration
+const WRONG_APPLIANCE_PENALTY = -5;   // Penalty for mentioning wrong appliance
+const CORRECT_APPLIANCE_BONUS = 2;    // Bonus for mentioning correct appliance
+const MIN_RELEVANCE_SCORE = 2;        // Minimum score for snippet inclusion
 ```
 
 ## Security Features
