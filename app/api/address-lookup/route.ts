@@ -93,7 +93,19 @@ export async function POST(request: NextRequest) {
         `Country=GB&` +
         `Limit=100`
       
+      console.log('Loqate Find URL:', url.replace(loqateKey, 'HIDDEN'))
+      
       const response = await fetch(url)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Loqate Find API error:', response.status, errorText)
+        return NextResponse.json(
+          { error: 'Address lookup service error' },
+          { status: 500 }
+        )
+      }
+      
       const data = await response.json()
       
       if (data.Items && data.Items.length > 0) {
@@ -136,7 +148,20 @@ export async function POST(request: NextRequest) {
         `Key=${loqateKey}&` +
         `Id=${encodeURIComponent(sanitizedId)}`
       
+      console.log('Loqate Retrieve URL:', url.replace(loqateKey, 'HIDDEN'))
+      console.log('Address ID being sent:', sanitizedId)
+      
       const response = await fetch(url)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Loqate Retrieve API error:', response.status, errorText)
+        return NextResponse.json(
+          { error: 'Unable to retrieve address details' },
+          { status: 500 }
+        )
+      }
+      
       const data = await response.json()
       
       if (data.Items && data.Items.length > 0) {
