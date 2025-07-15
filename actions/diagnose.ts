@@ -123,9 +123,16 @@ async function checkCachedDiagnosis(
       return null
     }
     
-    // Only use cached result if similarity is very high or exact error code match
-    if (bestMatch.similarity_score < 0.7 && (!errorCode || bestMatch.error_code !== errorCode)) {
-      console.log(`Similarity score too low: ${bestMatch.similarity_score}`)
+    // Only use cached result if similarity is very high AND error codes match (if present)
+    // If error codes don't match, never use cache regardless of similarity
+    if (errorCode && bestMatch.error_code !== errorCode) {
+      console.log(`Error code mismatch: cached ${bestMatch.error_code} vs requested ${errorCode} - not using cache`)
+      return null
+    }
+    
+    // For non-error code diagnoses, require high similarity
+    if (!errorCode && bestMatch.similarity_score < 0.7) {
+      console.log(`Similarity score too low for non-error diagnosis: ${bestMatch.similarity_score}`)
       return null
     }
 
@@ -194,22 +201,45 @@ async function searchForErrorCode(
   serpApiKey: string
 ): Promise<{ searchResults: SearchResult[], relevantInfo: string }> {
   try {
+    // Improved queries - more specific to avoid cross-appliance confusion
     const queries = [
-      `${brand} ${appliance} error code ${errorCode} meaning fix`,
-      `"${brand}" "${errorCode}" error washing machine solution`,
-      `${brand} error ${errorCode} troubleshooting guide`
+      `${brand} ${appliance} error code ${errorCode} meaning -dishwasher -dryer -oven`,
+      `"${brand} ${appliance}" "${errorCode}" error code what does it mean`,
+      `error code ${errorCode} "${brand}" "${appliance}" fix solution`,
+      `"${errorCode} error" "${brand} ${appliance}" troubleshooting`
     ]
     
     let allResults: SearchResult[] = []
-    let relevantSnippets: string[] = []
+    let scoredSnippets: { snippet: string, score: number }[] = []
+    
+    console.log(`Searching for ${brand} ${appliance} error code ${errorCode}...`)
     
     for (const query of queries) {
-      const searchUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${serpApiKey}&num=5`
+      // Added UK location parameter and increased results to 10
+      const searchUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${serpApiKey}&num=10&gl=uk`
       
       try {
         const response = await fetch(searchUrl)
         if (response.ok) {
           const data = await response.json()
+          
+          // Process answer box first if available
+          if (data.answer_box?.snippet) {
+            scoredSnippets.push({ 
+              snippet: data.answer_box.snippet, 
+              score: 10 // Highest priority for answer boxes
+            })
+            console.log('Found answer box snippet')
+          }
+          
+          // Process featured snippet if available
+          if (data.featured_snippet?.snippet) {
+            scoredSnippets.push({ 
+              snippet: data.featured_snippet.snippet, 
+              score: 9 // High priority for featured snippets
+            })
+            console.log('Found featured snippet')
+          }
           
           if (data.organic_results) {
             const results = data.organic_results.map((result: any) => ({
@@ -220,16 +250,67 @@ async function searchForErrorCode(
             
             allResults = allResults.concat(results)
             
+            // Improved relevance scoring instead of binary filtering
             results.forEach((result: SearchResult) => {
-              if (result.snippet.toLowerCase().includes(errorCode.toLowerCase()) &&
-                  result.snippet.toLowerCase().includes(brand.toLowerCase())) {
-                relevantSnippets.push(result.snippet)
+              const lowerSnippet = result.snippet.toLowerCase()
+              const lowerTitle = result.title.toLowerCase()
+              const lowerErrorCode = errorCode.toLowerCase()
+              const lowerBrand = brand.toLowerCase()
+              const lowerAppliance = appliance.toLowerCase()
+              
+              let score = 0
+              
+              // Penalize results for wrong appliance type
+              const wrongAppliances = ['dishwasher', 'dryer', 'oven', 'refrigerator', 'fridge', 'freezer', 'microwave']
+              const isWrongAppliance = wrongAppliances.some(wrong => 
+                wrong !== lowerAppliance && (lowerSnippet.includes(wrong) || lowerTitle.includes(wrong))
+              )
+              
+              if (isWrongAppliance) {
+                score -= 5 // Heavy penalty for wrong appliance
+              }
+              
+              // Bonus for correct appliance mention
+              if (lowerSnippet.includes(lowerAppliance) || lowerTitle.includes(lowerAppliance)) {
+                score += 2
+              }
+              
+              // Score based on presence of error code
+              if (lowerSnippet.includes(lowerErrorCode)) score += 3
+              if (lowerTitle.includes(lowerErrorCode)) score += 2
+              
+              // Score based on presence of brand
+              if (lowerSnippet.includes(lowerBrand)) score += 2
+              if (lowerTitle.includes(lowerBrand)) score += 1
+              
+              // Score based on relevant keywords
+              if (lowerSnippet.includes('meaning') || lowerSnippet.includes('indicates')) score += 1
+              if (lowerSnippet.includes('fix') || lowerSnippet.includes('solution')) score += 1
+              if (lowerSnippet.includes('error')) score += 0.5
+              
+              // Only include snippets with minimum relevance
+              if (score >= 2 && result.snippet.length > 20) {
+                scoredSnippets.push({ snippet: result.snippet, score })
+                
+                // Also check title for error code info
+                if (lowerTitle.includes(lowerErrorCode) && lowerTitle.includes('error')) {
+                  const titleInfo = `${result.title}: ${result.snippet}`
+                  scoredSnippets.push({ snippet: titleInfo, score: score + 1 })
+                }
               }
             })
           }
           
-          if (data.answer_box?.snippet) {
-            relevantSnippets.push(data.answer_box.snippet)
+          // Process "People also ask" section if available
+          if (data.related_questions) {
+            data.related_questions.forEach((question: any) => {
+              if (question.snippet && question.question.toLowerCase().includes(errorCode.toLowerCase())) {
+                scoredSnippets.push({ 
+                  snippet: `Q: ${question.question} A: ${question.snippet}`, 
+                  score: 5 
+                })
+              }
+            })
           }
         }
       } catch (error) {
@@ -237,10 +318,16 @@ async function searchForErrorCode(
       }
     }
     
+    // Sort snippets by score and take the best ones
+    scoredSnippets.sort((a, b) => b.score - a.score)
+    const relevantSnippets = scoredSnippets.slice(0, 8).map(item => item.snippet)
+    
+    console.log(`Found ${allResults.length} total results, ${relevantSnippets.length} relevant snippets`)
+    
     const relevantInfo = relevantSnippets.join('\n\n')
     
     return {
-      searchResults: allResults.slice(0, 10),
+      searchResults: allResults.slice(0, 15), // Increased from 10 to 15
       relevantInfo
     }
   } catch (error) {
@@ -258,17 +345,17 @@ async function searchWithBraveAPI(
 ): Promise<{ searchResults: SearchResult[], relevantInfo: string }> {
   try {
     const query = `${brand} ${appliance} error code ${errorCode} meaning troubleshooting`
-    const response = await fetch('https://api.search.brave.com/res/v1/web/search', {
+    const url = new URL('https://api.search.brave.com/res/v1/web/search')
+    url.searchParams.append('q', query)
+    url.searchParams.append('count', '20')
+    url.searchParams.append('country', 'gb') // UK-specific results
+    
+    const response = await fetch(url.toString(), {
       headers: {
         'X-Subscription-Token': apiKey,
         'Accept': 'application/json'
       },
-      method: 'GET',
-      // @ts-ignore
-      searchParams: {
-        q: query,
-        count: 10
-      }
+      method: 'GET'
     })
     
     if (!response.ok) {
@@ -282,15 +369,67 @@ async function searchWithBraveAPI(
       snippet: result.description || ''
     })) || []
     
-    const relevantInfo = searchResults
-      .filter((r: SearchResult) => 
-        r.snippet.toLowerCase().includes(errorCode.toLowerCase()) &&
-        r.snippet.toLowerCase().includes(brand.toLowerCase())
-      )
-      .map((r: SearchResult) => r.snippet)
-      .join('\n\n')
+    // Use same scoring system as SerpAPI function
+    let scoredSnippets: { snippet: string, score: number }[] = []
     
-    return { searchResults, relevantInfo }
+    searchResults.forEach((result: SearchResult) => {
+      const lowerSnippet = result.snippet.toLowerCase()
+      const lowerTitle = result.title.toLowerCase()
+      const lowerErrorCode = errorCode.toLowerCase()
+      const lowerBrand = brand.toLowerCase()
+      const lowerAppliance = appliance.toLowerCase()
+      
+      let score = 0
+      
+      // Penalize results for wrong appliance type
+      const wrongAppliances = ['dishwasher', 'dryer', 'oven', 'refrigerator', 'fridge', 'freezer', 'microwave']
+      const isWrongAppliance = wrongAppliances.some(wrong => 
+        wrong !== lowerAppliance && (lowerSnippet.includes(wrong) || lowerTitle.includes(wrong))
+      )
+      
+      if (isWrongAppliance) {
+        score -= 5 // Heavy penalty for wrong appliance
+      }
+      
+      // Bonus for correct appliance mention
+      if (lowerSnippet.includes(lowerAppliance) || lowerTitle.includes(lowerAppliance)) {
+        score += 2
+      }
+      
+      // Score based on presence of error code
+      if (lowerSnippet.includes(lowerErrorCode)) score += 3
+      if (lowerTitle.includes(lowerErrorCode)) score += 2
+      
+      // Score based on presence of brand
+      if (lowerSnippet.includes(lowerBrand)) score += 2
+      if (lowerTitle.includes(lowerBrand)) score += 1
+      
+      // Score based on relevant keywords
+      if (lowerSnippet.includes('meaning') || lowerSnippet.includes('indicates')) score += 1
+      if (lowerSnippet.includes('fix') || lowerSnippet.includes('solution')) score += 1
+      if (lowerSnippet.includes('error')) score += 0.5
+      
+      // Only include snippets with minimum relevance
+      if (score >= 2 && result.snippet.length > 20) {
+        scoredSnippets.push({ snippet: result.snippet, score })
+        
+        // Also check title for error code info
+        if (lowerTitle.includes(lowerErrorCode) && lowerTitle.includes('error')) {
+          const titleInfo = `${result.title}: ${result.snippet}`
+          scoredSnippets.push({ snippet: titleInfo, score: score + 1 })
+        }
+      }
+    })
+    
+    // Sort snippets by score and take the best ones
+    scoredSnippets.sort((a, b) => b.score - a.score)
+    const relevantSnippets = scoredSnippets.slice(0, 8).map(item => item.snippet)
+    
+    console.log(`Brave: Found ${searchResults.length} results, ${relevantSnippets.length} relevant snippets`)
+    
+    const relevantInfo = relevantSnippets.join('\n\n')
+    
+    return { searchResults: searchResults.slice(0, 15), relevantInfo }
   } catch (error) {
     console.error('Brave search error:', error)
     return { searchResults: [], relevantInfo: '' }
@@ -455,15 +594,23 @@ export async function diagnoseProblem(
       
       let searchResults
       if (process.env.SERP_API_KEY) {
-        searchResults = await searchForErrorCode(brand, appliance, detectedErrorCode, process.env.SERP_API_KEY)
+        searchResults = await searchForErrorCode(brand, normalizedAppliance, detectedErrorCode, process.env.SERP_API_KEY)
       } else if (process.env.BRAVE_SEARCH_API_KEY) {
-        searchResults = await searchWithBraveAPI(brand, appliance, detectedErrorCode, process.env.BRAVE_SEARCH_API_KEY)
+        searchResults = await searchWithBraveAPI(brand, normalizedAppliance, detectedErrorCode, process.env.BRAVE_SEARCH_API_KEY)
       }
       
       if (searchResults) {
         searchInfo = searchResults.relevantInfo
         searchUrls = searchResults.searchResults.map(r => r.url)
         console.log(`Found ${searchResults.searchResults.length} search results`)
+        
+        // Enhanced logging for debugging
+        if (searchInfo) {
+          console.log(`Relevant search info length: ${searchInfo.length} characters`)
+          console.log('First 200 chars of search info:', searchInfo.substring(0, 200) + '...')
+        } else {
+          console.log('WARNING: No relevant search info found for error code')
+        }
       }
     }
 
