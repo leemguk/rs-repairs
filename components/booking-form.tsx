@@ -42,7 +42,7 @@ interface LoqateRetrieveResult {
   [key: string]: any  // This allows for any additional fields
 }
 
-const LOQATE_KEY = process.env.NEXT_PUBLIC_LOQATE_KEY || ""
+// Loqate key removed - now using server-side proxy for security
 
 interface BookingData {
   applianceType: string
@@ -206,12 +206,33 @@ export function BookingForm() {
         
         // Try multiple ways to send the message for mobile compatibility
         try {
+          // Get allowed origins from environment or use defaults
+          const allowedOrigins = [
+            window.location.origin,
+            'https://www.ransomspares.co.uk',
+            'https://ransomspares.co.uk',
+            process.env.NEXT_PUBLIC_APP_URL
+          ].filter(Boolean)
+          
+          // Try to detect parent origin from document.referrer
+          let targetOrigin = '*'
+          if (document.referrer) {
+            try {
+              const referrerUrl = new URL(document.referrer)
+              if (allowedOrigins.includes(referrerUrl.origin)) {
+                targetOrigin = referrerUrl.origin
+              }
+            } catch (e) {
+              // Invalid referrer URL, use wildcard
+            }
+          }
+          
           window.parent.postMessage({
             type: 'rs-repairs-booking-height',
             height: height,
             timestamp: Date.now(),
             mobile: isMobile
-          }, '*')
+          }, targetOrigin)
           
           // For mobile, send a second message after a brief delay
           if (isMobile) {
@@ -222,7 +243,7 @@ export function BookingForm() {
                 timestamp: Date.now(),
                 mobile: isMobile,
                 retry: true
-              }, '*')
+              }, targetOrigin)
             }, 50)
           }
         } catch (e) {
@@ -479,16 +500,16 @@ export function BookingForm() {
       return
     }
     try {
-      const response = await fetch(
-        `https://api.addressy.com/Capture/Interactive/Find/v1.1/json3.ws?` +
-        new URLSearchParams({
-          Key: LOQATE_KEY,
-          Text: query,
-          Countries: "GB",
-          Limit: "10",
-          Language: "en-gb",
+      const response = await fetch('/api/address-lookup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'find',
+          postcode: query
         })
-      )
+      })
       if (!response.ok) {
         console.error("Loqate API error:", response.status)
         return
@@ -541,13 +562,16 @@ export function BookingForm() {
   // Add selectAddress function
   const selectAddress = async (suggestion: { id: string; text: string; description: string }) => {
     try {
-      const response = await fetch(
-        `https://api.addressy.com/Capture/Interactive/Retrieve/v1.1/json3.ws?` +
-        new URLSearchParams({
-          Key: LOQATE_KEY,
-          Id: suggestion.id,
+      const response = await fetch('/api/address-lookup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'retrieve',
+          addressId: suggestion.id
         })
-      )
+      })
       if (!response.ok) {
         console.error("Loqate Retrieve API error:", response.status)
         return

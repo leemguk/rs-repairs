@@ -37,9 +37,10 @@
 ## Active Tasks
 
 ### 🔧 Bug Fixes & Improvements
-- [ ] **Fix diagnostic report email sending** - Currently fails in Vercel server actions
-  - Consider alternatives: client-side API call, edge functions, or queue service
-  - Email template already exists in `/api/send-diagnostic-report`
+- [x] **Fix diagnostic report email sending** - ✅ COMPLETED (2025-07-15)
+  - Implemented client-side email sending solution
+  - Email now sent from `diagnostic-form.tsx` after diagnosis
+  - Added visual feedback and retry functionality
 - [ ] Fix mobile responsiveness issues in **booking widget** (iframe)
 - [ ] Optimize iframe height adjustment for mobile devices (widget only)
 - [ ] Improve step navigation in **booking modal**
@@ -122,6 +123,7 @@
 ✅ Updated documentation to clearly distinguish booking modal vs booking widget
 ✅ **Fixed DiagnoSys error code accuracy** - Enhanced search to prevent cross-appliance contamination (2025-07-15)
 ✅ **Improved cache matching** - Error codes now require exact match to prevent incorrect results (2025-07-15)
+✅ **Fixed diagnostic email reports** - Moved email sending to client-side to resolve Vercel deployment issues (2025-07-15)
 
 ## Recent Improvements (2025-07-15)
 
@@ -136,6 +138,17 @@
 
 **Result**: Now correctly identifies E19 as heating/temperature issue for washing machines
 
+### Diagnostic Email Reports Fix
+**Problem**: Email sending was failing in Vercel server actions when trying to call API routes
+
+**Solution**:
+1. Moved email sending from server action (`diagnose.ts`) to client-side (`diagnostic-form.tsx`)
+2. Added `sendDiagnosticEmail` function that calls `/api/send-diagnostic-report` after diagnosis
+3. Implemented visual feedback with loading, success, and error states
+4. Added retry functionality if email fails
+
+**Result**: Email reports now send reliably in production, with better user feedback
+
 ## Notes
 - All development should follow existing code patterns
 - Test thoroughly on mobile devices
@@ -145,4 +158,4 @@
 - Monitor DiagnoSys search quality for various error codes
 
 ---
-*Last updated: 2025-07-15*
+*Last updated: 2025-07-15 (Email reports fixed)*

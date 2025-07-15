@@ -40,8 +40,7 @@ interface LoqateRetrieveResult {
   [key: string]: any  // This allows for any additional fields
 }
 
-// Loqate API key
-const LOQATE_KEY = process.env.NEXT_PUBLIC_LOQATE_KEY || ""
+// Loqate key removed - now using server-side proxy for security
 
 interface BookingModalProps {
   isOpen: boolean
