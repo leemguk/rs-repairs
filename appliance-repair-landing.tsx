@@ -211,7 +211,7 @@ export default function Component() {
                   AI-Powered Diagnostics
                 </Badge>
                 <h2 className="text-2xl font-bold tracking-tighter sm:text-3xl md:text-4xl lg:text-5xl text-gray-900">
-                  DiagnoSys - Help You Make The Right Repair Choice?
+                  DiagnoSys - Make The Right Repair Choice!
                 </h2>
               </div>
             </div>
