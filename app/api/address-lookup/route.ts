@@ -97,12 +97,12 @@ export async function POST(request: NextRequest) {
       const data = await response.json()
       
       if (data.Items && data.Items.length > 0) {
-        // Sanitize response data
+        // Sanitize response data (but preserve IDs as-is for Loqate)
         const sanitizedItems = data.Items.map((item: any) => ({
-          Id: sanitizeInput(item.Id),
+          Id: item.Id, // Don't sanitize IDs - Loqate needs them intact
           Text: sanitizeInput(item.Text),
           Description: sanitizeInput(item.Description || ''),
-          Type: sanitizeInput(item.Type)
+          Type: item.Type || 'Address'
         }))
         
         return NextResponse.json({ Items: sanitizedItems })
@@ -120,16 +120,16 @@ export async function POST(request: NextRequest) {
         )
       }
       
-      // Validate address ID (alphanumeric + basic chars)
-      const idValidation = validateTextField(addressId, 'Address ID', 1, 100)
-      if (!idValidation.isValid) {
+      // Basic validation for address ID - Loqate IDs can contain special chars
+      if (addressId.length > 500) {
         return NextResponse.json(
           { error: 'Invalid address ID' },
           { status: 400 }
         )
       }
       
-      const sanitizedId = sanitizeInput(addressId)
+      // Don't sanitize the ID - Loqate needs it exactly as provided
+      const sanitizedId = addressId
       
       // Call Loqate Retrieve API
       const url = `https://api.addressy.com/Capture/Interactive/Retrieve/v1.10/json3.ws?` +
