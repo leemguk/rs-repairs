@@ -350,16 +350,16 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     }
 
     try {
-      const response = await fetch(
-        `https://api.addressy.com/Capture/Interactive/Find/v1.1/json3.ws?` +
-        new URLSearchParams({
-          Key: LOQATE_KEY,
-          Text: query,
-          Countries: "GB",
-          Limit: "10",
-          Language: "en-gb",
+      const response = await fetch('/api/address-lookup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'find',
+          postcode: query
         })
-      )
+      })
 
       if (!response.ok) {
         console.error("Loqate API error:", response.status)
@@ -395,13 +395,16 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
 
   const selectAddress = async (suggestion: { id: string; text: string; description: string }) => {
     try {
-      const response = await fetch(
-        `https://api.addressy.com/Capture/Interactive/Retrieve/v1.1/json3.ws?` +
-        new URLSearchParams({
-          Key: LOQATE_KEY,
-          Id: suggestion.id,
+      const response = await fetch('/api/address-lookup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'retrieve',
+          addressId: suggestion.id
         })
-      )
+      })
 
       if (!response.ok) {
         console.error("Loqate Retrieve API error:", response.status)
@@ -410,29 +413,15 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
 
       const data = await response.json()
       
-      if (data.Items && data.Items.length > 0) {
-        const addressData: LoqateRetrieveResult = data.Items[0]
-                
-        const addressParts = [
-          addressData.Line1,
-          addressData.Line2,
-          addressData.Line3,
-          addressData.Line4,
-          addressData.Line5,
-        ].filter(Boolean)
-        
-             
-        const fullAddress = addressParts.join(", ") + (addressData.PostalCode ? `, ${addressData.PostalCode}` : "")
-        
-        
+      if (data.address) {
         setBookingData((prev) => ({
           ...prev,
-          address: addressData.Line1 || "",
-          fullAddress: fullAddress,
-          postcode: addressData.PostalCode || "",
+          address: data.address,
+          fullAddress: data.address,
+          postcode: data.postcode || "",
         }))
 
-        setAddressSearchValue(fullAddress)
+        setAddressSearchValue(data.address)
         setShowAddressSuggestions(false)
         setAddressSuggestions([])
       }

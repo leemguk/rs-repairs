@@ -124,6 +124,7 @@
 ✅ **Fixed DiagnoSys error code accuracy** - Enhanced search to prevent cross-appliance contamination (2025-07-15)
 ✅ **Improved cache matching** - Error codes now require exact match to prevent incorrect results (2025-07-15)
 ✅ **Fixed diagnostic email reports** - Moved email sending to client-side to resolve Vercel deployment issues (2025-07-15)
+✅ **Enhanced booking security** - Added input validation, sanitization, rate limiting, and secure API proxy (2025-07-15)
 
 ## Recent Improvements (2025-07-15)
 
@@ -149,6 +150,20 @@
 
 **Result**: Email reports now send reliably in production, with better user feedback
 
+### Booking Security Enhancements
+**Problem**: Multiple security vulnerabilities in booking components
+
+**Solution**:
+1. Created validation.ts with comprehensive input validation functions
+2. Created sanitization.ts for XSS protection
+3. Added server-side address-lookup API proxy (removed client-side Loqate key)
+4. Implemented rate limiting middleware
+5. Added security headers (CSP, X-Frame-Options, etc.)
+6. Enhanced payment security with idempotency keys
+7. Fixed iframe postMessage to use specific origins
+
+**Result**: Booking components now protected against XSS, CSRF, injection attacks, and API abuse
+
 ## Notes
 - All development should follow existing code patterns
 - Test thoroughly on mobile devices
@@ -158,4 +173,4 @@
 - Monitor DiagnoSys search quality for various error codes
 
 ---
-*Last updated: 2025-07-15 (Email reports fixed)*
+*Last updated: 2025-07-15 (Email reports fixed, Security enhancements added)*

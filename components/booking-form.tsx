@@ -577,23 +577,14 @@ export function BookingForm() {
         return
       }
       const data = await response.json()
-      if (data.Items && data.Items.length > 0) {
-        const addressData: LoqateRetrieveResult = data.Items[0]
-        const addressParts = [
-          addressData.Line1,
-          addressData.Line2,
-          addressData.Line3,
-          addressData.Line4,
-          addressData.Line5,
-        ].filter(Boolean)
-        const fullAddress = addressParts.join(", ") + (addressData.PostalCode ? `, ${addressData.PostalCode}` : "")
+      if (data.address) {
         setBookingData((prev) => ({
           ...prev,
-          address: addressData.Line1 || "",
-          fullAddress: fullAddress,
-          postcode: addressData.PostalCode || "",
+          address: data.address,
+          fullAddress: data.address,
+          postcode: data.postcode || "",
         }))
-        setAddressSearchValue(fullAddress)
+        setAddressSearchValue(data.address)
         setShowAddressSuggestions(false)
         setAddressSuggestions([])
       }

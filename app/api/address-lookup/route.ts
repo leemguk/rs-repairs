@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    const loqateKey = process.env.NEXT_PUBLIC_LOQATE_KEY
+    const loqateKey = process.env.LOQATE_KEY || process.env.NEXT_PUBLIC_LOQATE_KEY
     if (!loqateKey) {
       console.error('Loqate API key not configured')
       return NextResponse.json(
