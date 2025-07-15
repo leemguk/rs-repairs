@@ -123,9 +123,16 @@ async function checkCachedDiagnosis(
       return null
     }
     
-    // Only use cached result if similarity is very high or exact error code match
-    if (bestMatch.similarity_score < 0.7 && (!errorCode || bestMatch.error_code !== errorCode)) {
-      console.log(`Similarity score too low: ${bestMatch.similarity_score}`)
+    // Only use cached result if similarity is very high AND error codes match (if present)
+    // If error codes don't match, never use cache regardless of similarity
+    if (errorCode && bestMatch.error_code !== errorCode) {
+      console.log(`Error code mismatch: cached ${bestMatch.error_code} vs requested ${errorCode} - not using cache`)
+      return null
+    }
+    
+    // For non-error code diagnoses, require high similarity
+    if (!errorCode && bestMatch.similarity_score < 0.7) {
+      console.log(`Similarity score too low for non-error diagnosis: ${bestMatch.similarity_score}`)
       return null
     }
 
