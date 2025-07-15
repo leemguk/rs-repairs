@@ -117,6 +117,21 @@
 ✅ Added environment variable control for next-day booking availability
 ✅ Changed all public-facing references from 'RS Repairs' to 'Repair Help'
 ✅ Updated documentation to clearly distinguish booking modal vs booking widget
+✅ **Fixed DiagnoSys error code accuracy** - Enhanced search to prevent cross-appliance contamination (2025-07-15)
+✅ **Improved cache matching** - Error codes now require exact match to prevent incorrect results (2025-07-15)
+
+## Recent Improvements (2025-07-15)
+
+### DiagnoSys Error Code Fix
+**Problem**: Bosch washing machine E19 was returning incorrect "drainage fault" information (actually dishwasher info)
+
+**Solution**:
+1. Fixed cache matching to require exact error code match
+2. Enhanced search queries with negative keywords (`-dishwasher -dryer -oven`)
+3. Implemented appliance-specific scoring system (wrong appliance: -5 points)
+4. Increased search results and added UK location parameter
+
+**Result**: Now correctly identifies E19 as heating/temperature issue for washing machines
 
 ## Notes
 - All development should follow existing code patterns
@@ -124,6 +139,7 @@
 - Ensure accessibility compliance
 - Keep performance in mind for widget usage
 - Follow security best practices
+- Monitor DiagnoSys search quality for various error codes
 
 ---
-*Last updated: 2025-01-14*
+*Last updated: 2025-07-15*

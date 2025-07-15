@@ -804,7 +804,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
               <div>
                 <p className="font-medium text-blue-800">DiagnoSys Is Analysing Your Appliance Problem...</p>
-                <p className="text-sm text-blue-600 mt-1">This may take a few seconds</p>
+                <p className="text-sm text-blue-600 mt-1">This may take up to 30 seconds</p>
               </div>
             </div>
           </CardContent>

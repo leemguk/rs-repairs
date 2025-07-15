@@ -545,6 +545,43 @@ Be specific to ${brand} ${appliance} and base your response on the search result
   }
 }
 
+// Send diagnostic report email helper function
+async function sendDiagnosticReportEmail(
+  email: string,
+  appliance: string,
+  brand: string,
+  problem: string,
+  diagnosis: DiagnosisResult,
+  errorCode: string | null
+): Promise<void> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/send-diagnostic-report`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        appliance,
+        brand,
+        problem,
+        diagnosis,
+        errorCode
+      })
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      console.error('Failed to send diagnostic report:', error)
+    } else {
+      console.log('Diagnostic report email sent successfully to:', email)
+    }
+  } catch (error) {
+    console.error('Error sending diagnostic report email:', error)
+    // Don't throw - we don't want email failures to break the diagnosis flow
+  }
+}
+
 // Main diagnosis function
 export async function diagnoseProblem(
   appliance: string, 
@@ -573,6 +610,11 @@ export async function diagnoseProblem(
       console.log('Cached diagnosis data:', JSON.stringify(cachedDiagnosis, null, 2))
       // Save this as a new entry but mark it as cached
       await saveDiagnosticToDatabase(appliance, brand, problem, email, cachedDiagnosis, detectedErrorCode, true)
+      
+      // Send diagnostic report email asynchronously
+      sendDiagnosticReportEmail(email, appliance, brand, problem, cachedDiagnosis, detectedErrorCode)
+        .catch(error => console.error('Failed to send diagnostic report email:', error))
+      
       return cachedDiagnosis
     }
 
@@ -630,18 +672,33 @@ export async function diagnoseProblem(
         aiResult.sourceUrls = searchUrls.slice(0, 3)
       }
       await saveDiagnosticToDatabase(appliance, brand, problem, email, aiResult, detectedErrorCode, false)
+      
+      // Send diagnostic report email asynchronously (don't block the response)
+      sendDiagnosticReportEmail(email, appliance, brand, problem, aiResult, detectedErrorCode)
+        .catch(error => console.error('Failed to send diagnostic report email:', error))
+      
       return aiResult
     }
 
     console.log('AI diagnosis failed, using emergency fallback')
     const fallbackResult = getEmergencyFallback(appliance, brand, problem)
     await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult, detectedErrorCode, false)
+    
+    // Send diagnostic report email even for fallback results
+    sendDiagnosticReportEmail(email, appliance, brand, problem, fallbackResult, detectedErrorCode)
+      .catch(error => console.error('Failed to send diagnostic report email:', error))
+    
     return fallbackResult
 
   } catch (error) {
     console.error("Diagnosis error:", error)
     const fallbackResult = getEmergencyFallback(appliance, brand, problem)
     await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult, null, false)
+    
+    // Send diagnostic report email even for error cases
+    sendDiagnosticReportEmail(email, appliance, brand, problem, fallbackResult, null)
+      .catch(error => console.error('Failed to send diagnostic report email:', error))
+    
     return fallbackResult
   }
 }
@@ -977,6 +1034,37 @@ async function saveDiagnosticToDatabase(
       console.error('Database save error:', error)
     } else {
       console.log(`Diagnostic saved to database ${wasCached ? '(from cache)' : '(from AI)'} - validated: ${!errorCode ? 'cleaned' : 'with error code'}`)
+      
+      // Send diagnostic report email asynchronously
+      try {
+        // In server actions, we need to construct the URL properly
+        const baseUrl = process.env.VERCEL_URL 
+          ? `https://${process.env.VERCEL_URL}`
+          : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+          
+        const emailResponse = await fetch(`${baseUrl}/api/send-diagnostic-report`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            appliance,
+            brand,
+            problem,
+            diagnosis: validatedDiagnosis,
+            errorCode
+          })
+        })
+        
+        if (emailResponse.ok) {
+          console.log('Diagnostic report email sent successfully to:', email)
+        } else {
+          const errorData = await emailResponse.json()
+          console.error('Failed to send diagnostic report email:', errorData.error)
+        }
+      } catch (emailError) {
+        console.error('Error sending diagnostic report email:', emailError)
+        // Don't throw - we don't want email failures to break the diagnosis flow
+      }
     }
   } catch (error) {
     console.error('Failed to save diagnostic to database:', error)
