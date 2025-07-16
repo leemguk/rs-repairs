@@ -3,7 +3,20 @@
 
 import { supabase } from '@/lib/supabase'
 import { validateEmail, validateTextField } from '@/lib/validation'
-import { sanitizeUserInput } from '@/lib/sanitization'
+
+// Server-safe sanitization function
+function sanitizeForServer(input: string, maxLength: number = 500): string {
+  if (!input || typeof input !== 'string') return ''
+  
+  return input
+    .trim()
+    .replace(/<script[\s\S]*?<\/script>/gi, '') // Remove script tags
+    .replace(/<iframe[\s\S]*?>/gi, '') // Remove iframes
+    .replace(/javascript:/gi, '') // Remove javascript: URLs
+    .replace(/on\w+\s*=/gi, '') // Remove event handlers
+    .replace(/<[^>]+>/g, '') // Remove all HTML tags
+    .slice(0, maxLength) // Enforce max length
+}
 
 // Simple in-memory rate limiting
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
@@ -625,9 +638,9 @@ export async function diagnoseProblem(
     }
     
     // Sanitize inputs
-    const sanitizedAppliance = sanitizeUserInput(appliance, { maxLength: 100, allowNewlines: false })
-    const sanitizedBrand = sanitizeUserInput(brand, { maxLength: 100, allowNewlines: false })
-    const sanitizedProblem = sanitizeUserInput(problem, { maxLength: 500, allowNewlines: true })
+    const sanitizedAppliance = sanitizeForServer(appliance, 100)
+    const sanitizedBrand = sanitizeForServer(brand, 100)
+    const sanitizedProblem = sanitizeForServer(problem, 500)
     const sanitizedEmail = email.trim().toLowerCase()
     
     // Check rate limit
@@ -733,8 +746,14 @@ export async function diagnoseProblem(
 
   } catch (error) {
     console.error("Diagnosis error:", error)
-    const fallbackResult = getEmergencyFallback(sanitizedAppliance, sanitizedBrand, sanitizedProblem)
-    await saveDiagnosticToDatabase(sanitizedAppliance, sanitizedBrand, sanitizedProblem, sanitizedEmail, fallbackResult, null, false)
+    // Use original inputs for fallback, sanitize them first
+    const fallbackAppliance = sanitizeForServer(appliance || '', 100)
+    const fallbackBrand = sanitizeForServer(brand || '', 100)
+    const fallbackProblem = sanitizeForServer(problem || '', 500)
+    const fallbackEmail = (email || '').trim().toLowerCase()
+    
+    const fallbackResult = getEmergencyFallback(fallbackAppliance, fallbackBrand, fallbackProblem)
+    await saveDiagnosticToDatabase(fallbackAppliance, fallbackBrand, fallbackProblem, fallbackEmail, fallbackResult, null, false)
     
     // Email sending is now handled client-side
     
