@@ -203,6 +203,8 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
 ## Recent Security Implementation (2025-07-16)
 
 ### What Was Implemented:
+
+#### Booking Security:
 1. **Input Validation** (`/lib/validation.ts`)
    - Email, UK mobile, name, postcode validation
    - Amount validation for payments
@@ -227,22 +229,44 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
    - Fixed postMessage to detect parent origin
    - Fallback to wildcard only when necessary
 
+#### DiagnoSys Security (NEW):
+1. **Input Validation** (`actions/diagnose.ts`)
+   - Email validation with regex
+   - Text field validation (2-500 chars)
+   - Malicious content detection
+   - Server-safe sanitization function
+
+2. **Rate Limiting** (`actions/diagnose.ts`)
+   - In-memory rate limiting (5 requests/hour/email)
+   - Automatic cleanup of expired entries
+   - No database changes required
+
+3. **XSS Protection** (`components/diagnostic-form.tsx`)
+   - Removed manual HTML escaping (React handles it)
+   - React automatically escapes text content
+   - Security maintained without display issues
+
+4. **SQL Injection Protection**
+   - Verified Supabase RPC uses parameter binding
+   - No vulnerabilities found
+
 ### What Was Reverted:
 1. **Loqate API Proxy** - Broke address lookup, reverted to client-side
 2. **Complex Security Headers** - Caused 403 errors, simplified middleware
 
 ### Security Improvements Completed (2025-07-16):
 
-1. **✅ Server-side validation implemented**
+1. **✅ Server-side validation implemented (Bookings)**
    - Created secure `/actions/create-booking.ts` server action
    - Uses validation library for all user inputs
    - Sanitizes data before database insertion
    - Both booking modal and widget updated to use secure action
 
-2. **✅ Loqate functionality preserved**
-   - Both modal and widget use direct client-side calls
-   - Consistent implementation across components
-   - No proxy issues - address lookup works properly
+2. **✅ DiagnoSys security enhanced**
+   - Input validation prevents malicious inputs
+   - Rate limiting prevents API abuse
+   - XSS protection via React's built-in escaping
+   - SQL injection not possible (parameterized queries)
 
 3. **✅ Loqate monitoring added**
    - Console logging for API usage tracking
@@ -252,18 +276,27 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
 ### Remaining Security TODO:
 
 **Low Priority:**
-1. **Add CSRF protection** 
+1. **Add persistent rate limiting**
+   - Current in-memory solution works but resets on restart
+   - Database-backed solution for production scale
+
+2. **Add audit logging**
+   - Track diagnostic requests for analysis
+   - Monitor for abuse patterns
+
+3. **Add CSRF protection** 
    - Low risk - no user accounts to compromise
    - Rate limiting already helps
    - Only if adding user authentication
 
-2. **Carefully reintroduce security headers**
+4. **Carefully reintroduce security headers**
    - Nice to have, not critical
    - Must test thoroughly to avoid breaking functionality
 
 ### Security Assessment Summary:
-**Current Risk Level: Low to Medium**
+**Current Risk Level: Low**
 - Payment security is solid (Stripe)
+- DiagnoSys protected against common attacks
 - No sensitive data exposure
-- Worst case: bad data or API quota abuse
-- **Acceptable for production with monitoring**
+- Rate limiting prevents API abuse
+- **Production-ready with current security measures**
