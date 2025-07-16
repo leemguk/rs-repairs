@@ -67,6 +67,9 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Log key info for debugging (first few chars only)
+    console.log('Using Loqate key starting with:', loqateKey.substring(0, 4) + '...')
+    
     // Handle postcode search
     if (action === 'find') {
       if (!postcode || typeof postcode !== 'string') {
@@ -108,11 +111,37 @@ export async function POST(request: NextRequest) {
       
       const data = await response.json()
       
+      // Check if Loqate returned an error
+      if (data.Items && data.Items.length > 0 && data.Items[0].Error) {
+        console.error('Loqate API error response:', data.Items[0])
+        const errorMessage = data.Items[0].Description || data.Items[0].Cause || 'Address lookup failed'
+        
+        // Check for specific error codes
+        if (data.Items[0].Error === '2' || errorMessage.includes('Unknown key')) {
+          console.error('Loqate API key issue')
+          return NextResponse.json(
+            { error: 'Address lookup configuration error' },
+            { status: 500 }
+          )
+        }
+        
+        return NextResponse.json(
+          { error: errorMessage },
+          { status: 400 }
+        )
+      }
+      
       if (data.Items && data.Items.length > 0) {
-        // Sanitize response data (but preserve IDs as-is for Loqate)
-        const sanitizedItems = data.Items.map((item: any) => ({
+        // Filter out error items and sanitize response data
+        const validItems = data.Items.filter((item: any) => !item.Error)
+        
+        if (validItems.length === 0) {
+          return NextResponse.json({ Items: [] })
+        }
+        
+        const sanitizedItems = validItems.map((item: any) => ({
           Id: item.Id, // Don't sanitize IDs - Loqate needs them intact
-          Text: sanitizeInput(item.Text),
+          Text: sanitizeInput(item.Text || ''),
           Description: sanitizeInput(item.Description || ''),
           Type: item.Type || 'Address'
         }))
