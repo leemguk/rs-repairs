@@ -16,6 +16,7 @@ interface BookingData {
   email: string
   mobile: string
   fullAddress: string
+  postcode: string
   applianceType: string
   manufacturer: string
   applianceModel?: string
@@ -34,8 +35,22 @@ export async function createBooking(
   selectedPricing: PricingOption
 ): Promise<{ success: boolean; bookingId?: string; error?: string }> {
   try {
+    // Map form data to validation schema
+    const validationData = {
+      fullName: bookingData.firstName,
+      email: bookingData.email,
+      mobile: bookingData.mobile,
+      address: bookingData.fullAddress,
+      postcode: bookingData.postcode,
+      applianceType: bookingData.applianceType,
+      manufacturer: bookingData.manufacturer,
+      faultDescription: bookingData.applianceFault,
+      serviceType: selectedPricing.type === 'same-day' ? 'same_day' : 
+                   selectedPricing.type === 'next-day' ? 'next_day' : 'standard'
+    }
+    
     // Validate all input fields
-    const validationResults = validateBookingData(bookingData)
+    const validationResults = validateBookingData(validationData)
     
     if (!validationResults.isValid) {
       return { 

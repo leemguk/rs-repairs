@@ -635,6 +635,7 @@ export function BookingForm() {
           email: bookingData.email,
           mobile: bookingData.mobile,
           fullAddress: bookingData.fullAddress,
+          postcode: bookingData.postcode,
           applianceType: bookingData.applianceType,
           manufacturer: bookingData.manufacturer,
           applianceModel: bookingData.applianceModel,
