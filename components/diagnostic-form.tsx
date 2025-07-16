@@ -29,21 +29,6 @@ import {
 } from "lucide-react"
 import { diagnoseProblem } from "../actions/diagnose"
 import { Checkbox } from "@/components/ui/checkbox"
-// Simple HTML escape function for safe display
-function escapeHtml(text: string): string {
-  if (!text || typeof text !== 'string') return ''
-  
-  const map: { [key: string]: string } = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#x27;',
-    '/': '&#x2F;',
-  }
-  
-  return text.replace(/[&<>"'/]/g, (char) => map[char] || char)
-}
 
 interface DiagnosisResult {
   errorCodeMeaning?: string
@@ -462,7 +447,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-purple-800 font-medium">{escapeHtml(diagnosisData.errorCodeMeaning)}</p>
+              <p className="text-purple-800 font-medium">{diagnosisData.errorCodeMeaning}</p>
             </CardContent>
           </Card>
         )}
@@ -477,7 +462,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                     <CardTitle className="text-xl">
                       {getServiceRecommendation(diagnosisData.recommendedService).title}
                     </CardTitle>
-                    <CardDescription className="mt-1">{escapeHtml(diagnosisData.serviceReason)}</CardDescription>
+                    <CardDescription className="mt-1">{diagnosisData.serviceReason}</CardDescription>
                   </div>
                 </div>
                 <Button
@@ -516,7 +501,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                   {(diagnosisData.recommendations?.diy || []).map((rec, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
                       <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosisData.recommendedService === "diy" ? "bg-blue-600" : "bg-gray-400"}`} />
-                      <span>{escapeHtml(rec)}</span>
+                      <span>{rec}</span>
                     </li>
                   ))}
                 </ul>
@@ -555,7 +540,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                   {(diagnosisData.recommendations?.professional || []).map((rec, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
                       <div className={`h-1.5 w-1.5 rounded-full mt-2 flex-shrink-0 ${diagnosisData.recommendedService === "professional" ? "bg-orange-600" : "bg-gray-400"}`} />
-                      <span>{escapeHtml(rec)}</span>
+                      <span>{rec}</span>
                     </li>
                   ))}
                 </ul>
@@ -610,7 +595,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                   {diagnosisData.safetyWarnings.map((warning, index) => (
                     <li key={index} className="flex items-start gap-2 text-red-700">
                       <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm">{escapeHtml(warning)}</span>
+                      <span className="text-sm">{warning}</span>
                     </li>
                   ))}
                 </ul>
@@ -626,7 +611,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                 <div className="flex flex-wrap gap-2">
                   {diagnosisData.skillsRequired.map((skill, index) => (
                     <Badge key={index} variant="outline" className="border-blue-300 text-blue-700">
-                      {escapeHtml(skill)}
+                      {skill}
                     </Badge>
                   ))}
                 </div>
@@ -642,7 +627,7 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                 {(diagnosisData.possibleCauses || []).map((cause, index) => (
                   <li key={index} className="flex items-start gap-2">
                     <div className="h-2 w-2 rounded-full bg-orange-600 mt-2 flex-shrink-0" />
-                    <span className="text-gray-700">{escapeHtml(cause)}</span>
+                    <span className="text-gray-700">{cause}</span>
                   </li>
                 ))}
               </ul>
