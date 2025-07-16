@@ -231,26 +231,33 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
 1. **Loqate API Proxy** - Broke address lookup, reverted to client-side
 2. **Complex Security Headers** - Caused 403 errors, simplified middleware
 
-### Security TODO (Prioritized):
+### Security Improvements Completed (2025-07-16):
 
-**Medium Priority:**
-1. **Implement server-side validation** using the created libraries
-   - Quick win - libraries already created
-   - Prevents bad data in database
-   - Use `/lib/validation.ts` in API routes
+1. **✅ Server-side validation implemented**
+   - Created secure `/actions/create-booking.ts` server action
+   - Uses validation library for all user inputs
+   - Sanitizes data before database insertion
+   - Both booking modal and widget updated to use secure action
+
+2. **✅ Loqate functionality preserved**
+   - Both modal and widget use direct client-side calls
+   - Consistent implementation across components
+   - No proxy issues - address lookup works properly
+
+3. **✅ Loqate monitoring added**
+   - Console logging for API usage tracking
+   - Logs timestamp and source (modal vs widget)
+   - Privacy-conscious - only logs partial queries
+
+### Remaining Security TODO:
 
 **Low Priority:**
-2. **Monitor Loqate API usage**
-   - Set up usage alerts in Loqate dashboard
-   - API key exposure is low risk (domain restrictions likely exist)
-   - Alternative: Keep client-side but add monitoring
-
-3. **Add CSRF protection** 
+1. **Add CSRF protection** 
    - Low risk - no user accounts to compromise
    - Rate limiting already helps
    - Only if adding user authentication
 
-4. **Carefully reintroduce security headers**
+2. **Carefully reintroduce security headers**
    - Nice to have, not critical
    - Must test thoroughly to avoid breaking functionality
 

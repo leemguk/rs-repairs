@@ -16,6 +16,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { supabase } from "@/lib/supabase"
 import type { Booking } from "@/lib/supabase"
 import { getRepairBookingCategories, getRepairBookingBrands, getRepairBrandPrice } from "@/actions/get-repair-booking-options"
+import { createBooking } from "@/actions/create-booking"
 
 // Loqate interfaces
 interface LoqateFindResult {
@@ -25,6 +26,9 @@ interface LoqateFindResult {
   Highlight: string
   Description: string
 }
+
+// Loqate API key
+const LOQATE_KEY = process.env.NEXT_PUBLIC_LOQATE_KEY || ""
 
 interface LoqateRetrieveResult {
   Id: string
@@ -366,7 +370,7 @@ export function BookingForm() {
 
   // Validation functions for each section
   const isStep1Valid = () => {
-    return bookingData.applianceType && bookingData.manufacturer && bookingData.applianceFault
+    return bookingData.applianceType && bookingData.manufacturer && bookingData.applianceFault && bookingData.applianceFault.length >= 10
   }
 
   const isStep2Valid = () => {
@@ -500,16 +504,22 @@ export function BookingForm() {
       return
     }
     try {
-      const response = await fetch('/api/address-lookup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'find',
-          postcode: query
-        })
+      // Log Loqate usage for monitoring
+      console.log('Loqate Find API called', { 
+        source: 'booking-form-widget',
+        timestamp: new Date().toISOString(),
+        query: query.substring(0, 3) + '...' // Log partial query for privacy
       })
+      
+      const response = await fetch(
+        `https://api.addressy.com/Capture/Interactive/Find/v1.1/json3.ws?` +
+        new URLSearchParams({
+          Key: LOQATE_KEY,
+          Text: query,
+          Countries: "GB",
+          Limit: "10",
+        })
+      )
       if (!response.ok) {
         console.error("Loqate API error:", response.status)
         return
@@ -562,16 +572,19 @@ export function BookingForm() {
   // Add selectAddress function
   const selectAddress = async (suggestion: { id: string; text: string; description: string }) => {
     try {
-      const response = await fetch('/api/address-lookup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'retrieve',
-          addressId: suggestion.id
-        })
+      // Log Loqate usage for monitoring
+      console.log('Loqate Retrieve API called', { 
+        source: 'booking-form-widget',
+        timestamp: new Date().toISOString()
       })
+      
+      const response = await fetch(
+        `https://api.addressy.com/Capture/Interactive/Retrieve/v1.1/json3.ws?` +
+        new URLSearchParams({
+          Key: LOQATE_KEY,
+          Id: suggestion.id,
+        })
+      )
       if (!response.ok) {
         console.error("Loqate Retrieve API error:", response.status)
         return
@@ -611,41 +624,34 @@ export function BookingForm() {
     }
   }
 
-  // Add saveBookingToDatabase function
+  // Add saveBookingToDatabase function using secure server action
   const saveBookingToDatabase = async (): Promise<string | null> => {
     if (!selectedPricing) return null
     try {
-      // Prepare booking data for database
-      const bookingRecord = {
-        full_name: bookingData.firstName,
-        email: bookingData.email,
-        mobile: bookingData.mobile,
-        address: bookingData.fullAddress,
-        appliance_type: bookingData.applianceType,
-        manufacturer: bookingData.manufacturer,
-        model: bookingData.applianceModel || null,
-        fault_description: bookingData.applianceFault,
-        service_type: selectedPricing.type === 'same-day' ? 'same_day' : 
-                     selectedPricing.type === 'next-day' ? 'next_day' : 'standard',
-        service_price: selectedPricing.price * 100, // Convert to pence
-        appointment_date: selectedPricing.type === 'same-day' ? new Date().toISOString().split('T')[0] :
-                         selectedPricing.type === 'next-day' ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] :
-                         bookingData.selectedDate || null,
-        appointment_time: selectedPricing.type === 'same-day' ? 'Before 6pm' : bookingData.selectedTimeSlot || null,
-        payment_status: 'pending',
-        booking_status: 'pending_payment'
+      // Use server action for secure validation and sanitization
+      const result = await createBooking(
+        {
+          firstName: bookingData.firstName,
+          email: bookingData.email,
+          mobile: bookingData.mobile,
+          fullAddress: bookingData.fullAddress,
+          postcode: bookingData.postcode,
+          applianceType: bookingData.applianceType,
+          manufacturer: bookingData.manufacturer,
+          applianceModel: bookingData.applianceModel,
+          applianceFault: bookingData.applianceFault,
+          selectedDate: bookingData.selectedDate,
+          selectedTimeSlot: bookingData.selectedTimeSlot
+        },
+        selectedPricing
+      )
+
+      if (!result.success) {
+        console.error('Error saving booking:', result.error)
+        throw new Error(result.error || 'Failed to save booking')
       }
-      // Insert booking into Supabase
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert([bookingRecord])
-        .select()
-        .single()
-      if (error) {
-        console.error('Error saving booking:', error)
-        throw new Error('Failed to save booking')
-      }
-      return data.id
+
+      return result.bookingId || null
     } catch (error) {
       console.error('Database error:', error)
       throw error
@@ -802,10 +808,15 @@ export function BookingForm() {
             <Textarea
               value={bookingData.applianceFault}
               onChange={(e) => updateBookingData("applianceFault", e.target.value)}
-              placeholder="Describe the problem with your appliance..."
+              placeholder="Describe the problem with your appliance (minimum 10 characters)..."
               className="w-full min-h-[80px] text-base"
               disabled={isSubmitting}
             />
+            {bookingData.applianceFault && bookingData.applianceFault.length < 10 && (
+              <p className="text-sm text-red-600 mt-1">
+                Please provide at least 10 characters ({10 - bookingData.applianceFault.length} more needed)
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Appliance Model:</label>
