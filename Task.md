@@ -68,9 +68,11 @@
 
 ### 🛡️ Security & Compliance
 - [ ] Add GDPR compliance features
-- [ ] Implement rate limiting
-- [ ] Add security headers
+- [x] Implement rate limiting - ✅ COMPLETED (2025-07-16) - Added to DiagnoSys
+- [ ] Add security headers (carefully to avoid breaking functionality)
 - [ ] Audit API endpoints
+- [ ] Add persistent rate limiting (database-backed)
+- [ ] Add audit logging for diagnostics
 
 ### 📱 Mobile Experience
 - [ ] Improve mobile booking flow
@@ -124,16 +126,19 @@
 
 **Protected:**
 - ✅ Payment processing (Stripe handles sensitive data)
-- ✅ API rate limiting prevents abuse
-- ✅ XSS protection via sanitization libraries
+- ✅ API rate limiting prevents abuse (DiagnoSys: 5 requests/hour/email)
+- ✅ XSS protection via React's automatic escaping
 - ✅ SQL injection impossible (Supabase parameterized queries)
 - ✅ Server-side validation implemented for all bookings
 - ✅ Input sanitization before database storage
 - ✅ Client-side validation with user feedback
+- ✅ DiagnoSys input validation (email, text fields)
+- ✅ DiagnoSys sanitization (removes HTML, scripts, etc.)
 
 **Remaining Vulnerabilities (Low Impact):**
 - ⚠️ Loqate API key exposed → Monitored with console logging
 - ⚠️ No CSRF tokens → Limited impact (no user accounts)
+- ⚠️ Rate limiting is memory-based → Resets on server restart
 
 **Recommendation:** Current state is secure for production. The remaining vulnerabilities are low-impact and acceptable with monitoring.
 
@@ -163,6 +168,37 @@
   - ✅ Client-side validation added for fault description (10 char minimum)
   - ✅ Loqate monitoring added (console logging for usage tracking)
   - ℹ️ Loqate API kept client-side for stability (acceptable risk)
+
+## Recent Improvements (2025-07-16)
+
+### DiagnoSys Security Enhancements
+**Problem**: Multiple security vulnerabilities identified in the diagnostic tool
+
+**Solution Implemented (Incremental approach to avoid breaking changes):**
+1. **Phase 1 - Input Validation** ✅
+   - Added email, text field validation with length limits
+   - Created server-safe sanitization function
+   - Validates all inputs before processing
+   
+2. **Phase 2 - Rate Limiting** ✅
+   - Implemented in-memory rate limiting (5 requests/hour/email)
+   - Automatic cleanup of expired entries
+   - No database changes required
+   
+3. **Phase 3 - XSS Protection** ✅
+   - Initially added HTML escaping
+   - Discovered React already escapes text content
+   - Removed manual escaping to fix display issues
+   
+4. **Phase 4 - SQL Injection Analysis** ✅
+   - Verified Supabase RPC uses proper parameter binding
+   - No SQL injection vulnerabilities found
+
+**Outstanding Security Tasks:**
+- Phase 5: Add database-backed rate limiting (low priority)
+- Phase 6: Add audit logging (optional)
+
+**Result**: DiagnoSys now has proper input validation and rate limiting without breaking functionality
 
 ## Recent Improvements (2025-07-15)
 
@@ -216,4 +252,4 @@
 - Monitor DiagnoSys search quality for various error codes
 
 ---
-*Last updated: 2025-07-16 (Security implementation completed, Client-side validation added)*
+*Last updated: 2025-07-16 (DiagnoSys security enhancements completed, Task.md updated)*
