@@ -592,11 +592,11 @@ export function DiagnosticForm({ onBookEngineer }: DiagnosticFormProps) {
                   <Clock className="h-4 w-4 text-gray-600" />
                   <h3 className="font-semibold text-gray-900">Estimated Time</h3>
                 </div>
-                <p className="text-xl font-bold text-blue-600">{escapeHtml(diagnosisData.timeEstimate || 'Varies')}</p>
+                <p className="text-xl font-bold text-blue-600">{diagnosisData.timeEstimate || 'Varies'}</p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-900 mb-3">Estimated Cost</h3>
-                <p className="text-xl font-bold text-green-600">{escapeHtml(diagnosisData.estimatedCost || 'Contact for quote')}</p>
+                <p className="text-xl font-bold text-green-600">{diagnosisData.estimatedCost || 'Contact for quote'}</p>
               </div>
             </div>
 
