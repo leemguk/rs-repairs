@@ -286,6 +286,137 @@ export function validateBookingData(data: Partial<BookingData>): ValidationResul
   return { isValid: errors.length === 0, errors }
 }
 
+// Spare parts category validation
+export function validateSparePartsCategory(category: string): ValidationResult {
+  const errors: string[] = []
+  
+  if (!category || typeof category !== 'string') {
+    errors.push('Appliance type is required')
+    return { isValid: false, errors }
+  }
+  
+  const trimmedCategory = category.trim()
+  
+  if (trimmedCategory.length === 0) {
+    errors.push('Appliance type cannot be empty')
+  }
+  
+  if (trimmedCategory.length < 2) {
+    errors.push('Appliance type is too short (min 2 characters)')
+  }
+  
+  if (trimmedCategory.length > 100) {
+    errors.push('Appliance type is too long (max 100 characters)')
+  }
+  
+  // Allow letters, numbers, spaces, hyphens, ampersands
+  const categoryRegex = /^[a-zA-Z0-9\s\-&]+$/
+  
+  if (!categoryRegex.test(trimmedCategory)) {
+    errors.push('Appliance type contains invalid characters')
+  }
+  
+  return { isValid: errors.length === 0, errors }
+}
+
+// Spare parts brand validation
+export function validateSparePartsBrand(brand: string): ValidationResult {
+  const errors: string[] = []
+  
+  if (!brand || typeof brand !== 'string') {
+    errors.push('Brand is required')
+    return { isValid: false, errors }
+  }
+  
+  const trimmedBrand = brand.trim()
+  
+  if (trimmedBrand.length === 0) {
+    errors.push('Brand cannot be empty')
+  }
+  
+  if (trimmedBrand.length < 2) {
+    errors.push('Brand is too short (min 2 characters)')
+  }
+  
+  if (trimmedBrand.length > 100) {
+    errors.push('Brand is too long (max 100 characters)')
+  }
+  
+  // Allow letters, numbers, spaces, hyphens, periods, ampersands
+  const brandRegex = /^[a-zA-Z0-9\s\-\.&]+$/
+  
+  if (!brandRegex.test(trimmedBrand)) {
+    errors.push('Brand contains invalid characters')
+  }
+  
+  return { isValid: errors.length === 0, errors }
+}
+
+// Spare parts model validation
+export function validateSparePartsModel(model: string): ValidationResult {
+  const errors: string[] = []
+  
+  if (!model || typeof model !== 'string') {
+    errors.push('Model number is required')
+    return { isValid: false, errors }
+  }
+  
+  const trimmedModel = model.trim()
+  
+  if (trimmedModel.length === 0) {
+    errors.push('Model number cannot be empty')
+  }
+  
+  if (trimmedModel.length < 1) {
+    errors.push('Model number is too short')
+  }
+  
+  if (trimmedModel.length > 100) {
+    errors.push('Model number is too long (max 100 characters)')
+  }
+  
+  // Allow alphanumeric, spaces, hyphens, periods, forward slashes, parentheses
+  const modelRegex = /^[a-zA-Z0-9\s\-\.\/\(\)]+$/
+  
+  if (!modelRegex.test(trimmedModel)) {
+    errors.push('Model number contains invalid characters')
+  }
+  
+  return { isValid: errors.length === 0, errors }
+}
+
+// Spare parts search term validation (for model search)
+export function validateSparePartsSearchTerm(searchTerm: string): ValidationResult {
+  const errors: string[] = []
+  
+  if (!searchTerm || typeof searchTerm !== 'string') {
+    return { isValid: true, errors } // Search term can be empty
+  }
+  
+  const trimmedSearch = searchTerm.trim()
+  
+  if (trimmedSearch.length > 100) {
+    errors.push('Search term is too long (max 100 characters)')
+  }
+  
+  // Check for potentially malicious patterns
+  const suspiciousPatterns = [
+    /<script[\s\S]*?<\/script>/gi,
+    /<iframe[\s\S]*?>/gi,
+    /javascript:/gi,
+    /on\w+\s*=/gi,
+  ]
+  
+  for (const pattern of suspiciousPatterns) {
+    if (pattern.test(trimmedSearch)) {
+      errors.push('Search term contains potentially unsafe content')
+      break
+    }
+  }
+  
+  return { isValid: errors.length === 0, errors }
+}
+
 // Sanitize input for safe storage
 export function sanitizeInput(input: string): string {
   if (!input || typeof input !== 'string') return ''
