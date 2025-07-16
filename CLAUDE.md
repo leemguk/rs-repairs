@@ -199,3 +199,64 @@ For external embedding, use:
 7. **Review**: Add summary section to `Task.md` when complete
 
 Remember: Everything is about simplicity. Small, focused changes that follow existing patterns.
+
+## Recent Security Implementation (2025-07-16)
+
+### What Was Implemented:
+1. **Input Validation** (`/lib/validation.ts`)
+   - Email, UK mobile, name, postcode validation
+   - Amount validation for payments
+   - Booking data validation functions
+
+2. **HTML Sanitization** (`/lib/sanitization.ts`)
+   - XSS protection functions
+   - HTML escaping utilities
+   - Safe input handling
+
+3. **Rate Limiting** (`middleware.ts`)
+   - API endpoint protection
+   - Different limits for sensitive operations
+   - IP-based tracking
+
+4. **Payment Security**
+   - Enhanced validation in checkout session
+   - Input sanitization for Stripe metadata
+   - HTML escaping in payment emails
+
+5. **iframe Security**
+   - Fixed postMessage to detect parent origin
+   - Fallback to wildcard only when necessary
+
+### What Was Reverted:
+1. **Loqate API Proxy** - Broke address lookup, reverted to client-side
+2. **Complex Security Headers** - Caused 403 errors, simplified middleware
+
+### Security TODO (Prioritized):
+
+**Medium Priority:**
+1. **Implement server-side validation** using the created libraries
+   - Quick win - libraries already created
+   - Prevents bad data in database
+   - Use `/lib/validation.ts` in API routes
+
+**Low Priority:**
+2. **Monitor Loqate API usage**
+   - Set up usage alerts in Loqate dashboard
+   - API key exposure is low risk (domain restrictions likely exist)
+   - Alternative: Keep client-side but add monitoring
+
+3. **Add CSRF protection** 
+   - Low risk - no user accounts to compromise
+   - Rate limiting already helps
+   - Only if adding user authentication
+
+4. **Carefully reintroduce security headers**
+   - Nice to have, not critical
+   - Must test thoroughly to avoid breaking functionality
+
+### Security Assessment Summary:
+**Current Risk Level: Low to Medium**
+- Payment security is solid (Stripe)
+- No sensitive data exposure
+- Worst case: bad data or API quota abuse
+- **Acceptable for production with monitoring**
