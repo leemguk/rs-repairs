@@ -2,6 +2,47 @@
 "use server"
 
 import { supabase } from '@/lib/supabase'
+import { validateEmail, validateTextField } from '@/lib/validation'
+import { sanitizeUserInput } from '@/lib/sanitization'
+
+// Simple in-memory rate limiting
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
+const RATE_LIMIT_WINDOW = 60 * 60 * 1000 // 1 hour in milliseconds
+const RATE_LIMIT_MAX_REQUESTS = 5 // Max 5 requests per hour per email
+
+function checkRateLimit(email: string): boolean {
+  const now = Date.now()
+  const userLimit = rateLimitMap.get(email)
+  
+  if (!userLimit || now > userLimit.resetTime) {
+    // No limit or limit expired, create new window
+    rateLimitMap.set(email, {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW
+    })
+    return true
+  }
+  
+  if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
+    console.log(`Rate limit exceeded for ${email}: ${userLimit.count} requests`)
+    return false
+  }
+  
+  // Increment count
+  userLimit.count++
+  rateLimitMap.set(email, userLimit)
+  return true
+}
+
+// Clean up old entries periodically (every hour)
+setInterval(() => {
+  const now = Date.now()
+  for (const [email, limit] of rateLimitMap.entries()) {
+    if (now > limit.resetTime) {
+      rateLimitMap.delete(email)
+    }
+  }
+}, RATE_LIMIT_WINDOW)
 
 interface DiagnosisResult {
   errorCodeMeaning?: string
@@ -558,26 +599,63 @@ export async function diagnoseProblem(
   email: string
 ): Promise<DiagnosisResult> {
   try {
+    // Input validation
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) {
+      console.error('Email validation failed:', emailValidation.errors)
+      throw new Error('Invalid email address')
+    }
+    
+    const applianceValidation = validateTextField(appliance, 'Appliance', 2, 100)
+    if (!applianceValidation.isValid) {
+      console.error('Appliance validation failed:', applianceValidation.errors)
+      throw new Error('Invalid appliance type')
+    }
+    
+    const brandValidation = validateTextField(brand, 'Brand', 2, 100)
+    if (!brandValidation.isValid) {
+      console.error('Brand validation failed:', brandValidation.errors)
+      throw new Error('Invalid brand name')
+    }
+    
+    const problemValidation = validateTextField(problem, 'Problem', 10, 500)
+    if (!problemValidation.isValid) {
+      console.error('Problem validation failed:', problemValidation.errors)
+      throw new Error('Invalid problem description')
+    }
+    
+    // Sanitize inputs
+    const sanitizedAppliance = sanitizeUserInput(appliance, { maxLength: 100, allowNewlines: false })
+    const sanitizedBrand = sanitizeUserInput(brand, { maxLength: 100, allowNewlines: false })
+    const sanitizedProblem = sanitizeUserInput(problem, { maxLength: 500, allowNewlines: true })
+    const sanitizedEmail = email.trim().toLowerCase()
+    
+    // Check rate limit
+    if (!checkRateLimit(sanitizedEmail)) {
+      console.error(`Rate limit exceeded for email: ${sanitizedEmail}`)
+      throw new Error('Too many requests. Please try again in an hour.')
+    }
+    
     const openRouterApiKey = process.env.OPENROUTER_API_KEY
     const searchApiKey = process.env.SERP_API_KEY || process.env.BRAVE_SEARCH_API_KEY
 
     // Normalize appliance type (remove "spares", "parts", etc.)
-    const normalizedAppliance = appliance.toLowerCase()
+    const normalizedAppliance = sanitizedAppliance.toLowerCase()
       .replace(/\s*(spares?|parts?|accessories)\s*/gi, '')
       .trim()
 
     // Detect error code if present
-    const detectedErrorCode = detectErrorCode(problem)
-    console.log(`Analysing: ${brand} ${normalizedAppliance} - ${problem}${detectedErrorCode ? ` (Error: ${detectedErrorCode})` : ''}`)
+    const detectedErrorCode = detectErrorCode(sanitizedProblem)
+    console.log(`Analysing: ${sanitizedBrand} ${normalizedAppliance} - ${sanitizedProblem}${detectedErrorCode ? ` (Error: ${detectedErrorCode})` : ''}`)
 
     // NEW: Check for cached similar diagnosis first
-    const cachedDiagnosis = await checkCachedDiagnosis(normalizedAppliance, brand, problem, detectedErrorCode)
+    const cachedDiagnosis = await checkCachedDiagnosis(normalizedAppliance, sanitizedBrand, sanitizedProblem, detectedErrorCode)
 
     if (cachedDiagnosis) {
       console.log('✨ Using cached diagnosis result - faster and cheaper!')
       console.log('Cached diagnosis data:', JSON.stringify(cachedDiagnosis, null, 2))
       // Save this as a new entry but mark it as cached
-      await saveDiagnosticToDatabase(appliance, brand, problem, email, cachedDiagnosis, detectedErrorCode, true)
+      await saveDiagnosticToDatabase(sanitizedAppliance, sanitizedBrand, sanitizedProblem, sanitizedEmail, cachedDiagnosis, detectedErrorCode, true)
       
       // Email sending is now handled client-side after diagnosis is displayed
       // This avoids issues with server actions in Vercel
@@ -590,8 +668,8 @@ export async function diagnoseProblem(
     
     if (!openRouterApiKey) {
       console.error('OpenRouter API key not found')
-      const fallbackResult = getEmergencyFallback(appliance, brand, problem)
-      await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult, detectedErrorCode, false)
+      const fallbackResult = getEmergencyFallback(sanitizedAppliance, sanitizedBrand, sanitizedProblem)
+      await saveDiagnosticToDatabase(sanitizedAppliance, sanitizedBrand, sanitizedProblem, sanitizedEmail, fallbackResult, detectedErrorCode, false)
       return fallbackResult
     }
 
@@ -599,13 +677,13 @@ export async function diagnoseProblem(
     let searchUrls: string[] = []
 
     if (detectedErrorCode && searchApiKey) {
-      console.log(`Searching for ${brand} ${detectedErrorCode} information...`)
+      console.log(`Searching for ${sanitizedBrand} ${detectedErrorCode} information...`)
       
       let searchResults
       if (process.env.SERP_API_KEY) {
-        searchResults = await searchForErrorCode(brand, normalizedAppliance, detectedErrorCode, process.env.SERP_API_KEY)
+        searchResults = await searchForErrorCode(sanitizedBrand, normalizedAppliance, detectedErrorCode, process.env.SERP_API_KEY)
       } else if (process.env.BRAVE_SEARCH_API_KEY) {
-        searchResults = await searchWithBraveAPI(brand, normalizedAppliance, detectedErrorCode, process.env.BRAVE_SEARCH_API_KEY)
+        searchResults = await searchWithBraveAPI(sanitizedBrand, normalizedAppliance, detectedErrorCode, process.env.BRAVE_SEARCH_API_KEY)
       }
       
       if (searchResults) {
@@ -624,9 +702,9 @@ export async function diagnoseProblem(
     }
 
     const aiResult = await diagnoseWithAI(
-      appliance,
-      brand,
-      problem,
+      sanitizedAppliance,
+      sanitizedBrand,
+      sanitizedProblem,
       detectedErrorCode,
       searchInfo,
       searchUrls,
@@ -638,7 +716,7 @@ export async function diagnoseProblem(
       if (searchUrls.length > 0 && !aiResult.sourceUrls) {
         aiResult.sourceUrls = searchUrls.slice(0, 3)
       }
-      await saveDiagnosticToDatabase(appliance, brand, problem, email, aiResult, detectedErrorCode, false)
+      await saveDiagnosticToDatabase(sanitizedAppliance, sanitizedBrand, sanitizedProblem, sanitizedEmail, aiResult, detectedErrorCode, false)
       
       // Email sending is now handled client-side in diagnostic-form.tsx
       
@@ -646,8 +724,8 @@ export async function diagnoseProblem(
     }
 
     console.log('AI diagnosis failed, using emergency fallback')
-    const fallbackResult = getEmergencyFallback(appliance, brand, problem)
-    await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult, detectedErrorCode, false)
+    const fallbackResult = getEmergencyFallback(sanitizedAppliance, sanitizedBrand, sanitizedProblem)
+    await saveDiagnosticToDatabase(sanitizedAppliance, sanitizedBrand, sanitizedProblem, sanitizedEmail, fallbackResult, detectedErrorCode, false)
     
     // Email sending is now handled client-side
     
@@ -655,8 +733,8 @@ export async function diagnoseProblem(
 
   } catch (error) {
     console.error("Diagnosis error:", error)
-    const fallbackResult = getEmergencyFallback(appliance, brand, problem)
-    await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult, null, false)
+    const fallbackResult = getEmergencyFallback(sanitizedAppliance, sanitizedBrand, sanitizedProblem)
+    await saveDiagnosticToDatabase(sanitizedAppliance, sanitizedBrand, sanitizedProblem, sanitizedEmail, fallbackResult, null, false)
     
     // Email sending is now handled client-side
     
