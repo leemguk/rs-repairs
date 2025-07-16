@@ -640,9 +640,7 @@ export async function diagnoseProblem(
       }
       await saveDiagnosticToDatabase(appliance, brand, problem, email, aiResult, detectedErrorCode, false)
       
-      // Send diagnostic report email asynchronously (don't block the response)
-      sendDiagnosticReportEmail(email, appliance, brand, problem, aiResult, detectedErrorCode)
-        .catch(error => console.error('Failed to send diagnostic report email:', error))
+      // Email sending is now handled client-side in diagnostic-form.tsx
       
       return aiResult
     }
@@ -651,9 +649,7 @@ export async function diagnoseProblem(
     const fallbackResult = getEmergencyFallback(appliance, brand, problem)
     await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult, detectedErrorCode, false)
     
-    // Send diagnostic report email even for fallback results
-    sendDiagnosticReportEmail(email, appliance, brand, problem, fallbackResult, detectedErrorCode)
-      .catch(error => console.error('Failed to send diagnostic report email:', error))
+    // Email sending is now handled client-side
     
     return fallbackResult
 
@@ -662,9 +658,7 @@ export async function diagnoseProblem(
     const fallbackResult = getEmergencyFallback(appliance, brand, problem)
     await saveDiagnosticToDatabase(appliance, brand, problem, email, fallbackResult, null, false)
     
-    // Send diagnostic report email even for error cases
-    sendDiagnosticReportEmail(email, appliance, brand, problem, fallbackResult, null)
-      .catch(error => console.error('Failed to send diagnostic report email:', error))
+    // Email sending is now handled client-side
     
     return fallbackResult
   }

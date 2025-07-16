@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import sgMail from '@sendgrid/mail'
 import { supabase } from '@/lib/supabase'
+import { escapeHtml } from '@/lib/sanitization'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia',
@@ -16,9 +17,17 @@ export async function POST(request: NextRequest) {
 
     console.log('Payment success processing:', { sessionId, bookingId })
 
-    if (!sessionId || !bookingId) {
+    // Validate inputs
+    if (!sessionId || typeof sessionId !== 'string' || sessionId.length > 200) {
       return NextResponse.json(
-        { error: 'Session ID and Booking ID are required' },
+        { error: 'Invalid session ID' },
+        { status: 400 }
+      )
+    }
+    
+    if (!bookingId || typeof bookingId !== 'string' || bookingId.length > 100) {
+      return NextResponse.json(
+        { error: 'Invalid booking ID' },
         { status: 400 }
       )
     }
@@ -118,7 +127,7 @@ export async function POST(request: NextRequest) {
                                       
                                       <!-- Confirmation Message -->
                                       <div style="margin: 30px 0;">
-                                          <p style="color: #4b5563; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6;">Dear <strong>${booking.full_name}</strong>,</p>
+                                          <p style="color: #4b5563; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6;">Dear <strong>${escapeHtml(booking.full_name)}</strong>,</p>
                                           <p style="color: #4b5563; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6;">Thank you for choosing Repair Help, in partnership with Pacifica Group. Please check your booking details below. If there are any errors or omissions please call <strong>01010101010</strong> to amend.</p>
                                           <p style="color: #4b5563; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6;">Your booking is now being processed and you will receive a text message to your mobile on the day of your engineer visit.</p>
                                       </div>
@@ -135,7 +144,7 @@ export async function POST(request: NextRequest) {
                                                               <strong style="color: #374151;">Booking ID:</strong>
                                                           </td>
                                                           <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                                                              <span style="color: #6b7280;">${booking.id.slice(0, 8)}</span>
+                                                              <span style="color: #6b7280;">${escapeHtml(booking.id.slice(0, 8))}</span>
                                                           </td>
                                                       </tr>
                                                       <tr>
@@ -143,7 +152,7 @@ export async function POST(request: NextRequest) {
                                                               <strong style="color: #374151;">Customer Name:</strong>
                                                           </td>
                                                           <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                                                              <span style="color: #6b7280;">${booking.full_name}</span>
+                                                              <span style="color: #6b7280;">${escapeHtml(booking.full_name)}</span>
                                                           </td>
                                                       </tr>
                                                       <tr>
@@ -151,7 +160,7 @@ export async function POST(request: NextRequest) {
                                                               <strong style="color: #374151;">Email:</strong>
                                                           </td>
                                                           <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                                                              <span style="color: #6b7280;">${booking.email}</span>
+                                                              <span style="color: #6b7280;">${escapeHtml(booking.email)}</span>
                                                           </td>
                                                       </tr>
                                                       <tr>
@@ -159,7 +168,7 @@ export async function POST(request: NextRequest) {
                                                               <strong style="color: #374151;">Mobile:</strong>
                                                           </td>
                                                           <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                                                              <span style="color: #6b7280;">${booking.mobile}</span>
+                                                              <span style="color: #6b7280;">${escapeHtml(booking.mobile)}</span>
                                                           </td>
                                                       </tr>
                                                       <tr>
@@ -167,7 +176,7 @@ export async function POST(request: NextRequest) {
                                                               <strong style="color: #374151;">Address:</strong>
                                                           </td>
                                                           <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                                                              <span style="color: #6b7280;">${booking.address}</span>
+                                                              <span style="color: #6b7280;">${escapeHtml(booking.address)}</span>
                                                           </td>
                                                       </tr>
                                                       <tr>
@@ -175,7 +184,7 @@ export async function POST(request: NextRequest) {
                                                               <strong style="color: #374151;">Appliance:</strong>
                                                           </td>
                                                           <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                                                              <span style="color: #6b7280;">${booking.manufacturer} ${booking.appliance_type}</span>
+                                                              <span style="color: #6b7280;">${escapeHtml(booking.manufacturer)} ${escapeHtml(booking.appliance_type)}</span>
                                                           </td>
                                                       </tr>
                                                       <tr>
@@ -183,7 +192,7 @@ export async function POST(request: NextRequest) {
                                                               <strong style="color: #374151;">Fault Description:</strong>
                                                           </td>
                                                           <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                                                              <span style="color: #6b7280;">${booking.fault_description}</span>
+                                                              <span style="color: #6b7280;">${escapeHtml(booking.fault_description)}</span>
                                                           </td>
                                                       </tr>
                                                       <tr>
