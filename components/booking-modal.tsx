@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/lib/supabase"
 import type { Booking } from "@/lib/supabase"
 import { getRepairBookingCategories, getRepairBookingBrands, getRepairBrandPrice } from "@/actions/get-repair-booking-options"
+import { createBooking } from "@/actions/create-booking"
 
 // Loqate interfaces
 interface LoqateFindResult {
@@ -263,45 +264,34 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     setBookingData((prev) => ({ ...prev, [field]: value }))
   }
 
-  // Save booking to Supabase
+  // Save booking to Supabase using secure server action
   const saveBookingToDatabase = async (): Promise<string | null> => {
     if (!selectedPricing) return null
 
     try {
-      // Prepare booking data for database
-      const bookingRecord: Omit<Booking, 'id' | 'created_at'> = {
-        full_name: bookingData.firstName,
-        email: bookingData.email,
-        mobile: bookingData.mobile,
-        address: bookingData.fullAddress,
-        appliance_type: bookingData.applianceType,
-        manufacturer: bookingData.manufacturer,
-        model: bookingData.applianceModel || null,
-        fault_description: bookingData.applianceFault,
-        service_type: selectedPricing.type === 'same-day' ? 'same_day' : 
-                     selectedPricing.type === 'next-day' ? 'next_day' : 'standard',
-        service_price: selectedPricing.price * 100, // Convert to pence
-        appointment_date: selectedPricing.type === 'same-day' ? new Date().toISOString().split('T')[0] :
-                         selectedPricing.type === 'next-day' ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] :
-                         bookingData.selectedDate || null,
-        appointment_time: selectedPricing.type === 'same-day' ? 'Before 6pm' : bookingData.selectedTimeSlot || null,
-        payment_status: 'pending',
-        booking_status: 'pending_payment' // Changed from 'confirmed' to 'pending_payment'
+      // Use server action for secure validation and sanitization
+      const result = await createBooking(
+        {
+          firstName: bookingData.firstName,
+          email: bookingData.email,
+          mobile: bookingData.mobile,
+          fullAddress: bookingData.fullAddress,
+          applianceType: bookingData.applianceType,
+          manufacturer: bookingData.manufacturer,
+          applianceModel: bookingData.applianceModel,
+          applianceFault: bookingData.applianceFault,
+          selectedDate: bookingData.selectedDate,
+          selectedTimeSlot: bookingData.selectedTimeSlot
+        },
+        selectedPricing
+      )
+
+      if (!result.success) {
+        console.error('Error saving booking:', result.error)
+        throw new Error(result.error || 'Failed to save booking')
       }
 
-      // Insert booking into Supabase
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert([bookingRecord])
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error saving booking:', error)
-        throw new Error('Failed to save booking')
-      }
-
-      return data.id
+      return result.bookingId || null
     } catch (error) {
       console.error('Database error:', error)
       throw error
@@ -351,6 +341,13 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
     }
 
     try {
+      // Log Loqate usage for monitoring
+      console.log('Loqate Find API called', { 
+        source: 'booking-modal',
+        timestamp: new Date().toISOString(),
+        query: query.substring(0, 3) + '...' // Log partial query for privacy
+      })
+      
       const response = await fetch(
         `https://api.addressy.com/Capture/Interactive/Find/v1.1/json3.ws?` +
         new URLSearchParams({
@@ -396,6 +393,12 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
 
   const selectAddress = async (suggestion: { id: string; text: string; description: string }) => {
     try {
+      // Log Loqate usage for monitoring
+      console.log('Loqate Retrieve API called', { 
+        source: 'booking-modal',
+        timestamp: new Date().toISOString()
+      })
+      
       const response = await fetch(
         `https://api.addressy.com/Capture/Interactive/Retrieve/v1.1/json3.ws?` +
         new URLSearchParams({
