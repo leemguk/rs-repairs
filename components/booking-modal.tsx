@@ -835,10 +835,15 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
             <Textarea
               value={bookingData.applianceFault}
               onChange={(e) => updateBookingData("applianceFault", e.target.value)}
-              placeholder="Describe the problem with your appliance..."
+              placeholder="Describe the problem with your appliance (minimum 10 characters)..."
               className="w-full min-h-[80px] text-base"
               disabled={isSubmitting}
             />
+            {bookingData.applianceFault && bookingData.applianceFault.length < 10 && (
+              <p className="text-sm text-red-600 mt-1">
+                Please provide at least 10 characters ({10 - bookingData.applianceFault.length} more needed)
+              </p>
+            )}
           </div>
 
           <div>
@@ -858,7 +863,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
         <Button
           onClick={nextStep}
           className="bg-green-600 hover:bg-green-700 w-full"
-          disabled={!bookingData.applianceType || !bookingData.manufacturer || !bookingData.applianceFault || isSubmitting}
+          disabled={!bookingData.applianceType || !bookingData.manufacturer || !bookingData.applianceFault || bookingData.applianceFault.length < 10 || isSubmitting}
         >
           Continue
         </Button>

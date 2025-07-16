@@ -370,7 +370,7 @@ export function BookingForm() {
 
   // Validation functions for each section
   const isStep1Valid = () => {
-    return bookingData.applianceType && bookingData.manufacturer && bookingData.applianceFault
+    return bookingData.applianceType && bookingData.manufacturer && bookingData.applianceFault && bookingData.applianceFault.length >= 10
   }
 
   const isStep2Valid = () => {
@@ -808,10 +808,15 @@ export function BookingForm() {
             <Textarea
               value={bookingData.applianceFault}
               onChange={(e) => updateBookingData("applianceFault", e.target.value)}
-              placeholder="Describe the problem with your appliance..."
+              placeholder="Describe the problem with your appliance (minimum 10 characters)..."
               className="w-full min-h-[80px] text-base"
               disabled={isSubmitting}
             />
+            {bookingData.applianceFault && bookingData.applianceFault.length < 10 && (
+              <p className="text-sm text-red-600 mt-1">
+                Please provide at least 10 characters ({10 - bookingData.applianceFault.length} more needed)
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Appliance Model:</label>
