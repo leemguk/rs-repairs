@@ -44,6 +44,13 @@ export function middleware(request: NextRequest) {
   // Add minimal security headers that are unlikely to break functionality
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('X-DNS-Prefetch-Control', 'on')
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  
+  // Add HSTS for production (not localhost)
+  if (!request.nextUrl.hostname.includes('localhost')) {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  }
   
   // Only set X-Frame-Options for non-widget paths to allow iframe embedding
   if (!pathname.includes('/widget/')) {
