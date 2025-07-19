@@ -69,9 +69,9 @@ export default function Component() {
       <header className="px-4 lg:px-6 h-16 flex items-center border-b bg-white sticky top-0 z-50">
         <Link href="/" className="flex items-center justify-center">
           <img 
-            src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogo.png" 
+            src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogov1.png" 
             alt="Repair Help" 
-            className="h-8 sm:h-10 w-auto"
+            className="h-10 sm:h-12 w-auto"
           />
         </Link>
 
@@ -556,9 +556,9 @@ export default function Component() {
           <div className="grid gap-8 lg:grid-cols-4 md:grid-cols-2">
             <div className="space-y-4 lg:pr-4">
               <img 
-                src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogo.png" 
+                src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogov1.png" 
                 alt="Repair Help" 
-                className="h-8 w-auto mb-2"
+                className="h-10 w-auto mb-2"
               />
               <p className="text-sm text-gray-600">
                 Part of the Ransom Spares Group - Your trusted partner for appliance repair solutions.

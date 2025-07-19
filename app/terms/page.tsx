@@ -15,9 +15,9 @@ export default function TermsPage() {
           </Link>
           <Link href="/" className="flex items-center gap-2">
             <img 
-              src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogo.png" 
+              src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogov1.png" 
               alt="Repair Help" 
-              className="h-8 w-auto"
+              className="h-10 w-auto"
             />
           </Link>
         </div>
