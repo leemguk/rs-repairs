@@ -54,7 +54,7 @@ export function middleware(request: NextRequest) {
   // Start with report-only mode to test without breaking anything
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://vercel.live",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
     "font-src 'self' data:",
@@ -66,7 +66,7 @@ export function middleware(request: NextRequest) {
   
   // For widget paths, add frame-ancestors to allow embedding
   if (pathname.includes('/widget/')) {
-    const cspWithFrameAncestors = csp + "; frame-ancestors 'self' https://www.ransomspares.co.uk https://ransomspares.co.uk http://localhost:*"
+    const cspWithFrameAncestors = csp + "; frame-ancestors 'self' https://www.ransomspares.co.uk https://ransomspares.co.uk https://www.ransomdev.co.uk https://ransomdev.co.uk http://localhost:*"
     response.headers.set('Content-Security-Policy-Report-Only', cspWithFrameAncestors)
   } else {
     response.headers.set('Content-Security-Policy-Report-Only', csp)
