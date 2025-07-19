@@ -254,6 +254,25 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
 1. **Loqate API Proxy** - Broke address lookup, reverted to client-side
 2. **Complex Security Headers** - Caused 403 errors, simplified middleware
 
+### Client-Side Validation Implementation (2025-07-19):
+1. **HTML5 Validation Attributes**
+   - Added to all form inputs in both booking modal and widget
+   - Includes: required, minLength, maxLength, pattern, type attributes
+   - Mobile keyboards show appropriate input types
+
+2. **Real-Time Validation Feedback**
+   - Validation functions imported from `/lib/validation.ts`
+   - Validates on blur events
+   - Shows inline error messages
+   - Red borders on invalid fields
+   - Clears errors when user types
+
+3. **Form Submission Protection**
+   - Validates all fields before allowing progression
+   - Booking modal: validates on Continue button clicks
+   - Booking widget: validates before payment processing
+   - Expands accordion sections with errors (widget only)
+
 ### Security Improvements Completed (2025-07-16):
 
 1. **✅ Server-side validation implemented (Bookings)**
@@ -268,12 +287,29 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
    - XSS protection via React's built-in escaping
    - SQL injection not possible (parameterized queries)
 
+3. **✅ Client-side validation implemented (Bookings)**
+   - HTML5 validation attributes on all inputs
+   - Real-time validation feedback
+   - Prevents invalid form submission
+   - Better mobile experience with proper input types
+
 3. **✅ Loqate monitoring added**
    - Console logging for API usage tracking
    - Logs timestamp and source (modal vs widget)
    - Privacy-conscious - only logs partial queries
 
 ### Remaining Security TODO:
+
+**Medium Priority:**
+1. **Implement Loqate Proxy** (API Key Protection)
+   - Create `/api/address-lookup` endpoint
+   - Move API key to server-side only
+   - Add rate limiting to proxy endpoint
+
+2. **Add Security Headers** (Defense in Depth)
+   - Implement CSP for XSS protection
+   - Add X-Frame-Options for widget security
+   - Test thoroughly to avoid breaking functionality
 
 **Low Priority:**
 1. **Add persistent rate limiting**
@@ -288,10 +324,6 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
    - Low risk - no user accounts to compromise
    - Rate limiting already helps
    - Only if adding user authentication
-
-4. **Carefully reintroduce security headers**
-   - Nice to have, not critical
-   - Must test thoroughly to avoid breaking functionality
 
 ### Security Assessment Summary:
 **Current Risk Level: Low**
