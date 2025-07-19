@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       // Call Loqate Find API
       const url = `https://api.addressy.com/Capture/Interactive/Find/v1.10/json3.ws?` +
         `Key=${loqateKey}&` +
-        `SearchTerm=${encodeURIComponent(searchTerm)}&` +
+        `Text=${encodeURIComponent(searchTerm)}&` +
         `Country=GB&` +
         `Limit=100`
       
