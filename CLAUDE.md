@@ -252,7 +252,7 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
 
 ### What Was Reverted:
 1. ~~**Loqate API Proxy** - Broke address lookup, reverted to client-side~~ **NOW FIXED (2025-07-19)**
-2. **Complex Security Headers** - Caused 403 errors, simplified middleware
+2. ~~**Complex Security Headers** - Caused 403 errors, simplified middleware~~ **NOW FIXED (2025-07-19)**
 
 ### Client-Side Validation Implementation (2025-07-19):
 1. **HTML5 Validation Attributes**
@@ -291,6 +291,27 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
    - Updated response handling for proxy's format
    - Fixed parameter name issue (Text vs SearchTerm)
 
+### Security Headers Implementation (2025-07-19):
+1. **Headers Added (Minimal Approach)**
+   - X-Content-Type-Options: nosniff
+   - Referrer-Policy: strict-origin-when-cross-origin
+   - X-Frame-Options: SAMEORIGIN (non-widget paths only)
+   - X-DNS-Prefetch-Control: on
+   - Permissions-Policy: camera=(), microphone=(), geolocation=()
+   - Strict-Transport-Security (production only)
+
+2. **Content Security Policy**
+   - Implemented in report-only mode first
+   - Allows necessary resources (Stripe, inline scripts/styles)
+   - Frame-ancestors for widget: ransomspares.co.uk, ransomdev.co.uk
+   - Includes Vercel development features
+
+3. **Testing Approach**
+   - Started with minimal headers
+   - Tested both booking modal and widget
+   - No functionality breakage
+   - Ready for production use
+
 ### Security Improvements Completed (2025-07-16):
 
 1. **✅ Server-side validation implemented (Bookings)**
@@ -325,10 +346,11 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
 ### Remaining Security TODO:
 
 **Medium Priority:**
-1. **Add Security Headers** (Defense in Depth)
-   - Implement CSP for XSS protection
-   - Add X-Frame-Options for widget security
-   - Test thoroughly to avoid breaking functionality
+1. ~~**Add Security Headers** (Defense in Depth)~~ **✅ COMPLETED (2025-07-19)**
+   - ✅ Implemented CSP in report-only mode
+   - ✅ Added X-Frame-Options for non-widget paths
+   - ✅ Tested thoroughly - no functionality broken
+   - Consider switching CSP to enforcing mode after monitoring
 
 **Low Priority:**
 1. **Add persistent rate limiting**
