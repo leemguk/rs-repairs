@@ -17,6 +17,7 @@ import { supabase } from "@/lib/supabase"
 import type { Booking } from "@/lib/supabase"
 import { getRepairBookingCategories, getRepairBookingBrands, getRepairBrandPrice } from "@/actions/get-repair-booking-options"
 import { createBooking } from "@/actions/create-booking"
+import { validateEmail, validateUKMobile, validateName, validateTextField } from "@/lib/validation"
 
 // Loqate interfaces
 interface LoqateFindResult {
@@ -338,6 +339,73 @@ export function BookingForm() {
   // Add updateBookingData function
   const updateBookingData = (field: keyof BookingData, value: string) => {
     setBookingData((prev) => ({ ...prev, [field]: value }))
+    
+    // Clear validation error when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[field]
+        return newErrors
+      })
+    }
+  }
+  
+  // Validate field on blur
+  const validateField = (fieldName: keyof BookingData) => {
+    let error = ''
+    
+    switch (fieldName) {
+      case 'manufacturer':
+        const brandValidation = validateTextField(bookingData.manufacturer, 'Brand', 2, 50)
+        if (!brandValidation.isValid && bookingData.manufacturer) {
+          error = brandValidation.errors[0]
+        }
+        break
+      
+      case 'applianceFault':
+        const faultValidation = validateTextField(bookingData.applianceFault, 'Fault description', 10, 500)
+        if (!faultValidation.isValid) {
+          error = faultValidation.errors[0]
+        }
+        break
+      
+      case 'firstName':
+        const nameValidation = validateName(bookingData.firstName, 'Full name')
+        if (!nameValidation.isValid) {
+          error = nameValidation.errors[0]
+        }
+        break
+      
+      case 'mobile':
+        const mobileValidation = validateUKMobile(bookingData.mobile)
+        if (!mobileValidation.isValid && bookingData.mobile) {
+          error = mobileValidation.errors[0]
+        }
+        break
+      
+      case 'email':
+        const emailValidation = validateEmail(bookingData.email)
+        if (!emailValidation.isValid && bookingData.email) {
+          error = emailValidation.errors[0]
+        }
+        break
+      
+      case 'address':
+        if (!bookingData.fullAddress) {
+          error = 'Please select an address from the suggestions'
+        }
+        break
+    }
+    
+    if (error) {
+      setValidationErrors(prev => ({ ...prev, [fieldName]: error }))
+    } else {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[fieldName]
+        return newErrors
+      })
+    }
   }
 
   // Function to complete a section and open the next one
@@ -661,6 +729,57 @@ export function BookingForm() {
   // Add handleStripePayment function
   const handleStripePayment = async () => {
     if (!selectedPricing || isSubmitting) return
+    
+    // Validate all fields before payment
+    const errors: Record<string, string> = {}
+    let hasErrors = false
+    
+    // Validate step 1 fields
+    if (!bookingData.manufacturer || manufacturerSearch !== bookingData.manufacturer) {
+      errors.manufacturer = 'Please select a brand from the list'
+      hasErrors = true
+    }
+    
+    const faultValidation = validateTextField(bookingData.applianceFault, 'Fault description', 10, 500)
+    if (!faultValidation.isValid) {
+      errors.applianceFault = faultValidation.errors[0]
+      hasErrors = true
+    }
+    
+    // Validate contact fields
+    const nameValidation = validateName(bookingData.firstName, 'Full name')
+    if (!nameValidation.isValid) {
+      errors.firstName = nameValidation.errors[0]
+      hasErrors = true
+    }
+    
+    const mobileValidation = validateUKMobile(bookingData.mobile)
+    if (!mobileValidation.isValid) {
+      errors.mobile = mobileValidation.errors[0]
+      hasErrors = true
+    }
+    
+    const emailValidation = validateEmail(bookingData.email)
+    if (!emailValidation.isValid) {
+      errors.email = emailValidation.errors[0]
+      hasErrors = true
+    }
+    
+    if (!bookingData.fullAddress) {
+      errors.address = 'Please select an address from the suggestions'
+      hasErrors = true
+    }
+    
+    if (hasErrors) {
+      setValidationErrors(errors)
+      // Expand sections with errors
+      const errorSections = new Set<string>()
+      if (errors.manufacturer || errors.applianceFault) errorSections.add('step1')
+      if (errors.firstName || errors.mobile || errors.email || errors.address) errorSections.add('step3')
+      setExpandedSections(Array.from(errorSections))
+      return
+    }
+    
     setIsSubmitting(true)
     try {
       // First save the booking to get an ID
@@ -767,10 +886,24 @@ export function BookingForm() {
                   if (e.target.value.length > 0) {
                     setManufacturerOpen(true)
                   }
+                  // Clear validation error when typing
+                  if (validationErrors.manufacturer) {
+                    setValidationErrors(prev => {
+                      const newErrors = { ...prev }
+                      delete newErrors.manufacturer
+                      return newErrors
+                    })
+                  }
                 }}
                 onFocus={() => manufacturerSearch.length > 0 && setManufacturerOpen(true)}
-                onBlur={() => setTimeout(() => setManufacturerOpen(false), 200)}
-                className="w-full text-base"
+                onBlur={() => {
+                  setTimeout(() => setManufacturerOpen(false), 200)
+                  // Validate on blur
+                  if (manufacturerSearch && !bookingData.manufacturer) {
+                    setValidationErrors(prev => ({ ...prev, manufacturer: 'Please select a brand from the list' }))
+                  }
+                }}
+                className={`w-full text-base ${validationErrors.manufacturer ? 'border-red-500' : ''}`}
                 disabled={isSubmitting}
               />
               {manufacturerOpen && manufacturerSearch.length > 0 && (
@@ -800,6 +933,9 @@ export function BookingForm() {
             {bookingData.manufacturer && (
               <p className="text-xs text-green-600 mt-1">✓ Selected: {bookingData.manufacturer}</p>
             )}
+            {validationErrors.manufacturer && (
+              <p className="text-xs text-red-600 mt-1">{validationErrors.manufacturer}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -808,14 +944,21 @@ export function BookingForm() {
             <Textarea
               value={bookingData.applianceFault}
               onChange={(e) => updateBookingData("applianceFault", e.target.value)}
+              onBlur={() => validateField("applianceFault")}
               placeholder="Describe the problem with your appliance (minimum 10 characters)..."
-              className="w-full min-h-[80px] text-base"
+              minLength={10}
+              maxLength={500}
+              required
+              className={`w-full min-h-[80px] text-base ${validationErrors.applianceFault ? 'border-red-500' : ''}`}
               disabled={isSubmitting}
             />
             {bookingData.applianceFault && bookingData.applianceFault.length < 10 && (
               <p className="text-sm text-red-600 mt-1">
                 Please provide at least 10 characters ({10 - bookingData.applianceFault.length} more needed)
               </p>
+            )}
+            {validationErrors.applianceFault && !bookingData.applianceFault && (
+              <p className="text-sm text-red-600 mt-1">{validationErrors.applianceFault}</p>
             )}
           </div>
           <div>
@@ -1026,10 +1169,19 @@ export function BookingForm() {
         <Input
           value={bookingData.firstName}
           onChange={(e) => updateBookingData("firstName", e.target.value)}
+          onBlur={() => validateField("firstName")}
           placeholder="Enter your full name"
-          className="w-full text-base"
+          required
+          minLength={2}
+          maxLength={100}
+          pattern="[a-zA-Z\s\-']+"
+          title="Name can only contain letters, spaces, hyphens, and apostrophes"
+          className={`w-full text-base ${validationErrors.firstName ? 'border-red-500' : ''}`}
           disabled={isSubmitting}
         />
+        {validationErrors.firstName && (
+          <p className="text-xs text-red-600 mt-1">{validationErrors.firstName}</p>
+        )}
       </div>
       <div className="space-y-4 mt-4">
         <div>
@@ -1037,11 +1189,20 @@ export function BookingForm() {
             Mobile: <span className="text-red-500">*</span>
           </label>
           <Input
+            type="tel"
             value={bookingData.mobile}
             onChange={(e) => updateBookingData("mobile", e.target.value)}
-            className="w-full text-base"
+            onBlur={() => validateField("mobile")}
+            placeholder="07xxx xxxxxx"
+            required
+            pattern="07[0-9]{9}"
+            title="Please enter a valid UK mobile number starting with 07"
+            className={`w-full text-base ${validationErrors.mobile ? 'border-red-500' : ''}`}
             disabled={isSubmitting}
           />
+          {validationErrors.mobile && (
+            <p className="text-xs text-red-600 mt-1">{validationErrors.mobile}</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1051,9 +1212,15 @@ export function BookingForm() {
             type="email"
             value={bookingData.email}
             onChange={(e) => updateBookingData("email", e.target.value)}
-            className="w-full text-base"
+            onBlur={() => validateField("email")}
+            required
+            maxLength={255}
+            className={`w-full text-base ${validationErrors.email ? 'border-red-500' : ''}`}
             disabled={isSubmitting}
           />
+          {validationErrors.email && (
+            <p className="text-xs text-red-600 mt-1">{validationErrors.email}</p>
+          )}
         </div>
         <div className="flex items-start gap-2">
           <Checkbox 
@@ -1077,6 +1244,9 @@ export function BookingForm() {
               value={addressSearchValue}
               onChange={(e) => handleAddressSearch(e.target.value)}
               placeholder="Start typing your address..."
+              required
+              minLength={10}
+              maxLength={500}
               className="w-full text-base pr-10"
               disabled={isSubmitting}
               onFocus={() => {
@@ -1099,6 +1269,10 @@ export function BookingForm() {
             />
             <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
+          {validationErrors.address && !bookingData.fullAddress && (
+            <p className="text-xs text-red-600 mt-1">{validationErrors.address}</p>
+          )}
+          
           {bookingData.fullAddress && !showAddressSuggestions && (
             <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-start gap-2">
