@@ -42,8 +42,8 @@ interface LoqateRetrieveResult {
   [key: string]: any  // This allows for any additional fields
 }
 
-// Loqate API key
-const LOQATE_KEY = process.env.NEXT_PUBLIC_LOQATE_KEY || ""
+// Loqate API proxy endpoint
+const ADDRESS_LOOKUP_ENDPOINT = "/api/address-lookup"
 
 interface BookingModalProps {
   isOpen: boolean
