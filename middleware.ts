@@ -8,8 +8,8 @@ const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   
-  // Only apply to API routes
-  if (pathname.startsWith('/api/')) {
+  // Only apply to API routes (excluding CSP reports)
+  if (pathname.startsWith('/api/') && pathname !== '/api/csp-report') {
     // Get client IP
     const forwarded = request.headers.get('x-forwarded-for')
     const ip = forwarded ? forwarded.split(',')[0] : 'unknown'
@@ -69,6 +69,7 @@ export function middleware(request: NextRequest) {
     "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://vercel.live",
     "object-src 'none'",
     "base-uri 'self'",
+    "report-uri /api/csp-report",
   ].join('; ')
   
   // For widget paths, add frame-ancestors to allow embedding
