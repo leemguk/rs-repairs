@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase"
 import type { Booking } from "@/lib/supabase"
 import { getRepairBookingCategories, getRepairBookingBrands, getRepairBrandPrice } from "@/actions/get-repair-booking-options"
 import { createBooking } from "@/actions/create-booking"
+import { validateEmail, validateUKMobile, validateName, validateTextField } from "@/lib/validation"
 
 // Loqate interfaces
 interface LoqateFindResult {
@@ -532,7 +533,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
       // Validate step 1 fields
       let hasErrors = false
       
-      if (!bookingData.manufacturer || manufacturerSearch !== bookingData.manufacturer) {
+      if (!bookingData.manufacturer) {
         setValidationErrors(prev => ({ ...prev, manufacturer: 'Please select a brand from the list' }))
         hasErrors = true
       }
@@ -930,8 +931,8 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
                 onFocus={() => manufacturerSearch.length > 0 && setManufacturerOpen(true)}
                 onBlur={() => {
                   setTimeout(() => setManufacturerOpen(false), 200)
-                  // Validate on blur
-                  if (manufacturerSearch && !bookingData.manufacturer) {
+                  // Validate on blur only if there's text but no selection
+                  if (manufacturerSearch && manufacturerSearch.length > 0 && !bookingData.manufacturer) {
                     setValidationErrors(prev => ({ ...prev, manufacturer: 'Please select a brand from the list' }))
                   }
                 }}
@@ -953,6 +954,14 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
                           setBookingData(prev => ({ ...prev, manufacturer: brand }))
                           setManufacturerSearch(brand)
                           setManufacturerOpen(false)
+                          // Clear validation error when brand is selected
+                          if (validationErrors.manufacturer) {
+                            setValidationErrors(prev => {
+                              const newErrors = { ...prev }
+                              delete newErrors.manufacturer
+                              return newErrors
+                            })
+                          }
                         }}
                       >
                         {brand}
