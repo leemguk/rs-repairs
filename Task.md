@@ -71,7 +71,7 @@
 - [x] Implement rate limiting - ✅ COMPLETED (2025-07-16) - Added to DiagnoSys and Spare Parts
 - [x] Secure spare parts search - ✅ COMPLETED (2025-07-16) - Full security implementation
 - [x] Add client-side validation for bookings - ✅ COMPLETED (2025-07-19) - HTML5 attributes + real-time feedback
-- [ ] Implement Loqate API proxy (protect API key)
+- [x] Implement Loqate API proxy - ✅ COMPLETED (2025-07-19) - API key now server-side only
 - [ ] Add security headers (carefully to avoid breaking functionality)
 - [ ] Audit API endpoints
 - [ ] Add persistent rate limiting (database-backed)
@@ -109,7 +109,7 @@
 - Mobile widget fixes
 - Payment processing improvements (already secure via Stripe)
 - Critical bug fixes
-- Loqate API proxy implementation (protect API key)
+- ~~Loqate API proxy implementation~~ ✅ COMPLETED (2025-07-19)
 
 ### Medium Priority (P2)
 - **Server-side validation** - Quick win using existing validation libraries
@@ -141,9 +141,10 @@
 - ✅ Spare Parts Search validation and sanitization
 - ✅ Server-side rate limiting for all search operations
 - ✅ Form submission protection (validates before allowing progression)
+- ✅ Loqate API key protected via server-side proxy
 
 **Remaining Vulnerabilities (Low Impact):**
-- ⚠️ Loqate API key exposed → Monitored with console logging
+- ⚠️ ~~Loqate API key exposed~~ → ✅ FIXED with proxy implementation (2025-07-19)
 - ⚠️ No CSRF tokens → Limited impact (no user accounts)
 - ⚠️ Rate limiting is memory-based → Resets on server restart
 
@@ -316,5 +317,30 @@
 
 **Result**: Enhanced security and user experience with immediate validation feedback
 
+## Recent Improvements (2025-07-19) - Loqate API Proxy
+
+### API Key Protection Implementation
+**Problem**: Loqate API key exposed in client-side code
+
+**Solution Implemented:**
+1. **Server-Side Proxy** ✅
+   - Created `/api/address-lookup` endpoint
+   - Handles both 'find' and 'retrieve' actions
+   - Fixed parameter issue (Text vs SearchTerm)
+   
+2. **Security Features** ✅
+   - API key moved to server-side only
+   - Rate limiting: 20 requests/minute per IP
+   - Input validation and sanitization
+   - Proper error handling
+   
+3. **Component Updates** ✅
+   - Both booking modal and widget updated
+   - Removed all direct Loqate API calls
+   - Updated response handling
+   - Fixed runtime errors
+
+**Result**: Loqate API key is now protected, no longer exposed to clients
+
 ---
-*Last updated: 2025-07-19 (Client-side validation implementation completed)*
+*Last updated: 2025-07-19 (Loqate API proxy implementation completed)*

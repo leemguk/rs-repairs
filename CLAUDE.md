@@ -273,6 +273,24 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
    - Booking widget: validates before payment processing
    - Expands accordion sections with errors (widget only)
 
+### Loqate API Proxy Implementation (2025-07-19):
+1. **Proxy Endpoint Created**
+   - `/api/address-lookup/route.ts` handles all Loqate API calls
+   - Supports both 'find' and 'retrieve' actions
+   - Returns simplified response format
+
+2. **Security Features**
+   - API key moved to server-side only (use `LOQATE_KEY` without `NEXT_PUBLIC_` prefix)
+   - Rate limiting: 20 requests per minute per IP
+   - Input validation and sanitization
+   - Proper error handling and logging
+
+3. **Component Updates**
+   - Both booking modal and widget updated to use proxy endpoint
+   - Removed all direct Loqate API calls
+   - Updated response handling for proxy's format
+   - Fixed parameter name issue (Text vs SearchTerm)
+
 ### Security Improvements Completed (2025-07-16):
 
 1. **✅ Server-side validation implemented (Bookings)**
@@ -307,12 +325,7 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
 ### Remaining Security TODO:
 
 **Medium Priority:**
-1. ~~**Implement Loqate Proxy** (API Key Protection)~~ **✅ COMPLETED (2025-07-19)**
-   - ✅ Created `/api/address-lookup` endpoint
-   - ✅ Moved API key to server-side only
-   - ✅ Added rate limiting to proxy endpoint (20 req/min)
-
-2. **Add Security Headers** (Defense in Depth)
+1. **Add Security Headers** (Defense in Depth)
    - Implement CSP for XSS protection
    - Add X-Frame-Options for widget security
    - Test thoroughly to avoid breaking functionality
