@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
-  Wrench,
   Search,
   Calendar,
   Shield,
@@ -69,8 +68,11 @@ export default function Component() {
       {/* Header */}
       <header className="px-4 lg:px-6 h-16 flex items-center border-b bg-white sticky top-0 z-50">
         <Link href="/" className="flex items-center justify-center">
-          <Wrench className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
-          <span className="ml-2 text-lg sm:text-xl font-bold text-gray-900">Repair Help</span>
+          <img 
+            src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogov2.png" 
+            alt="Repair Help" 
+            className="h-10 sm:h-12 w-auto"
+          />
         </Link>
 
         {/* Desktop Navigation */}
@@ -256,7 +258,7 @@ export default function Component() {
                   <div className="text-center space-y-3 flex-1">
                     <div className="bg-white/70 rounded-lg p-3 sm:p-4 border border-orange-200">
                       <div className="text-base sm:text-lg font-bold text-orange-700 mb-2">Call out and Repair</div>
-                      <div className="text-xl sm:text-2xl font-bold text-orange-600 mb-1">From £109</div>
+                      <div className="text-xl sm:text-2xl font-bold text-orange-600 mb-1">From £139.00</div>
                       <div className="text-xs sm:text-sm text-gray-600">Price varies by service speed</div>
                     </div>
 
@@ -288,7 +290,7 @@ export default function Component() {
                       </div>
                       <div className="flex items-center gap-1">
                         <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                        <span>1-year warranty</span>
+                        <span>60-day guarantee</span>
                       </div>
                     </div>
                     <div className="p-2 bg-white border border-orange-300 rounded text-xs text-orange-700 text-center">
@@ -553,10 +555,11 @@ export default function Component() {
         <div className="container px-4 md:px-6 max-w-6xl mx-auto">
           <div className="grid gap-8 lg:grid-cols-4 md:grid-cols-2">
             <div className="space-y-4 lg:pr-4">
-              <div className="flex items-center space-x-2">
-                <Wrench className="h-6 w-6 text-orange-700" />
-                <span className="text-lg font-bold">Repair Help</span>
-              </div>
+              <img 
+                src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogov2.png" 
+                alt="Repair Help" 
+                className="h-10 w-auto mb-2"
+              />
               <p className="text-sm text-gray-600">
                 Part of the Ransom Spares Group - Your trusted partner for appliance repair solutions.
               </p>
@@ -631,18 +634,18 @@ export default function Component() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => window.open("#", "_blank")}
+                  <a
+                    href="/terms"
                     className="text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
                   >
                     Terms & Conditions
-                  </button>
-                  <button
-                    onClick={() => window.open("#", "_blank")}
+                  </a>
+                  <a
+                    href="/privacy"
                     className="text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
                   >
                     Privacy Policy
-                  </button>
+                  </a>
                 </div>
               </div>
             </div>

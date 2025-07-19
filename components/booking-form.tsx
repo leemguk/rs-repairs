@@ -1142,7 +1142,7 @@ export function BookingForm() {
           <ul className="text-sm text-gray-700 space-y-1">
             <li>• Professional diagnosis of your appliance</li>
             <li>• Repair work and replacement parts</li>
-            <li>• 1-year warranty on all work</li>
+            <li>• 60-day parts and labour guarantee</li>
             <li>• No hidden fees or call-out charges</li>
           </ul>
         </div>
@@ -1350,8 +1350,8 @@ export function BookingForm() {
               </div>
               <div className="bg-white/70 p-3 rounded border">
                 <p className="text-sm text-gray-700">
-                  <strong>What's included:</strong> Professional diagnosis, repair work, replacement parts, and 1-year
-                  warranty
+                  <strong>What's included:</strong> Professional diagnosis, repair work, replacement parts, and 60-day
+                  guarantee
                 </p>
               </div>
             </CardContent>
@@ -1422,11 +1422,11 @@ export function BookingForm() {
             />
             <label htmlFor="terms" className="text-sm text-gray-700 cursor-pointer">
               I agree to the{" "}
-              <a href="#" className="text-green-600 hover:underline">
+              <a href="/terms" target="_blank" className="text-green-600 hover:underline">
                 Terms and Conditions
               </a>{" "}
               and{" "}
-              <a href="#" className="text-green-600 hover:underline">
+              <a href="/privacy" target="_blank" className="text-green-600 hover:underline">
                 Privacy Policy
               </a>.
               I understand that payment will be processed securely via Stripe.
