@@ -15,7 +15,7 @@ export default function PrivacyPage() {
           </Link>
           <Link href="/" className="flex items-center gap-2">
             <img 
-              src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogov1.png" 
+              src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogov2.png" 
               alt="Repair Help" 
               className="h-10 w-auto"
             />

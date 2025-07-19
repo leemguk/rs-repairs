@@ -69,7 +69,7 @@ export default function Component() {
       <header className="px-4 lg:px-6 h-16 flex items-center border-b bg-white sticky top-0 z-50">
         <Link href="/" className="flex items-center justify-center">
           <img 
-            src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogov1.png" 
+            src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogov2.png" 
             alt="Repair Help" 
             className="h-10 sm:h-12 w-auto"
           />
@@ -556,7 +556,7 @@ export default function Component() {
           <div className="grid gap-8 lg:grid-cols-4 md:grid-cols-2">
             <div className="space-y-4 lg:pr-4">
               <img 
-                src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogov1.png" 
+                src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogov2.png" 
                 alt="Repair Help" 
                 className="h-10 w-auto mb-2"
               />
