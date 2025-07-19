@@ -42,8 +42,8 @@ interface LoqateRetrieveResult {
   [key: string]: any  // This allows for any additional fields
 }
 
-// Loqate API key
-const LOQATE_KEY = process.env.NEXT_PUBLIC_LOQATE_KEY || ""
+// Loqate API proxy endpoint
+const ADDRESS_LOOKUP_ENDPOINT = "/api/address-lookup"
 
 interface BookingModalProps {
   isOpen: boolean
@@ -420,16 +420,16 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
         query: query.substring(0, 3) + '...' // Log partial query for privacy
       })
       
-      const response = await fetch(
-        `https://api.addressy.com/Capture/Interactive/Find/v1.1/json3.ws?` +
-        new URLSearchParams({
-          Key: LOQATE_KEY,
-          Text: query,
-          Countries: "GB",
-          Limit: "10",
-          Language: "en-gb",
-        })
-      )
+      const response = await fetch(ADDRESS_LOOKUP_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "find",
+          postcode: query,
+        }),
+      })
 
       if (!response.ok) {
         console.error("Loqate API error:", response.status)
@@ -471,13 +471,16 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
         timestamp: new Date().toISOString()
       })
       
-      const response = await fetch(
-        `https://api.addressy.com/Capture/Interactive/Retrieve/v1.1/json3.ws?` +
-        new URLSearchParams({
-          Key: LOQATE_KEY,
-          Id: suggestion.id,
-        })
-      )
+      const response = await fetch(ADDRESS_LOOKUP_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "retrieve",
+          addressId: suggestion.id,
+        }),
+      })
 
       if (!response.ok) {
         console.error("Loqate Retrieve API error:", response.status)
@@ -486,26 +489,15 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
 
       const data = await response.json()
       
-      if (data.Items && data.Items.length > 0) {
-        const addressData = data.Items[0]
-                
-        const addressParts = [
-          addressData.Line1,
-          addressData.Line2,
-          addressData.Line3,
-          addressData.Line4,
-          addressData.Line5,
-        ].filter(Boolean)
-        
-             
-        const fullAddress = addressParts.join(", ") + (addressData.PostalCode ? `, ${addressData.PostalCode}` : "")
-        
+      if (data.address) {
+        // Proxy returns simplified format
+        const fullAddress = data.address + (data.postcode ? `, ${data.postcode}` : "")
         
         setBookingData((prev) => ({
           ...prev,
-          address: addressData.Line1 || "",
+          address: data.address || "",
           fullAddress: fullAddress,
-          postcode: addressData.PostalCode || "",
+          postcode: data.postcode || "",
         }))
 
         setAddressSearchValue(fullAddress)

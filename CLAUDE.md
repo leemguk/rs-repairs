@@ -153,7 +153,7 @@ OPENROUTER_API_KEY=
 SERP_API_KEY= # or BRAVE_SEARCH_API_KEY
 
 # Address & Email
-NEXT_PUBLIC_LOQATE_KEY=
+LOQATE_KEY= # Server-side only (no NEXT_PUBLIC_ prefix)
 SENDGRID_API_KEY=
 
 # Feature Flags
@@ -251,7 +251,7 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
    - No vulnerabilities found
 
 ### What Was Reverted:
-1. **Loqate API Proxy** - Broke address lookup, reverted to client-side
+1. ~~**Loqate API Proxy** - Broke address lookup, reverted to client-side~~ **NOW FIXED (2025-07-19)**
 2. **Complex Security Headers** - Caused 403 errors, simplified middleware
 
 ### Client-Side Validation Implementation (2025-07-19):
@@ -273,6 +273,24 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
    - Booking widget: validates before payment processing
    - Expands accordion sections with errors (widget only)
 
+### Loqate API Proxy Implementation (2025-07-19):
+1. **Proxy Endpoint Created**
+   - `/api/address-lookup/route.ts` handles all Loqate API calls
+   - Supports both 'find' and 'retrieve' actions
+   - Returns simplified response format
+
+2. **Security Features**
+   - API key moved to server-side only (use `LOQATE_KEY` without `NEXT_PUBLIC_` prefix)
+   - Rate limiting: 20 requests per minute per IP
+   - Input validation and sanitization
+   - Proper error handling and logging
+
+3. **Component Updates**
+   - Both booking modal and widget updated to use proxy endpoint
+   - Removed all direct Loqate API calls
+   - Updated response handling for proxy's format
+   - Fixed parameter name issue (Text vs SearchTerm)
+
 ### Security Improvements Completed (2025-07-16):
 
 1. **✅ Server-side validation implemented (Bookings)**
@@ -293,6 +311,12 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
    - Prevents invalid form submission
    - Better mobile experience with proper input types
 
+4. **✅ Loqate API proxy implemented**
+   - API key moved to server-side only
+   - Rate limiting (20 requests/minute per IP)
+   - Input validation and sanitization
+   - Both booking components updated to use proxy
+
 3. **✅ Loqate monitoring added**
    - Console logging for API usage tracking
    - Logs timestamp and source (modal vs widget)
@@ -301,12 +325,7 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
 ### Remaining Security TODO:
 
 **Medium Priority:**
-1. **Implement Loqate Proxy** (API Key Protection)
-   - Create `/api/address-lookup` endpoint
-   - Move API key to server-side only
-   - Add rate limiting to proxy endpoint
-
-2. **Add Security Headers** (Defense in Depth)
+1. **Add Security Headers** (Defense in Depth)
    - Implement CSP for XSS protection
    - Add X-Frame-Options for widget security
    - Test thoroughly to avoid breaking functionality
