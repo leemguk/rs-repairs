@@ -305,12 +305,19 @@ Remember: Everything is about simplicity. Small, focused changes that follow exi
    - Allows necessary resources (Stripe, inline scripts/styles)
    - Frame-ancestors for widget: ransomspares.co.uk, ransomdev.co.uk
    - Includes Vercel development features
+   - CSP violation reporting endpoint at `/api/csp-report`
 
 3. **Testing Approach**
    - Started with minimal headers
    - Tested both booking modal and widget
    - No functionality breakage
    - Ready for production use
+
+4. **CSP Reporting Endpoint** (Added 2025-07-19)
+   - `/api/csp-report/route.ts` collects CSP violations
+   - Logs to Vercel Functions logs
+   - Excluded from rate limiting
+   - Safe implementation (always returns 204)
 
 ### Security Improvements Completed (2025-07-16):
 

@@ -143,6 +143,7 @@
 - ✅ Form submission protection (validates before allowing progression)
 - ✅ Loqate API key protected via server-side proxy
 - ✅ Security headers implemented (CSP, X-Frame-Options, HSTS, etc.)
+- ✅ CSP violation reporting endpoint for monitoring
 
 **Remaining Vulnerabilities (Low Impact):**
 - ⚠️ ~~Loqate API key exposed~~ → ✅ FIXED with proxy implementation (2025-07-19)
@@ -373,5 +374,11 @@
 
 **Result**: All security headers implemented without breaking any functionality
 
+### CSP Reporting Endpoint Added
+- Created `/api/csp-report` to collect violations
+- Violations logged to Vercel Function logs
+- Check logs to monitor before switching to enforce mode
+- Safe implementation with proper error handling
+
 ---
-*Last updated: 2025-07-19 (Security headers implementation completed)*
+*Last updated: 2025-07-19 (Security headers and CSP reporting completed)*
