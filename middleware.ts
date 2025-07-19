@@ -38,10 +38,46 @@ export function middleware(request: NextRequest) {
     }
   }
   
-  // Continue with the request
-  return NextResponse.next()
+  // Create response with security headers
+  const response = NextResponse.next()
+  
+  // Add minimal security headers that are unlikely to break functionality
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  
+  // Only set X-Frame-Options for non-widget paths to allow iframe embedding
+  if (!pathname.includes('/widget/')) {
+    response.headers.set('X-Frame-Options', 'SAMEORIGIN')
+  }
+  
+  // Add a permissive CSP that allows necessary resources
+  // Start with report-only mode to test without breaking anything
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https: blob:",
+    "font-src 'self' data:",
+    "connect-src 'self' https: wss:",
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+  ].join('; ')
+  
+  // For widget paths, add frame-ancestors to allow embedding
+  if (pathname.includes('/widget/')) {
+    const cspWithFrameAncestors = csp + "; frame-ancestors 'self' https://www.ransomspares.co.uk https://ransomspares.co.uk http://localhost:*"
+    response.headers.set('Content-Security-Policy-Report-Only', cspWithFrameAncestors)
+  } else {
+    response.headers.set('Content-Security-Policy-Report-Only', csp)
+  }
+  
+  return response
 }
 
 export const config = {
-  matcher: '/api/:path*',
+  matcher: [
+    '/api/:path*',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ],
 }
