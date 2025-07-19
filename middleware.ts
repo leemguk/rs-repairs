@@ -58,8 +58,8 @@ export function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
     "font-src 'self' data:",
-    "connect-src 'self' https: wss:",
-    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+    "connect-src 'self' https: wss: https://vercel.live wss://ws-us3.pusher.com",
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://vercel.live",
     "object-src 'none'",
     "base-uri 'self'",
   ].join('; ')
