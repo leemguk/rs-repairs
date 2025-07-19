@@ -108,7 +108,6 @@ export default function PrivacyPage() {
                   <li><strong>Payment Processors:</strong> Secure payment handling and transaction processing</li>
                   <li><strong>Communication Services:</strong> Email delivery and customer notifications</li>
                   <li><strong>Address Validation:</strong> UK address lookup and verification services</li>
-                  <li><strong>AI Technology Partners:</strong> Diagnostic analysis and fault identification</li>
                   <li><strong>Infrastructure Providers:</strong> Secure data storage and hosting services</li>
                 </ul>
 
