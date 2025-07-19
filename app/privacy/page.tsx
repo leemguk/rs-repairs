@@ -102,14 +102,14 @@ export default function PrivacyPage() {
               <section className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">6. Data Sharing and Disclosure</h2>
                 <h3 className="text-xl font-semibold mb-3">6.1 Service Providers</h3>
-                <p className="mb-4">We share your information with trusted third parties who assist us:</p>
+                <p className="mb-4">We share your information with carefully selected third parties who assist us in providing our services:</p>
                 <ul className="list-disc pl-6 mb-4">
                   <li><strong>Pacifica Group Ltd:</strong> Our repair service partner who performs the repairs</li>
-                  <li><strong>Stripe:</strong> Secure payment processing</li>
-                  <li><strong>SendGrid:</strong> Email communications</li>
-                  <li><strong>Loqate:</strong> Address lookup and validation</li>
-                  <li><strong>OpenRouter:</strong> AI diagnostic services</li>
-                  <li><strong>Supabase:</strong> Database and hosting services</li>
+                  <li><strong>Payment Processors:</strong> Secure payment handling and transaction processing</li>
+                  <li><strong>Communication Services:</strong> Email delivery and customer notifications</li>
+                  <li><strong>Address Validation:</strong> UK address lookup and verification services</li>
+                  <li><strong>AI Technology Partners:</strong> Diagnostic analysis and fault identification</li>
+                  <li><strong>Infrastructure Providers:</strong> Secure data storage and hosting services</li>
                 </ul>
 
                 <h3 className="text-xl font-semibold mb-3">6.2 Legal Requirements</h3>

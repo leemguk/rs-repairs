@@ -84,9 +84,9 @@ export default function TermsPage() {
                 <h3 className="text-xl font-semibold mb-3">4.1 Service Options and Pricing</h3>
                 <p className="mb-4">Our standard service charges include:</p>
                 <ul className="list-disc pl-6 mb-4">
-                  <li>Same-day service: £189 (bookings made before midday)</li>
-                  <li>Next-day service: £179</li>
-                  <li>Standard service (2-3 working days): £169</li>
+                  <li>Same-day service: From £159 (bookings made before midday)</li>
+                  <li>Next-day service: From £149</li>
+                  <li>Standard service (2-3 working days): From £139</li>
                 </ul>
                 <p className="mb-4">
                   Prices may vary based on appliance type and brand. All prices include VAT where applicable.
@@ -141,23 +141,14 @@ export default function TermsPage() {
               </section>
 
               <section className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4">7. Guarantees and Warranties</h2>
-                <h3 className="text-xl font-semibold mb-3">7.1 repair.help Guarantee</h3>
-                <p className="mb-4">
-                  repair.help provides a 1-year guarantee on all work completed through our platform, 
-                  covering the quality of service and customer satisfaction.
-                </p>
-
-                <h3 className="text-xl font-semibold mb-3">7.2 Pacifica Repair Guarantee</h3>
+                <h2 className="text-2xl font-semibold mb-4">7. Repair Guarantee</h2>
                 <p className="mb-4">
                   All repairs carried out by Pacifica are covered by a 60-day parts and labour guarantee. 
                   This covers any faults related to the original repair. New, unrelated faults are not covered 
                   and will incur a new service charge.
                 </p>
-
-                <h3 className="text-xl font-semibold mb-3">7.3 Your Statutory Rights</h3>
                 <p className="mb-4">
-                  These guarantees do not affect your statutory rights under the Consumer Rights Act 2015 
+                  This guarantee does not affect your statutory rights under the Consumer Rights Act 2015 
                   or any other applicable laws.
                 </p>
               </section>

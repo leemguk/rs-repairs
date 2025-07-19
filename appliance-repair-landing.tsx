@@ -256,7 +256,7 @@ export default function Component() {
                   <div className="text-center space-y-3 flex-1">
                     <div className="bg-white/70 rounded-lg p-3 sm:p-4 border border-orange-200">
                       <div className="text-base sm:text-lg font-bold text-orange-700 mb-2">Call out and Repair</div>
-                      <div className="text-xl sm:text-2xl font-bold text-orange-600 mb-1">From £109</div>
+                      <div className="text-xl sm:text-2xl font-bold text-orange-600 mb-1">From £139.00</div>
                       <div className="text-xs sm:text-sm text-gray-600">Price varies by service speed</div>
                     </div>
 
@@ -288,7 +288,7 @@ export default function Component() {
                       </div>
                       <div className="flex items-center gap-1">
                         <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                        <span>1-year warranty</span>
+                        <span>60-day guarantee</span>
                       </div>
                     </div>
                     <div className="p-2 bg-white border border-orange-300 rounded text-xs text-orange-700 text-center">
@@ -631,18 +631,18 @@ export default function Component() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => window.open("/terms", "_blank")}
+                  <a
+                    href="/terms"
                     className="text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
                   >
                     Terms & Conditions
-                  </button>
-                  <button
-                    onClick={() => window.open("/privacy", "_blank")}
+                  </a>
+                  <a
+                    href="/privacy"
                     className="text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
                   >
                     Privacy Policy
-                  </button>
+                  </a>
                 </div>
               </div>
             </div>
