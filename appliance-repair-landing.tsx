@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
-  Wrench,
   Search,
   Calendar,
   Shield,
@@ -69,8 +68,11 @@ export default function Component() {
       {/* Header */}
       <header className="px-4 lg:px-6 h-16 flex items-center border-b bg-white sticky top-0 z-50">
         <Link href="/" className="flex items-center justify-center">
-          <Wrench className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
-          <span className="ml-2 text-lg sm:text-xl font-bold text-gray-900">Repair Help</span>
+          <img 
+            src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogo.png" 
+            alt="Repair Help" 
+            className="h-8 sm:h-10 w-auto"
+          />
         </Link>
 
         {/* Desktop Navigation */}
@@ -553,10 +555,11 @@ export default function Component() {
         <div className="container px-4 md:px-6 max-w-6xl mx-auto">
           <div className="grid gap-8 lg:grid-cols-4 md:grid-cols-2">
             <div className="space-y-4 lg:pr-4">
-              <div className="flex items-center space-x-2">
-                <Wrench className="h-6 w-6 text-orange-700" />
-                <span className="text-lg font-bold">Repair Help</span>
-              </div>
+              <img 
+                src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogo.png" 
+                alt="Repair Help" 
+                className="h-8 w-auto mb-2"
+              />
               <p className="text-sm text-gray-600">
                 Part of the Ransom Spares Group - Your trusted partner for appliance repair solutions.
               </p>

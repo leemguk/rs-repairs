@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, Home, Lock } from "lucide-react"
+import { ArrowLeft, Lock } from "lucide-react"
 import Link from "next/link"
 
 export default function PrivacyPage() {
@@ -14,8 +14,11 @@ export default function PrivacyPage() {
             <span className="font-semibold">Back to Home</span>
           </Link>
           <Link href="/" className="flex items-center gap-2">
-            <Home className="h-5 w-5 text-orange-600" />
-            <span className="text-xl font-bold">Repair Help</span>
+            <img 
+              src="https://ih5f1pkyy3brtmob.public.blob.vercel-storage.com/RepairHelpLogo.png" 
+              alt="Repair Help" 
+              className="h-8 w-auto"
+            />
           </Link>
         </div>
       </header>
