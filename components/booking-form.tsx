@@ -119,6 +119,9 @@ export function BookingForm() {
     postcode: "",
     marketingConsent: true,
   })
+  
+  // Validation errors state
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_your_key_here")
 
