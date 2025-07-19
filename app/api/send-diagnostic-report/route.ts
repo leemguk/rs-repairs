@@ -276,8 +276,8 @@ export async function POST(request: NextRequest) {
                                     <p style="color: #9ca3af; margin: 0 0 15px 0; font-size: 12px;">AI-Powered Appliance Diagnostics</p>
                                     <p style="color: #9ca3af; margin: 0 0 15px 0; font-size: 11px;">Part of the Ransom Spares Group, Unit 3 Flushing Meadow, Yeovil, BA21 5DL</p>
                                     <p style="color: #9ca3af; margin: 0; font-size: 11px;">
-                                        <a href="#" style="color: #6b7280; text-decoration: none;">Privacy Policy</a> | 
-                                        <a href="#" style="color: #6b7280; text-decoration: none;">Terms of Service</a> | 
+                                        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/privacy" style="color: #6b7280; text-decoration: none;">Privacy Policy</a> | 
+                                        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/terms" style="color: #6b7280; text-decoration: none;">Terms of Service</a> | 
                                         <a href="#" style="color: #6b7280; text-decoration: none;">Unsubscribe</a>
                                     </p>
                                 </td>

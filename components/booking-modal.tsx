@@ -1511,11 +1511,11 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
             />
             <label htmlFor="terms" className="text-sm text-gray-700 cursor-pointer">
               I agree to the{" "}
-              <a href="#" className="text-green-600 hover:underline">
+              <a href="/terms" target="_blank" className="text-green-600 hover:underline">
                 Terms and Conditions
               </a>{" "}
               and{" "}
-              <a href="#" className="text-green-600 hover:underline">
+              <a href="/privacy" target="_blank" className="text-green-600 hover:underline">
                 Privacy Policy
               </a>
               . I understand that payment will be processed securely via Stripe.
@@ -1643,7 +1643,7 @@ export function BookingModal({ isOpen, onClose }: BookingModalProps) {
                     <h3 className="font-bold text-gray-900 mb-4">Call-out &amp; Repair</h3>
                     <p className="text-gray-700 mb-4">
                       Price includes our appliance expert to diagnose the problem, and replace any parts that may be
-                      required subject to Terms and conditions.
+                      required subject to <a href="/terms" target="_blank" className="text-orange-600 hover:underline">Terms and conditions</a>.
                     </p>
                     <div className="flex items-center gap-2">
                       <Clock className="h-5 w-5 text-green-600" />

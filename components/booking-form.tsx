@@ -1422,11 +1422,11 @@ export function BookingForm() {
             />
             <label htmlFor="terms" className="text-sm text-gray-700 cursor-pointer">
               I agree to the{" "}
-              <a href="#" className="text-green-600 hover:underline">
+              <a href="/terms" target="_blank" className="text-green-600 hover:underline">
                 Terms and Conditions
               </a>{" "}
               and{" "}
-              <a href="#" className="text-green-600 hover:underline">
+              <a href="/privacy" target="_blank" className="text-green-600 hover:underline">
                 Privacy Policy
               </a>.
               I understand that payment will be processed securely via Stripe.

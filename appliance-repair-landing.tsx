@@ -632,13 +632,13 @@ export default function Component() {
                 </div>
                 <div className="flex items-center gap-4">
                   <button
-                    onClick={() => window.open("#", "_blank")}
+                    onClick={() => window.open("/terms", "_blank")}
                     className="text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
                   >
                     Terms & Conditions
                   </button>
                   <button
-                    onClick={() => window.open("#", "_blank")}
+                    onClick={() => window.open("/privacy", "_blank")}
                     className="text-sm text-gray-600 hover:text-orange-600 transition-colors cursor-pointer"
                   >
                     Privacy Policy
